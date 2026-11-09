@@ -35,7 +35,6 @@
     initAnnouncement();
   });
   $('infoButton').addEventListener('click',openWelcome);
-  $('reopenWelcome').addEventListener('click',openWelcome);
   $('welcomeAlerts').addEventListener('click',()=>{closeWelcome();$('coderedButton').click();});
   R.initCoderedOverlay(DOM); R.initCallerIdOverlay(DOM); R.initDrillBanner(DOM);
   if (!safeStorage(localStorage,'getItem','readylpc-zone-info-dismissed-v2') && !safeStorage(sessionStorage,'getItem','readylpc-zone-info-seen-v2')) openWelcome();
@@ -94,7 +93,20 @@
       card.append(focus,badges,link);container.appendChild(card);
     }
     $('incidentCount').textContent=incidents.size;
+    requestAnimationFrame(updateIncidentArrows);
   }
+  function updateIncidentArrows(){
+    const list=$('incidentList'),max=list.scrollWidth-list.clientWidth;
+    $('incidentPrev').disabled=list.scrollLeft<=2;
+    $('incidentNext').disabled=list.scrollLeft>=max-2;
+  }
+  for(const [id,direction] of [['incidentPrev',-1],['incidentNext',1]]){
+    $(id).addEventListener('click',()=>{
+      const list=$('incidentList');list.scrollBy({left:direction*Math.max(200,list.clientWidth*0.8),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+    });
+  }
+  $('incidentList').addEventListener('scroll',updateIncidentArrows,{passive:true});
+  new ResizeObserver(updateIncidentArrows).observe($('incidentList'));
   // Find an interior label position, including concave zones and holes.
   function zoneLabelPoint(feature) {
     const geometry=feature.geometry;
@@ -185,7 +197,7 @@
   async function initMap() {
     if(!window.L || !L.esri){mapFailure('The interactive map could not load.');return;}
     try {
-      view=L.map('viewDiv',{scrollWheelZoom:false,zoomSnap:0.25}).fitBounds(countyBounds,{padding:[20,20]});
+      view=L.map('viewDiv',{dragging:false,touchZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,scrollWheelZoom:false,zoomSnap:0.25}).fitBounds(countyBounds,{padding:[20,20]});
       view.createPane('zoneLabels');view.getPane('zoneLabels').style.zIndex=480;view.getPane('zoneLabels').style.pointerEvents='none';
       view.createPane('incidentPins');view.getPane('incidentPins').style.zIndex=675;
       zoneLabelLayer=L.layerGroup().addTo(view);
@@ -294,7 +306,7 @@
     },()=>{button.disabled=false;$('mapMessage').textContent='Location could not be obtained. You can search for your address on the map.';},{timeout:10000});
   });
   function expandMap(expanded){
-    $('mapFrame').classList.toggle('is-expanded',expanded);$('mapFullscreenBtn').setAttribute('aria-pressed',String(expanded));$('mapFullscreenBtn').textContent=expanded?'Close expanded map':'Expand map';document.body.style.overflow=expanded?'hidden':'';if(view)setTimeout(()=>view.invalidateSize(),0);
+    $('mapFrame').classList.toggle('is-expanded',expanded);$('mapFullscreenBtn').setAttribute('aria-pressed',String(expanded));$('mapFullscreenBtn').textContent=expanded?'Close expanded map':'Expand map';document.body.style.overflow=expanded?'hidden':'';if(view){for(const handler of ['dragging','touchZoom','doubleClickZoom','boxZoom','keyboard','scrollWheelZoom'])view[handler][expanded?'enable':'disable']();setTimeout(()=>view.invalidateSize(),0);}
   }
   $('mapFullscreenBtn').addEventListener('click',()=>expandMap($('mapFullscreenBtn').getAttribute('aria-pressed')!=='true'));
   document.addEventListener('keydown',event=>{if(event.key==='Escape')expandMap(false);});

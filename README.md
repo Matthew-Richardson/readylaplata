@@ -14,4 +14,4 @@ The access-impact frontend status is `Access` (also recognizes `Access Impact Ar
 
 The overview fits the full county boundary (including the north edge) with padding. Zone names are drawn below incident markers and labels. The information dialog uses a compact six-card grid; the preparedness checklist can be expanded when needed.
 
-Overview controls, search, legend, and compact incident cards sit above the map. Incident cards show zone counts by status and scroll horizontally on phones. Only the footer appears below the map.
+Centered search, controls and incident cards sit above the map. Arrow buttons scroll the incident cards, which show zone counts by status. The legend sits directly below the map. Panning and gesture navigation are enabled only in expanded mode.
