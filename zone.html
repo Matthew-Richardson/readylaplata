@@ -680,15 +680,12 @@ require([
           parts.forEach((g,i) => sketchLayer.add(new Graphic({ geometry:g, symbol: previewSymbol(i) })));
           $("hint").textContent = `${parts.length} pieces ready. The largest keeps the original record; the others become new zones with numbered names. Review attributes, then Save.`;
         } else {
-          const inner = geometryEngine.intersect(sourceZone.geometry, graphic.geometry);
-          const remainder = inner && geometryEngine.difference(sourceZone.geometry, inner);
-          if (!inner || polygonArea(inner) <= 0 || !remainder || polygonArea(remainder) <= 0)
-            throw new Error("Draw inside or partly across the zone, leaving some of the original zone remaining.");
-          selected = new Graphic({ geometry: inner });
+          const { zone, remainder } = carveGeometry(sourceZone.geometry, graphic.geometry);
+          selected = new Graphic({ geometry: zone });
           sketchLayer.removeAll();
           sketchLayer.add(new Graphic({ geometry: remainder, symbol: previewSymbol(0) }));
-          sketchLayer.add(new Graphic({ geometry: inner, symbol: previewSymbol(1) }));
-          $("hint").textContent = "Inner zone ready (clipped to the original boundary). Give it a name and Save to remove that area from the original zone.";
+          sketchLayer.add(new Graphic({ geometry: zone, symbol: previewSymbol(1) }));
+          $("hint").textContent = "New zone ready. The full drawn shape is kept, including areas outside the original zone. Give it a name and Save; only the shared area is removed from the original.";
         }
         saveBtn.disabled = false;
         $("editDrawingBtn").style.display = "";
@@ -974,6 +971,18 @@ require([
     return g && g.type === "polygon" ? Math.abs(geometryEngine.planarArea(g)) : 0;
   }
 
+  function carveGeometry(parent, drawn){
+    const zone = geometryEngine.simplify(drawn);
+    if (!zone || polygonArea(zone) <= 0) throw new Error("Draw a valid zone with an area.");
+    const overlap = geometryEngine.intersect(parent, zone);
+    if (!overlap || polygonArea(overlap) <= 0)
+      throw new Error("The new zone must overlap the selected parent zone. It may extend outside it.");
+    const remainder = geometryEngine.difference(parent, zone);
+    if (!remainder || polygonArea(remainder) <= 0)
+      throw new Error("Leave some of the parent zone remaining outside the new zone.");
+    return { zone, remainder };
+  }
+
   function previewSymbol(i){
     return { type: "simple-fill", color: i ? [242,196,61,0.35] : [31,111,194,0.25],
       outline: { color: i ? "#f2c43d" : "#5ca9ef", width: 2 } };
@@ -1002,7 +1011,7 @@ require([
     sketchLayer.add(new Graphic({ geometry: original.geometry, symbol: previewSymbol(0) }));
     $("hint").textContent = kind === "split"
       ? "Draw a line across the zone (start and end outside). Double-click to finish; Undo corrects drawing mistakes."
-      : "Draw the new zone inside the original. Double-click to finish; overlapping area will be removed from the original on Save.";
+      : "Draw a new zone overlapping the original; it may extend outside it. Double-click to finish. The full new shape is kept and only the shared area is removed from the original on Save.";
     sketchVM.create(kind === "split" ? "polyline" : "polygon");
   }
 
@@ -1221,11 +1230,9 @@ require([
           addFeatures.push(new Graphic({ geometry:g, attributes:copy }));
         });
       } else if (mode === "carve"){
-        const inner = geometryEngine.intersect(sourceZone.geometry, geom);
-        const rest = inner && geometryEngine.difference(sourceZone.geometry, inner);
-        if (!inner || !rest || polygonArea(inner) <= 0 || polygonArea(rest) <= 0) throw new Error("Leave some of the original zone outside the inner zone.");
-        updateFeatures.push(new Graphic({ geometry:rest, attributes:{ [oidField]:sourceZone.attributes[oidField] } }));
-        addFeatures.push(new Graphic({ geometry:inner, attributes:attrs }));
+        const { zone, remainder } = carveGeometry(sourceZone.geometry, geom);
+        updateFeatures.push(new Graphic({ geometry:remainder, attributes:{ [oidField]:sourceZone.attributes[oidField] } }));
+        addFeatures.push(new Graphic({ geometry:zone, attributes:attrs }));
       } else if (mode === "edit" || mode === "reshape"){
         excludedIds.push(selected.attributes[oidField]);
         updateFeatures.push(new Graphic({ geometry:geom, attributes:{ ...attrs, [oidField]:selected.attributes[oidField] } }));
