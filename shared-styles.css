@@ -3462,7 +3462,7 @@ main {
   flex-wrap: wrap;
 }
 
-/* Unified public information cards. Status colors remain as accents. */
+/* Public information cards use a flat status color. */
 .evac-box,.status-card{border:1px solid #dce3ec;border-radius:12px;box-shadow:0 3px 12px rgba(24,51,76,.05)}
-.evac-box{background:#fff!important;border-left:4px solid var(--status-accent,#667180);color:#162b40}
+.evac-box{background:var(--status-color,#f3f4f6);border:0;box-shadow:none;color:#162b40}
 .evac-box .evac-title{font-size:18px;color:#254763}.evac-box .evac-body{font-size:14px;line-height:1.6}.status-card{background:#fff}

@@ -374,7 +374,7 @@
 
       const boxClass = statusCode === 'GO' ? ' evac-box-go' : statusCode === 'SET' ? ' evac-box-set' : '';
 
-      return `<div class="evac-box${boxClass}" style="--status-accent:${data.color}">
+      return `<div class="evac-box${boxClass}" style="--status-color:${data.color}">
         <div class="evac-title">${data.label}</div>
         <div class="evac-body">
           <div>The following zones are under ${statusCode} status for <strong>${INCIDENT ? escHTML(INCIDENT) : 'this incident'}</strong>.</div>

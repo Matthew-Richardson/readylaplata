@@ -13,3 +13,14 @@
 @media(max-width:1000px){.home-brand-banner{gap:18px;padding:22px}.home-brand-logo{width:105px}.home-site-name{font-size:27px}.home-header-actions{gap:12px}.home-nav-btn{padding:9px 11px}.home-call-link{padding-left:12px}}
 @media(max-width:760px){.home-brand-banner{flex-direction:column;align-items:stretch;padding:18px;gap:18px;margin-bottom:14px}.home-brand-group{gap:14px}.home-brand-logo{width:78px}.home-site-name{font-size:26px}.home-site-subtitle{margin-top:5px;font-size:12px}.home-header-actions{justify-content:space-between;gap:10px;flex-wrap:wrap}.home-brand-nav{gap:6px}.home-nav-btn{font-size:12px;padding:9px 10px}.home-call-link{border:0;padding:0;gap:5px}.home-call-link .call-label{display:none}.home-call-link .call-number{font-size:12px}.home-call-link svg{width:14px}.welcome-extra{grid-template-columns:1fr}.home-map-tools label{font-size:12px}.welcome-scroll .rsg-header{flex-wrap:wrap}}
 @media(max-width:360px){.home-brand-banner{padding:15px}.home-header-actions{justify-content:flex-start}.home-call-link{margin-top:2px}}
+
+/* Status information cards use one flat status color, without edge accents. */
+.home-map-page .rsg-card,.welcome-status{border:0;box-shadow:none;background-image:none;color:#162b40}
+.home-map-page .rsg-card--ready{background:#f8dadd;border:0}
+.home-map-page .rsg-card--set{background:#fff36a;border:0}
+.home-map-page .rsg-card--go{background:#41f56e;border:0}
+.welcome-status.shelter{background:#8dc8f8;border:0;color:#162b40}
+.welcome-status.access{background:#d9c5f4;border:0;color:#162b40}
+.welcome-status.planning{background:#b8bec7;border:0;color:#162b40}
+.home-map-page .rsg-content,.home-map-page .rsg-header,.home-map-page .rsg-body,.home-map-page .rsg-bullets{background:transparent}
+.home-map-page .rsg-title,.home-map-page .rsg-label,.welcome-status h3,.welcome-status p{color:#162b40}
