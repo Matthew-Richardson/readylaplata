@@ -359,6 +359,7 @@
   $('addressForm').addEventListener('submit',async event=>{
     event.preventDefault();if(!view)return;
     const text=$('addressSearch').value.trim();if(!text)return;
+    $('addressSearch').blur();
     const button=$('addressForm').querySelector('button');button.disabled=true;
     $('addressIncidentResult').hidden=true;
     try {
