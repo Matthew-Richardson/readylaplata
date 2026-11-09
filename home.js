@@ -69,6 +69,14 @@
       if(entry.marker) entry.marker.openPopup();
     } catch(err){if(err.name!=='AbortError')console.warn('Incident navigation:',err);}
   }
+  const STATUS_PRIORITY = Object.freeze({Go:0,Shelter:1,Set:2,Access:3,Planning:4});
+  function statusPriority(status) { return STATUS_PRIORITY[Z.key(status)]; }
+  function incidentPriority(entry) {
+    return Array.from(entry.statuses).reduce((highest,status)=>Math.min(highest,statusPriority(status)),STATUS_PRIORITY.Planning);
+  }
+  function compareIncidents([nameA,a],[nameB,b]) {
+    return incidentPriority(a)-incidentPriority(b) || nameA.localeCompare(nameB);
+  }
   function renderIncidentList() {
     const container=$('incidentList');container.replaceChildren();
     for(const [name,entry] of incidents){
@@ -76,7 +84,7 @@
       card.classList.toggle('is-selected',name===chosenIncident);
       const focus=document.createElement('button');focus.type='button';focus.className='incident-focus';focus.textContent=name;focus.setAttribute('aria-label','Show '+name+' on the map');focus.addEventListener('click',()=>focusIncident(name));
       const badges=document.createElement('div');badges.className='incident-badges';
-      for(const status of Array.from(entry.statuses).sort()){
+      for(const status of Array.from(entry.statuses).sort((a,b)=>statusPriority(a)-statusPriority(b)||a.localeCompare(b))){
         const style=Z.styles[Z.key(status)],badge=document.createElement('span');badge.className='status-badge';badge.textContent=Z.key(status)==='Access'?style.label:status;if(Z.key(status)==='Access')badge.classList.add('access-hatch');badge.style.background=style.fill;badge.style.borderColor=style.stroke;badge.style.color=style.text;badges.appendChild(badge);
       }
       const link=document.createElement('a');link.href='evac.html?incident='+encodeURIComponent(name);link.textContent='Incident details →';
@@ -107,7 +115,7 @@
         const bounds=L.geoJSON(feature).getBounds();
         if(bounds.isValid())entry.extent.extend(bounds);
       });
-      incidents=new Map(Array.from(next.entries()).sort(([a],[b])=>a.localeCompare(b)));
+      incidents=new Map(Array.from(next.entries()).sort(compareIncidents));
       const drawingOrder={Planning:0,Access:1,Set:2,Shelter:3,Go:4};
       features.sort((a,b)=>drawingOrder[Z.key(statusName(a))]-drawingOrder[Z.key(statusName(b))]);
       zoneLayer.clearLayers();zoneLayer.addData({type:'FeatureCollection',features});
