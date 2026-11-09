@@ -186,7 +186,7 @@
       });
       renderIncidentList();lastIncidentSuccess=Date.now();
       $('incidentState').dataset.error='false';$('incidentState').hidden=incidents.size>0;$('incidentState').textContent=incidents.size?'':'No incidents are currently shown in the county zone layer.';
-      $('lastLoaded').textContent='Source: La Plata County OEM · Updated '+localTime(lastIncidentSuccess);
+      $('lastLoaded').textContent='Updated '+localTime(lastIncidentSuccess);
       if(firstLoad && chosenIncident)await focusIncident(chosenIncident);
       firstLoad=false;
     } catch(err){
