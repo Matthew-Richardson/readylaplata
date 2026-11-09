@@ -13,7 +13,7 @@
   let countyBounds = C.countyBounds;
   let chosenIncident = new URLSearchParams(location.search).get('incident') || '';
   let firstLoad = true, announcementInitialized = false;
-  let operationalLayers = [];
+  let operationalLayers = [], currentZoneFeatures = [];
   const welcome = $('welcomeDialog');
   function safeStorage(storage, method, key, value) { try { return storage[method](key,value); } catch (_) { return null; } }
   function initAnnouncement() {
@@ -165,6 +165,7 @@
         const bounds=L.geoJSON(feature).getBounds();
         if(bounds.isValid())entry.extent.extend(bounds);
       });
+      currentZoneFeatures=features;
       incidents=new Map(Array.from(next.entries()).sort(compareIncidents));
       const drawingOrder={Planning:0,Access:1,Set:2,Shelter:3,Go:4};
       features.sort((a,b)=>drawingOrder[Z.key(statusName(a))]-drawingOrder[Z.key(statusName(b))]);
@@ -326,17 +327,51 @@
   $('mapFullscreenBtn').addEventListener('click',()=>expandMap($('mapFullscreenBtn').getAttribute('aria-pressed')!=='true'));
   document.addEventListener('keydown',event=>{if(event.key==='Escape')expandMap(false);});
 
+  // GeoJSON polygons include holes; a point on a boundary is included for review.
+  function zoneContainsAddress(geometry,x,y){
+    const inRing=ring=>{
+      let inside=false;
+      for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+        const [ax,ay]=ring[j],[bx,by]=ring[i];
+        const cross=(x-ax)*(by-ay)-(y-ay)*(bx-ax);
+        if(Math.abs(cross)<1e-12 && x>=Math.min(ax,bx)-1e-12 && x<=Math.max(ax,bx)+1e-12 && y>=Math.min(ay,by)-1e-12 && y<=Math.max(ay,by)+1e-12)return 2;
+        if((ay>y)!==(by>y) && x<(bx-ax)*(y-ay)/(by-ay)+ax)inside=!inside;
+      }
+      return inside?1:0;
+    };
+    const polygons=geometry?.type==='MultiPolygon'?geometry.coordinates:geometry?.type==='Polygon'?[geometry.coordinates]:[];
+    return polygons.some(rings=>{
+      const outer=inRing(rings[0]||[]);if(!outer)return false;if(outer===2)return true;
+      for(const hole of rings.slice(1)){const hit=inRing(hole);if(hit===2)return true;if(hit===1)return false;}
+      return true;
+    });
+  }
+  function addressIncidentContent(match){
+    const content=document.createElement('div');
+    const address=document.createElement('strong');address.textContent=match.address;content.appendChild(address);
+    const names=new Set(currentZoneFeatures.filter(feature=>zoneContainsAddress(feature.geometry,match.location.x,match.location.y)).map(feature=>String(feature.properties[zoneFields.incident]||'').trim()).filter(Boolean));
+    const message=document.createElement('p');
+    message.textContent=!lastIncidentSuccess?'Incident zones are still loading. Search again once loading finishes.':names.size?'This address is within '+(names.size===1?'an incident zone.':'overlapping incident zones.')+' Open the incident for instructions.':'No current incident zone is shown at this address. Check official updates for changing conditions.';
+    content.appendChild(message);
+    for(const name of incidents.keys()){
+      if(!names.has(name))continue;
+      const link=document.createElement('a');link.className='home-btn primary';link.href='evac.html?incident='+encodeURIComponent(name);link.textContent='Open incident: '+name;content.appendChild(link);
+    }
+    return content;
+  }
   $('addressForm').addEventListener('submit',async event=>{
     event.preventDefault();if(!view)return;
     const text=$('addressSearch').value.trim();if(!text)return;
     const button=$('addressForm').querySelector('button');button.disabled=true;
+    $('addressIncidentResult').hidden=true;
     try {
-      const data=await json('https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?'+new URLSearchParams({SingleLine:text,f:'json',outSR:'4326',maxLocations:'1',searchExtent:'-108.379,36.993,-107.482,37.567'}));
+      const data=await json('https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?'+new URLSearchParams({SingleLine:text,f:'json',outSR:'4326',maxLocations:'1',searchExtent:[countyBounds[0][1],countyBounds[0][0],countyBounds[1][1],countyBounds[1][0]].join(',')}));
       const match=data.candidates?.[0];
       if(!match){$('mapMessage').textContent='No address match was found in La Plata County. Try the full street address and city.';return;}
       view.setView([match.location.y,match.location.x],15);
-      const textNode=document.createElement('p');textNode.textContent=match.address;
-      L.popup().setLatLng([match.location.y,match.location.x]).setContent(textNode).openOn(view);
+      const content=addressIncidentContent(match);
+      $('addressIncidentResult').replaceChildren(content);$('addressIncidentResult').hidden=false;
+      L.popup().setLatLng([match.location.y,match.location.x]).setContent(content.cloneNode(true)).openOn(view);
       $('mapMessage').textContent='Address location is approximate. Confirm the mapped zone and incident instructions.';
     }catch(_){$('mapMessage').textContent='Address search is unavailable. You can browse the map or try again.';}
     finally {button.disabled=false;}
