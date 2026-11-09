@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Evacuation Zones — ReadyLaPlata Lite</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <meta name="description" content="Lightweight evacuation zone map for La Plata County, Colorado. Optimized for low-bandwidth and field use.">
+  <meta name="theme-color" content="#0b4da2">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
+
+  <style>
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{margin:0;padding:0;font-family:Arial,sans-serif;background:#1e293b;overflow:hidden;height:100%}
+
+    .site-banner{display:none;align-items:center;justify-content:center;gap:8px;padding:8px 14px;font-size:12px;font-weight:600;color:#fff;text-align:center;line-height:1.3;z-index:1000;position:relative}
+    .site-banner.is-active{display:flex}
+    .site-banner--warning{background:linear-gradient(135deg,#d97706 0%,#b45309 100%)}
+    .site-banner--alert{background:linear-gradient(135deg,#9a1f18 0%,#7f1d1d 100%)}
+    .site-banner--info{background:linear-gradient(135deg,#0891b2 0%,#0e7490 100%)}
+    .site-banner--success{background:linear-gradient(135deg,#059669 0%,#047857 100%)}
+    .site-banner svg{width:14px;height:14px;flex-shrink:0}
+
+    #map{position:absolute;inset:0;z-index:1}
+
+    .top-bar{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;flex-direction:column}
+    .header-row{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:rgba(255,255,255,0.95);backdrop-filter:blur(8px);border-bottom:1px solid rgba(0,0,0,0.1)}
+    .brand-lite{display:flex;align-items:center;gap:12px}
+    .brand-lite img{height:38px;width:auto}
+    .brand-lite h1{font-size:18px;font-weight:800;color:#0b4da2;margin:0;line-height:1.2}
+    .brand-lite .sub{font-size:12px;color:#64748b;font-weight:500;margin-top:2px}
+    .brand-lite .sub-low{font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-top:2px}
+    .full-link{display:inline-flex;align-items:center;gap:5px;padding:8px 12px;border-radius:6px;background:#0b4da2;color:#fff;font-size:12px;font-weight:700;text-decoration:none;transition:opacity 0.15s;white-space:nowrap;flex-shrink:0}
+    .full-link:hover{opacity:0.85}
+    .full-link svg{width:14px;height:14px}
+    .full-link-hint{display:block;font-size:9px;font-weight:500;opacity:0.7;margin-top:1px}
+
+    .bottom-bar{position:fixed;bottom:0;left:0;right:0;z-index:1000;background:rgba(255,255,255,0.95);backdrop-filter:blur(8px);border-top:1px solid rgba(0,0,0,0.1);padding:12px 16px;display:flex;flex-direction:column;align-items:center;gap:8px}
+    .legend-row{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+    .legend-chip{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#334155}
+    .legend-swatch{width:18px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,0.2)}
+    .ctrl-row{display:flex;justify-content:center;gap:8px}
+    .ctrl-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border:1px solid rgba(0,0,0,0.12);border-radius:6px;background:#fff;cursor:pointer;font-size:13px;font-weight:600;color:#334155;transition:all 0.15s}
+    .ctrl-btn:hover{background:#f1f5f9;border-color:rgba(0,0,0,0.2)}
+    .ctrl-btn:disabled{opacity:0.5;cursor:default}
+    .ctrl-btn svg{width:14px;height:14px;flex-shrink:0}
+
+    .zone-count{position:fixed;right:14px;z-index:1001;background:#fff;border:1.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:#334155;box-shadow:0 2px 10px rgba(0,0,0,0.12);display:none;text-align:center;line-height:1.3}
+    .zone-count.is-active{display:block}
+    .zone-count .count{font-size:16px;font-weight:800;display:block;color:#0b4da2}
+
+    .leaflet-popup-content{font-family:Arial,sans-serif;font-size:13px;line-height:1.5;min-width:160px}
+    .leaflet-popup-content strong{display:block;margin-bottom:4px}
+    .zone-popup-status{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em}
+    .zone-popup-set{background:#fff36a;color:#713f12}
+    .zone-popup-go{background:#41f56e;color:#14532d}
+    .zone-popup-incident{margin-top:6px;font-size:12px;color:#475569}
+
+    .location-dot{width:16px;height:16px;background:rgba(0,122,255,0.9);border:2.5px solid #fff;border-radius:50%;box-shadow:0 0 0 6px rgba(0,122,255,0.2),0 2px 6px rgba(0,0,0,0.3)}
+
+    .zone-label{font-family:Arial,sans-serif;font-size:13px;font-weight:700;text-align:center;line-height:1.3;padding:3px 6px;border-radius:4px;white-space:nowrap;pointer-events:none}
+    .zone-label--set{color:#713f12;text-shadow:0 0 3px #fff36a,0 0 3px #fff36a,0 0 6px rgba(255,255,255,0.8)}
+    .zone-label--go{color:#14532d;text-shadow:0 0 3px #41f56e,0 0 3px #41f56e,0 0 6px rgba(255,255,255,0.8)}
+    .zone-label--incident{font-size:14px;font-weight:800;color:#dc2626;text-shadow:0 0 4px #fff,0 0 4px #fff,0 0 8px #fff,0 0 8px #fff}
+
+    .loading-overlay{position:fixed;inset:0;z-index:2000;background:rgba(255,255,255,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;transition:opacity 0.3s}
+    .loading-overlay.is-hidden{opacity:0;pointer-events:none}
+    .loading-spinner{width:36px;height:36px;border:3px solid rgba(11,77,162,0.15);border-top-color:#0b4da2;border-radius:50%;animation:spin 0.8s linear infinite}
+    .loading-text{font-size:13px;font-weight:600;color:#64748b}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .leaflet-control-attribution{font-size:9px!important;background:rgba(255,255,255,0.7)!important}
+    .leaflet-control-zoom{margin-top:100px!important}
+    body.has-banner .leaflet-control-zoom{margin-top:134px!important}
+  </style>
+</head>
+
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Loading evacuation map...</div>
+</div>
+
+<div class="top-bar">
+  <div id="siteBanner" class="site-banner"></div>
+  <div class="header-row">
+    <div class="brand-lite">
+      <img src="logo.png" alt="La Plata County" loading="eager">
+      <div>
+        <h1>ReadyLaPlata</h1>
+        <div class="sub">Evacuation Viewer</div>
+        <div class="sub-low">Low Bandwidth Mode</div>
+      </div>
+    </div>
+    <a href="overview.html" class="full-link" onclick="sessionStorage.setItem('preferFullSite','1')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      <span>Full Site<span class="full-link-hint">May load slow</span></span>
+    </a>
+  </div>
+</div>
+
+<div id="zoneCount" class="zone-count"></div>
+<div id="map"></div>
+
+<div class="bottom-bar">
+  <div class="legend-row">
+    <div class="legend-chip"><span class="legend-swatch" style="background:#fff36a"></span> SET — Pre-Evacuation</div>
+    <div class="legend-chip"><span class="legend-swatch" style="background:#41f56e"></span> GO — Evacuate Now</div>
+    <div class="legend-chip"><span class="legend-swatch" style="background:rgba(11,77,162,0.15);border-color:rgba(11,77,162,0.5)"></span> County</div>
+  </div>
+  <div class="ctrl-row">
+    <button id="resetBtn" class="ctrl-btn" type="button" aria-label="Reset map">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Reset
+    </button>
+    <button id="locateBtn" class="ctrl-btn" type="button" aria-label="My location">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+      Locate Me
+    </button>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // Clear redirect flag so it can fire again if user navigates back to full site
+  sessionStorage.removeItem('redirectedToLite');
+
+  var EVAC_URL = 'https://services2.arcgis.com/ilLrLpXfElYxSy9y/ArcGIS/rest/services/LPC_Evac_Zones_View/FeatureServer/0';
+  var BOUNDARY_URL = 'https://gis.lpcgov.org/arcgis/rest/services/JS_website/Map_Pro/MapServer/83';
+  var COUNTY = L.latLngBounds([36.993, -108.379], [37.567, -107.482]);
+  var COLORS = {
+    Set: { fill: '#fff36a', stroke: '#b8960a', cls: 'zone-popup-set' },
+    Go:  { fill: '#41f56e', stroke: '#15803d', cls: 'zone-popup-go' }
+  };
+
+  // -- Banner --
+  fetch('drill-banner.json').then(function(r) { return r.json(); }).then(function(d) {
+    if (!d.enabled) return;
+    var b = document.getElementById('siteBanner');
+    var icons = {
+      'alert-triangle': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+      'info': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+    };
+    b.className = 'site-banner is-active' + (d.variant ? ' site-banner--' + d.variant : '');
+    b.innerHTML = (icons[d.icon] || icons['alert-triangle']) + '<span>' + d.message + '</span>';
+    document.body.classList.add('has-banner');
+    positionBadge();
+  }).catch(function() {});
+
+  // -- Map --
+  var map = L.map('map').fitBounds(COUNTY);
+
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri', maxZoom: 18
+  }).addTo(map);
+
+  L.esri.featureLayer({
+    url: BOUNDARY_URL,
+    style: function() { return { color: 'rgba(11,77,162,0.5)', weight: 2, fill: true, fillColor: 'rgba(11,77,162,0.04)', fillOpacity: 1 }; },
+    interactive: false
+  }).addTo(map);
+
+  // -- Zones --
+  var zoneCountEl = document.getElementById('zoneCount');
+  var loadingEl = document.getElementById('loadingOverlay');
+  var locationMarker = null;
+
+  fetch(EVAC_URL + '/query?' + new URLSearchParams({
+    where: "STATUS IN ('Set','Go')", outFields: 'incident,STATUS,zonename',
+    returnGeometry: 'true', outSR: '4326', f: 'geojson'
+  }))
+    .then(function(r) { return r.json(); })
+    .then(function(geojson) {
+      var features = geojson.features || [];
+      loadingEl.classList.add('is-hidden');
+
+      if (!features.length) {
+        zoneCountEl.innerHTML = '<span class="count">No Active Incidents</span>';
+        zoneCountEl.classList.add('is-active');
+        positionBadge();
+        return;
+      }
+
+      var incidents = {};
+      features.forEach(function(f) { if (f.properties.incident) incidents[f.properties.incident] = true; });
+      var count = Object.keys(incidents).length;
+
+      var incidentBounds = {};
+      L.geoJSON(geojson, {
+        style: function(f) {
+          var c = COLORS[f.properties.STATUS] || COLORS.Set;
+          return { fillColor: c.fill, fillOpacity: 0.55, color: c.stroke, weight: 2.5 };
+        },
+        onEachFeature: function(f, layer) {
+          var p = f.properties;
+          var c = COLORS[p.STATUS] || COLORS.Set;
+
+          layer.bindPopup(
+            '<strong>' + (p.zonename || 'Unnamed Zone') + '</strong>' +
+            '<span class="zone-popup-status ' + c.cls + '">' + (p.STATUS || '').toUpperCase() + '</span>' +
+            '<div class="zone-popup-incident">' + (p.incident || '') + '</div>'
+          );
+
+          if (p.zonename) {
+            var cls = p.STATUS === 'Go' ? 'zone-label zone-label--go' : 'zone-label zone-label--set';
+            L.marker(layer.getBounds().getCenter(), {
+              icon: L.divIcon({ className: '', html: '<div class="' + cls + '">' + p.zonename + '</div>', iconSize: [120, 20], iconAnchor: [60, 10] }),
+              interactive: false
+            }).addTo(map);
+          }
+
+          if (p.incident) {
+            if (!incidentBounds[p.incident]) incidentBounds[p.incident] = L.latLngBounds();
+            incidentBounds[p.incident].extend(layer.getBounds());
+          }
+        }
+      }).addTo(map);
+
+      Object.keys(incidentBounds).forEach(function(name) {
+        L.marker(incidentBounds[name].getCenter(), {
+          icon: L.divIcon({ className: '', html: '<div class="zone-label zone-label--incident">' + name + '</div>', iconSize: [160, 22], iconAnchor: [80, 30] }),
+          interactive: false
+        }).addTo(map);
+      });
+
+      zoneCountEl.innerHTML = '<span class="count">' + count + '</span>Active Incident' + (count === 1 ? '' : 's');
+      zoneCountEl.classList.add('is-active');
+      positionBadge();
+    })
+    .catch(function(err) {
+      console.error('Zone load error:', err);
+      loadingEl.classList.add('is-hidden');
+      zoneCountEl.innerHTML = '<span class="count" style="color:#dc2626;font-size:14px">Unable to load zones</span>';
+      zoneCountEl.classList.add('is-active');
+      positionBadge();
+    });
+
+  // -- Badge positioning --
+  function positionBadge() {
+    var h = document.querySelector('.top-bar');
+    if (h && zoneCountEl) zoneCountEl.style.top = (h.offsetHeight + 10) + 'px';
+  }
+  window.addEventListener('resize', positionBadge);
+  setTimeout(positionBadge, 600);
+
+  // -- Controls --
+  document.getElementById('resetBtn').addEventListener('click', function() { map.fitBounds(COUNTY); });
+
+  document.getElementById('locateBtn').addEventListener('click', function() {
+    var btn = this;
+    if (!navigator.geolocation) return;
+    btn.disabled = true;
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        var ll = [pos.coords.latitude, pos.coords.longitude];
+        if (locationMarker) map.removeLayer(locationMarker);
+        locationMarker = L.marker(ll, {
+          icon: L.divIcon({ className: '', html: '<div class="location-dot"></div>', iconSize: [16, 16], iconAnchor: [8, 8] })
+        }).addTo(map);
+        map.setView(ll, 14);
+        btn.disabled = false;
+      },
+      function() {
+        alert('Unable to determine your location. Please check your browser location permissions.');
+        btn.disabled = false;
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
+
+})();
+</script>
+</body>
+</html>

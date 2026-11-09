@@ -1,0 +1,42 @@
+[
+  {
+    "name": "North Vallecito Flooding",
+    "startDate": "2025-10-10",
+    "liftedDate": "2025-10-16"
+  },
+  {
+    "name": "CR 250 Hazmat",
+    "startDate": "2025-09-29",
+    "liftedDate": "2025-09-29"
+  },
+  {
+    "name": "Blue Ridge Fire",
+    "startDate": "2025-08-15",
+    "liftedDate": "2025-08-18"
+  },
+  {
+    "name": "Elkhorn Fire",
+    "startDate": "2025-07-26",
+    "liftedDate": "2025-08-04"
+  },
+  {
+    "name": "Rim Road Fire",
+    "startDate": "2025-07-26",
+    "liftedDate": "2025-07-28"
+  },
+  {
+    "name": "UTE-63 Fire",
+    "startDate": "2025-07-13",
+    "liftedDate": "2025-07-21"
+  },
+  {
+    "name": "2025 Annual Wildfire Exercise",
+    "startDate": "2025-04-21",
+    "liftedDate": "2025-04-25"
+  },
+  {
+    "name": "Enterprise Pipeline Spill",
+    "startDate": "2024-12-05",
+    "liftedDate": "2024-12-05"
+  }
+]

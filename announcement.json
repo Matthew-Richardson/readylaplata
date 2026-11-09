@@ -1,0 +1,39 @@
+{
+  "enabled": false,
+  "autoOpen": true,
+  "title": "2026 LPC Alerts Update",
+  "subtitle": "Important information about your managed account",
+  "keyMessage": "<strong>We recommend all LPC Alert account holders update their password</strong> to help keep your information secure.",
+  "primaryButton": {
+    "text": "Manage My LPC Alerts Account",
+    "url": "https://accountportal.onsolve.net/lpcalerts"
+  },
+  "accordion": {
+    "why": {
+      "title": "Why am I seeing this?",
+      "paragraphs": [
+        "Out of an abundance of caution, we are recommending that all LPC Alert users with an online account update their password. This helps ensure your information remains secure and protected."
+      ]
+    },
+    "noAccount": {
+      "title": "I'm not sure if I have an account",
+      "paragraphs": [
+        "Some individuals receive LPC Alerts without having an online account. If you're one of these legacy users, <strong>we highly recommened creating an account</strong>.",
+        "Creating an account allows you to review and update your contact information, manage alert preferences, and ensure your information stays current."
+      ]
+    }
+  },
+  "callerId": {
+    "enabled": true,
+    "title": "Save LPC Alerts Caller ID",
+    "description": "Add these numbers to your contacts so alerts aren't marked as spam:",
+    "textNumber": "386-71",
+    "voiceNumber": "(970) 385-8700"
+  },
+  "contact": {
+    "title": "Need help?",
+    "email": "oem@lpcgov.org",
+    "phone": "970-382-6275"
+  },
+  "dismissButton": "I'll do this later"
+}
