@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ReadyLaPlata — La Plata County Evacuation Viewer</title>
+  <title>ReadyLaPlata — Incidents & Public Safety</title>
 
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-LF6VNLVXVQ"></script>
@@ -13,70 +13,49 @@
     gtag('js', new Date());
     gtag('config', 'G-LF6VNLVXVQ');
   </script>
-
+  
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <meta name="description" content="Official evacuation information and interactive maps for La Plata County, Colorado. View active incidents, evacuation zones, and sign up for emergency alerts.">
   <meta name="theme-color" content="#0b4da2">
-
-  <meta property="og:title" content="ReadyLaPlata — La Plata County Evacuation Viewer">
+  
+  <meta property="og:title" content="ReadyLaPlata — Incidents & Public Safety">
   <meta property="og:description" content="Official evacuation information and interactive maps for La Plata County, Colorado. View active incidents and evacuation zones.">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="en_US">
-
+  
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="ReadyLaPlata — La Plata County Evacuation Viewer">
+  <meta name="twitter:title" content="ReadyLaPlata — Incidents & Public Safety">
   <meta name="twitter:description" content="Official evacuation information for La Plata County, Colorado.">
 
-  <!-- Preconnect to external resources -->
-  <link rel="preconnect" href="https://services2.arcgis.com" crossorigin>
-  <link rel="preconnect" href="https://cms9files.revize.com">
+  <link rel="dns-prefetch" href="//js.arcgis.com">
   <link rel="dns-prefetch" href="//services2.arcgis.com">
-
-  <!-- Critical CSS for above-the-fold content -->
-  <style>
-    *,*::before,*::after{box-sizing:border-box}
-    html,body{margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f7;font-size:18px;overflow-x:hidden;color:#000}
-    .page-shell{min-height:100vh;display:flex;flex-direction:column}
-    .map-wrapper{max-width:900px;width:100%;margin:16px auto 0;padding:12px}
-    .map-card{width:100%;border-radius:14px;border:1.5px solid rgba(0,0,0,0.18);box-shadow:0 4px 20px rgba(0,0,0,0.12);overflow:hidden;background:#fff;display:flex;flex-direction:column}
-    #incidentsActive{display:none}
-    #incidentsActive.has-incidents{display:block}
-    #noIncidentsMsg{display:none}
-    #noIncidentsMsg.is-visible{display:block}
-  </style>
+  <link rel="preconnect" href="https://js.arcgis.com" crossorigin>
+  <link rel="preconnect" href="https://services2.arcgis.com" crossorigin>
 
   <link rel="stylesheet" href="shared-styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="home.css">
 </head>
-
-<body>
-  <a href="#main-content" class="skip-nav">Skip to main content</a>
-  <div class="page-shell">
-    <div class="map-wrapper">
-      <div class="map-card">
-
-        <button id="announcementAlertBtn" class="announcement-alert-btn" type="button" aria-label="View announcement">
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-          </svg>
-        </button>
-
-        <div id="siteBanner" class="site-banner"></div>
-
-        <header class="brand-banner" role="banner">
+<body class="home-map-page">
+<a href="#main-content" class="skip-nav">Skip to main content</a>
+<div class="home-shell">
+  <div id="siteBanner" class="site-banner"></div>
+<header class="brand-banner" role="banner">
           <div class="brand-row">
             <div class="brand-group">
               <img src="logo.png" alt="La Plata County Logo" class="header-logo" width="160" height="auto" loading="eager" fetchpriority="high" decoding="async">
               <div class="brand-text">
                 <h1 class="site-name">ReadyLaPlata</h1>
-                <div class="site-subtitle">La Plata County Evacuations</div>
+                <div class="site-subtitle">Incidents &amp; Public Safety Map</div>
               </div>
             </div>
             <nav class="banner-nav" aria-label="Site navigation">
               <div class="nav-buttons">
-                <button id="overviewButton" class="nav-btn" type="button">
-                  <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-                  <span>Overview Map</span>
+                <button id="infoButton" class="nav-btn" type="button">
+                  <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                  <span>Information</span>
                 </button>
+                <button id="announcementAlertBtn" class="nav-btn" type="button" aria-label="View county announcements">Updates</button>
                 <button id="coderedButton" class="nav-btn" type="button">
                   <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                   <span>LPC Alerts</span>
@@ -89,47 +68,62 @@
             </nav>
           </div>
         </header>
-
-        <div class="content-overlap">
-          <div class="incident-strip" aria-live="polite">
-            <!-- Active incidents state -->
-            <div id="incidentsActive" class="incident-box incident-box--alert">
-              <div class="incident-box-header incident-box-header--alert">
-                <svg class="incident-box-header-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                <span class="incident-box-header-text"><span id="incidentCountBadge">0</span> Active Incident<span id="incidentPlural">s</span></span>
-              </div>
-              <div class="incident-box-body">
-                <p class="incident-tip">Tap an incident to view the evacuation map.</p>
-                <div id="incidentChips" class="incident-chips"></div>
-              </div>
-            </div>
-            <!-- No incidents state -->
-            <div id="noIncidentsMsg" class="incident-box incident-box--calm">
-              <div class="incident-box-content-row">
-                <div class="incident-none-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-                <div class="incident-none-text">
-                  <div class="incident-none-title">No Active Incidents in La Plata County</div>
-                </div>
-              </div>
-            </div>
+  <main id="main-content">
+    <section class="overview-card" aria-labelledby="mapTitle">
+      <div class="overview-heading">
+        <div><span class="eyebrow">La Plata County, Colorado</span><h2 id="mapTitle">Know what’s happening.</h2><p>Explore incidents and zones. Select an incident for its latest details.</p></div>
+        <button id="refreshAll" class="home-btn" type="button">Refresh information</button>
+      </div>
+      <div class="overview-layout">
+        <aside class="incident-sidebar" aria-labelledby="incidentsTitle">
+          <div class="sidebar-heading"><h3 id="incidentsTitle">Incidents</h3><span id="incidentCount" class="count-pill">—</span></div>
+          <p id="incidentState" class="feed-state" role="status">Loading county incidents…</p>
+          <div id="incidentList" class="incident-list"></div>
+          <a class="lite-link" href="evac-lite.html">Open the lightweight map →</a>
+        </aside>
+        <div class="map-column">
+          <div id="mapFrame" class="home-map-frame">
+            <div id="viewDiv" role="region" aria-label="La Plata County incident map"></div>
+            <div id="mapLoading" class="home-map-loading" role="status">Loading overview map…</div>
           </div>
+          <form id="addressForm" class="home-address-search"><label for="addressSearch">Find your address</label><div><input id="addressSearch" type="search" placeholder="Street address, city" autocomplete="street-address"><button class="home-btn" type="submit">Search</button></div></form>
+          <div class="home-map-tools">
+            <button id="mapResetBtn" class="home-btn" type="button">County view</button>
+            <button id="myLocationBtn" class="home-btn" type="button">My location</button>
+            <button id="mapFullscreenBtn" class="home-btn" type="button" aria-pressed="false">Expand map</button>
+            <label id="roadLayerControl" hidden><input id="roadLayerToggle" type="checkbox" checked> Road closures</label>
+          </div>
+          <p id="mapMessage" class="map-message" role="status"></p>
+          <div class="home-legend" aria-label="Zone colors">
+            <span><i style="background:#fff36a;border-color:#967800"></i>Set</span>
+            <span><i style="background:#41f56e;border-color:#15803d"></i>Go</span>
+            <span><i style="background:#b79ae8;border-color:#7140ad"></i>Shelter</span>
+            <span><i style="background:#b8bec7;border-color:#667180"></i>Planning / All clear</span>
+          </div>
+          <p class="map-footnote">Zone colors describe the mapped status. Review the incident details and follow official instructions. Planning is not a protective-action order.</p>
         </div>
       </div>
-    </div>
-
-    <main id="main-content">
-      <div class="incident-panel">
-        <div class="home-wrapper">
-          <div class="preview-container">
-            <div class="preview-frame">
-              <div class="evac-stages">
+      <p id="lastLoaded" class="home-timestamp">Source: La Plata County Office of Emergency Management · Waiting for incident data</p>
+    </section>
+    <section class="weather-card" aria-labelledby="weatherTitle">
+      <div class="section-heading"><div><span class="eyebrow">National Weather Service</span><h2 id="weatherTitle">Weather warnings &amp; alerts</h2><p>Active warnings, watches and advisories affecting La Plata County.</p></div><a href="https://www.weather.gov/gjt/" target="_blank" rel="noopener noreferrer">NWS Grand Junction ↗</a></div>
+      <p id="nwsState" class="feed-state" role="status">Loading NWS alerts…</p>
+      <div id="nwsAlerts" class="nws-alerts"></div>
+      <p id="nwsUpdated" class="home-timestamp">Source: National Weather Service · Times shown in Mountain Time</p>
+    </section>
+    <details class="history-card"><summary>Past incidents</summary><div id="pastIncidentsTable" class="history-body">Loading past incidents…</div><p class="map-footnote">Even after evacuations are lifted, emergency personnel may still be active in the area. Follow posted signs and instructions.</p></details>
+  </main>
+  <footer class="home-footer"><p>La Plata County Office of Emergency Management · For immediate emergencies, call 911.</p><button id="reopenWelcome" class="home-btn" type="button">Preparedness &amp; map information</button></footer>
+</div>
+<dialog id="welcomeDialog" class="welcome-dialog" aria-labelledby="welcomeTitle">
+  <div class="welcome-header"><div><span class="eyebrow">Welcome to ReadyLaPlata</span><h2 id="welcomeTitle">Stay informed. Be ready.</h2></div><button id="welcomeClose" class="home-btn" type="button" aria-label="Close welcome information">×</button></div>
+  <div class="welcome-scroll"><p class="welcome-intro">Your starting point for county incidents, evacuation zones and NWS weather alerts. Explore the map, then open an incident for details.</p>
+<div class="evac-stages">
                 <div class="stage-header-main">
                   <div class="stage-tagline">La Plata County</div>
                   <div class="stage-headline">Stay Ready, Year-Round</div>
                   <div class="stage-body" style="margin-top:8px;max-width:780px;margin-left:auto;margin-right:auto;font-size:16px;line-height:1.55;">
-                    <p>La Plata County Office of Emergency Management (<strong>LPCOEM</strong>) — uses the Ready, Set, Go! system to establish evacuation zones. Click the incident map above to confirm your zone. During an incident your zone name and area is subject to change.</p>
+                    <p>La Plata County Office of Emergency Management (<strong>LPCOEM</strong>) — uses the Ready, Set, Go! system to establish evacuation zones. Use the incident map to confirm your zone. During an incident your zone name and area is subject to change.</p>
                   </div>
                 </div>
 
@@ -179,19 +173,14 @@
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div class="status-timestamp">
-            <span id="lastLoaded">Last loaded: --</span>
-            &nbsp;•&nbsp;
-            <span class="source-label">Source: La Plata County Office of Emergency Management</span>
-          </div>
-        </div>
-      </div>
-    </main>
+    <div class="welcome-extra">
+      <section class="welcome-status shelter"><h3>Shelter · Shelter in place</h3><p>Remain inside or move indoors when instructed. Review the incident details for the specific protective actions to take.</p></section>
+      <section class="welcome-status planning"><h3>Planning · Grey map areas</h3><p>Planning, all-clear and other informational areas use grey. Planning does not mean an evacuation or shelter order is in effect. Check the incident’s status and instructions.</p></section>
+    </div>
+    <button id="welcomeAlerts" class="home-btn primary" type="button">Sign up for LPC Alerts</button>
   </div>
-
+  <div class="welcome-footer"><label><input id="welcomeRemember" type="checkbox"> Don’t show this automatically again</label><button id="welcomeContinue" class="home-btn primary" type="button">View the map</button></div>
+</dialog>
   <!-- LPC Alerts Overlay -->
   <div id="coderedOverlay" class="codered-overlay" aria-hidden="true">
     <div class="codered-dialog" role="dialog" aria-modal="true" aria-labelledby="coderedTitle">
@@ -271,172 +260,12 @@
     </div>
   </div>
 
-  <script src="shared.js"></script>
-  <script>
-  (function() {
-    'use strict';
 
-    const { $, escHTML, createChip, sortIncidents, getIncidentParam, updateTimestamp, initCoderedOverlay, initCallerIdOverlay, initDrillBanner, initAnnouncement, initScrollIndicator } = ReadyLaPlata;
-
-    // Configuration
-    const CONFIG = {
-      mapUrl: 'evac.html',
-      incidentLayerUrl: 'https://services2.arcgis.com/ilLrLpXfElYxSy9y/ArcGIS/rest/services/LPC_Evac_Zones_View/FeatureServer/0/query',
-      incidentField: 'incident'
-    };
-
-    const INCIDENT = getIncidentParam();
-
-    // DOM elements (cached once)
-    const DOM = {
-      siteBanner: $('siteBanner'),
-      chipsEl: $('incidentChips'),
-      countBadge: $('incidentCountBadge'),
-      incidentPlural: $('incidentPlural'),
-      incidentsActive: $('incidentsActive'),
-      noIncidentsMsg: $('noIncidentsMsg'),
-      overviewButton: $('overviewButton'),
-      coderedButton: $('coderedButton'),
-      coderedOverlay: $('coderedOverlay'),
-      coderedClose: $('coderedClose'),
-      callerIdButton: $('callerIdButton'),
-      callerIdOverlay: $('callerIdOverlay'),
-      callerIdClose: $('callerIdClose'),
-      lastLoaded: $('lastLoaded'),
-      announcementOverlay: $('announcementOverlay'),
-      announcementClose: $('announcementClose'),
-      announcementDismiss: $('announcementDismiss'),
-      announcementAlertBtn: $('announcementAlertBtn')
-    };
-
-
-    async function loadIncidents() {
-      const params = new URLSearchParams({
-        where: '1=1',
-        outFields: CONFIG.incidentField,
-        returnDistinctValues: 'true',
-        f: 'json'
-      });
-
-      try {
-        const res = await fetch(CONFIG.incidentLayerUrl + '?' + params);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-
-        const data = await res.json();
-        const seen = new Set();
-        const names = (data.features || [])
-          .map(f => f.attributes?.[CONFIG.incidentField]?.trim())
-          .filter(n => {
-            if (!n) return false;
-            const key = n.toLowerCase();
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-          });
-
-        sortIncidents(names, INCIDENT);
-
-        DOM.countBadge.textContent = names.length;
-        DOM.incidentPlural.textContent = names.length === 1 ? '' : 's';
-        updateTimestamp(DOM.lastLoaded);
-
-        if (!names.length) {
-          DOM.incidentsActive.classList.remove('has-incidents');
-          DOM.noIncidentsMsg.classList.add('is-visible');
-          return;
-        }
-
-        DOM.incidentsActive.classList.add('has-incidents');
-        DOM.noIncidentsMsg.classList.remove('is-visible');
-
-        const frag = document.createDocumentFragment();
-        for (const name of names) {
-          frag.appendChild(createChip(name, () => {
-            const url = new URL(CONFIG.mapUrl, location.href);
-            url.searchParams.set('incident', name);
-            location.href = url;
-          }));
-        }
-        DOM.chipsEl.appendChild(frag);
-      } catch (err) {
-        console.error('Error loading incidents:', err);
-        DOM.countBadge.textContent = '0';
-        DOM.incidentsActive.classList.remove('has-incidents');
-        DOM.noIncidentsMsg.classList.add('is-visible');
-      }
-    }
-
-    function initTriangleLines() {
-      const container = $('stageTimeline');
-      const svg = $('triangleLines');
-      const pins = { ready: $('pinReady'), set: $('pinSet'), go: $('pinGo') };
-      
-      if (!container || !svg || !pins.ready || !pins.set || !pins.go) return;
-
-      const lines = {
-        readySet: $('line-ready-set'),
-        readyGo: $('line-ready-go'),
-        setGo: $('line-set-go')
-      };
-
-      const grads = {
-        readySet: $('grad-ready-set'),
-        readyGo: $('grad-ready-go'),
-        setGo: $('grad-set-go')
-      };
-
-      const updateLines = () => {
-        const containerRect = container.getBoundingClientRect();
-        
-        const getCenter = el => {
-          const rect = el.getBoundingClientRect();
-          return {
-            x: rect.left + rect.width / 2 - containerRect.left,
-            y: rect.top + rect.height / 2 - containerRect.top
-          };
-        };
-
-        const ready = getCenter(pins.ready);
-        const set = getCenter(pins.set);
-        const go = getCenter(pins.go);
-
-        const setAttr = (el, p1, p2) => {
-          el.setAttribute('x1', p1.x);
-          el.setAttribute('y1', p1.y);
-          el.setAttribute('x2', p2.x);
-          el.setAttribute('y2', p2.y);
-        };
-
-        setAttr(lines.readySet, ready, set);
-        setAttr(lines.readyGo, ready, go);
-        setAttr(lines.setGo, set, go);
-
-        setAttr(grads.readySet, ready, set);
-        setAttr(grads.readyGo, ready, go);
-        setAttr(grads.setGo, set, go);
-      };
-
-      updateLines();
-      setTimeout(updateLines, 100);
-      
-      let resizeTimeout;
-      window.addEventListener('resize', () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(updateLines, 50);
-      });
-    }
-
-    // Initialize
-    DOM.overviewButton?.addEventListener('click', () => location.href = 'overview.html');
-    
-    loadIncidents();
-    initCoderedOverlay(DOM);
-    initCallerIdOverlay(DOM);
-    initDrillBanner(DOM);
-    initAnnouncement(DOM);
-    initTriangleLines();
-    initScrollIndicator();
-  })();
-  </script>
+<script src="shared.js"></script>
+<script src="zone-status.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
+<script src="home-config.js"></script>
+<script src="home.js" defer></script>
 </body>
 </html>

@@ -311,6 +311,7 @@
 
   <script src="https://js.arcgis.com/4.31/" defer></script>
   <script src="shared.js"></script>
+  <script src="zone-status.js"></script>
   <script>
   (function() {
     'use strict';
@@ -328,7 +329,9 @@
 
     const STATUS_DATA = {
       SET: { label: 'SET - Pre-Evacuation', color: '#fff36a', text: 'Voluntary Evacuation;<br>Evacuation orders are likely' },
-      GO: { label: 'GO - Evacuate Now', color: '#41f56e', text: '<strong>LEAVE NOW.</strong> Immediate threat to life.<br>This area is closed to public access.' }
+      GO: { label: 'GO - Evacuate Now', color: '#41f56e', text: '<strong>LEAVE NOW.</strong> Immediate threat to life.<br>This area is closed to public access.' },
+      SHELTER: { label: 'SHELTER - Shelter in Place', color: '#b79ae8', text: 'Remain inside or move indoors when instructed. Follow the specific instructions for this incident.' },
+      PLANNING: { label: 'Planning / All clear', color: '#b8bec7', text: 'Informational areas. Planning is not a protective-action order. Review the actual zone status and incident instructions.' }
     };
 
     const INCIDENT = getIncidentParam();
@@ -365,7 +368,7 @@
       const hasFeatures = features?.length > 0;
       
       const zonesHTML = hasFeatures
-        ? `<div class="evac-zones">${features.map(f => `<div class="zone-chip">${escHTML(f?.attributes?.zonename)}</div>`).join('')}</div>`
+        ? `<div class="evac-zones">${features.map(f => `<div class="zone-chip">${escHTML(f?.attributes?.zonename)}${statusCode === 'PLANNING' ? ' · ' + escHTML(f?.attributes?.STATUS || 'Planning') : ''}</div>`).join('')}</div>`
         : `<div class="evac-zones"><div class="no-zones-chip">No ${statusCode} zones</div></div>`;
 
       const boxClass = statusCode === 'GO' ? ' evac-box-go' : statusCode === 'SET' ? ' evac-box-set' : '';
@@ -406,7 +409,7 @@
     async function loadEvacuationZones() {
       if (!INCIDENT) { showHelp(); return; }
 
-      const where = `incident='${escapeQuery(INCIDENT)}' AND STATUS IN ('${CONFIG.statusValues.SET}','${CONFIG.statusValues.GO}')`;
+      const where = `incident='${escapeQuery(INCIDENT)}'`;
       const params = new URLSearchParams({ where, outFields: '*', f: 'json', returnGeometry: 'false' });
 
       try {
@@ -425,12 +428,12 @@
           return;
         }
 
-        const setFeatures = [], goFeatures = [];
-        for (const f of data.features) {
-          if (f.attributes.STATUS === CONFIG.statusValues.SET) setFeatures.push(f);
-          else if (f.attributes.STATUS === CONFIG.statusValues.GO) goFeatures.push(f);
-        }
-        DOM.evacRow.innerHTML = buildBox('SET', setFeatures) + buildBox('GO', goFeatures);
+        if (data.exceededTransferLimit) throw new Error('The zone list is incomplete. Please use the map and refresh.');
+        const groups = {SET:[],GO:[],SHELTER:[],PLANNING:[]};
+        for (const f of data.features) groups[ReadyLaPlataZones.key(f.attributes.STATUS).toUpperCase()].push(f);
+        DOM.evacRow.innerHTML = buildBox('SET',groups.SET) + buildBox('GO',groups.GO)
+          + (groups.SHELTER.length ? buildBox('SHELTER',groups.SHELTER) : '')
+          + (groups.PLANNING.length ? buildBox('PLANNING',groups.PLANNING) : '');
       } catch (err) {
         console.error('Error loading evacuation zones:', err);
         showError(`Failed to load evacuation data: ${err.message}`);
@@ -598,6 +601,18 @@
           }
         });
 
+        // Style current and future public zone statuses without changing AGOL data.
+        webmap.when().then(async () => {
+          for (const candidate of webmap.allLayers.toArray()) {
+            if (candidate.type !== 'feature') continue;
+            try {
+              await candidate.load();
+              const status = candidate.fields.find(f => f.name.toLowerCase() === 'status');
+              const incident = candidate.fields.find(f => f.name.toLowerCase() === 'incident');
+              if (status && incident && candidate.geometryType === 'polygon') candidate.renderer = ReadyLaPlataZones.renderer(status.name);
+            } catch (err) { console.warn('Zone styling unavailable:', err); }
+          }
+        }).catch(console.warn);
         // Store reference for fullscreen toggle
         mapView = view;
 

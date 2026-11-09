@@ -56,6 +56,8 @@
     .leaflet-popup-content strong{display:block;margin-bottom:4px}
     .zone-popup-status{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em}
     .zone-popup-set{background:#fff36a;color:#713f12}
+    .zone-popup-shelter,.zone-label--shelter{background:#b79ae8;color:#48256e}
+    .zone-popup-planning,.zone-label--planning{background:#b8bec7;color:#313c49}
     .zone-popup-go{background:#41f56e;color:#14532d}
     .zone-popup-incident{margin-top:6px;font-size:12px;color:#475569}
 
@@ -110,6 +112,8 @@
   <div class="legend-row">
     <div class="legend-chip"><span class="legend-swatch" style="background:#fff36a"></span> SET — Pre-Evacuation</div>
     <div class="legend-chip"><span class="legend-swatch" style="background:#41f56e"></span> GO — Evacuate Now</div>
+    <div class="legend-chip"><span class="legend-swatch" style="background:#b79ae8"></span> SHELTER</div>
+    <div class="legend-chip"><span class="legend-swatch" style="background:#b8bec7"></span> PLANNING / ALL CLEAR</div>
     <div class="legend-chip"><span class="legend-swatch" style="background:rgba(11,77,162,0.15);border-color:rgba(11,77,162,0.5)"></span> County</div>
   </div>
   <div class="ctrl-row">
@@ -124,6 +128,7 @@
   </div>
 </div>
 
+<script src="zone-status.js"></script>
 <script>
 (function() {
   'use strict';
@@ -134,10 +139,13 @@
   var EVAC_URL = 'https://services2.arcgis.com/ilLrLpXfElYxSy9y/ArcGIS/rest/services/LPC_Evac_Zones_View/FeatureServer/0';
   var BOUNDARY_URL = 'https://gis.lpcgov.org/arcgis/rest/services/JS_website/Map_Pro/MapServer/83';
   var COUNTY = L.latLngBounds([36.993, -108.379], [37.567, -107.482]);
-  var COLORS = {
-    Set: { fill: '#fff36a', stroke: '#b8960a', cls: 'zone-popup-set' },
-    Go:  { fill: '#41f56e', stroke: '#15803d', cls: 'zone-popup-go' }
-  };
+  var COLORS = {};
+  Object.keys(ReadyLaPlataZones.styles).forEach(function(key) {
+    var style = ReadyLaPlataZones.styles[key];
+    COLORS[key] = {fill:style.fill,stroke:style.stroke,cls:'zone-popup-'+key.toLowerCase()};
+  });
+  function esc(value) { return String(value || '').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
 
   // -- Banner --
   fetch('drill-banner.json').then(function(r) { return r.json(); }).then(function(d) {
@@ -172,7 +180,7 @@
   var locationMarker = null;
 
   fetch(EVAC_URL + '/query?' + new URLSearchParams({
-    where: "STATUS IN ('Set','Go')", outFields: 'incident,STATUS,zonename',
+    where: "1=1", outFields: 'incident,STATUS,zonename',
     returnGeometry: 'true', outSR: '4326', f: 'geojson'
   }))
     .then(function(r) { return r.json(); })
@@ -194,23 +202,23 @@
       var incidentBounds = {};
       L.geoJSON(geojson, {
         style: function(f) {
-          var c = COLORS[f.properties.STATUS] || COLORS.Set;
+          var c = COLORS[ReadyLaPlataZones.key(f.properties.STATUS)];
           return { fillColor: c.fill, fillOpacity: 0.55, color: c.stroke, weight: 2.5 };
         },
         onEachFeature: function(f, layer) {
           var p = f.properties;
-          var c = COLORS[p.STATUS] || COLORS.Set;
+          var c = COLORS[ReadyLaPlataZones.key(p.STATUS)];
 
           layer.bindPopup(
-            '<strong>' + (p.zonename || 'Unnamed Zone') + '</strong>' +
-            '<span class="zone-popup-status ' + c.cls + '">' + (p.STATUS || '').toUpperCase() + '</span>' +
-            '<div class="zone-popup-incident">' + (p.incident || '') + '</div>'
+            '<strong>' + esc(p.zonename || 'Unnamed Zone') + '</strong>' +
+            '<span class="zone-popup-status ' + c.cls + '">' + esc(p.STATUS || 'Planning').toUpperCase() + '</span>' +
+            '<div class="zone-popup-incident">' + esc(p.incident) + '</div>'
           );
 
           if (p.zonename) {
-            var cls = p.STATUS === 'Go' ? 'zone-label zone-label--go' : 'zone-label zone-label--set';
+            var cls = 'zone-label zone-label--' + ReadyLaPlataZones.key(p.STATUS).toLowerCase();
             L.marker(layer.getBounds().getCenter(), {
-              icon: L.divIcon({ className: '', html: '<div class="' + cls + '">' + p.zonename + '</div>', iconSize: [120, 20], iconAnchor: [60, 10] }),
+              icon: L.divIcon({ className: '', html: '<div class="' + cls + '">' + esc(p.zonename) + '</div>', iconSize: [120, 20], iconAnchor: [60, 10] }),
               interactive: false
             }).addTo(map);
           }
