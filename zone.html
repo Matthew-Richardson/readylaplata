@@ -248,12 +248,13 @@
       <div id="editor">
         <div class="section-label" id="editorTitle" style="margin-top:18px;">Zone attributes</div>
         <div id="fields"></div>
+        <div id="mergeSelection" class="hint" style="display:none;"></div>
         <div class="actions">
           <button class="btn primary" id="saveBtn">Save</button>
-          <button class="btn" id="reshapeBtn">Reshape</button>
           <button class="btn" id="splitBtn">Split with line</button>
           <button class="btn" id="carveBtn">Create inner zone</button>
-          <button class="btn" id="verticesBtn">Edit vertices</button>
+          <button class="btn" id="mergeBtn">Merge zones</button>
+          <button class="btn" id="editDrawingBtn" style="display:none;">Edit cut drawing</button>
           <button class="btn" id="undoBtn" disabled>Undo</button>
           <button class="btn" id="redoBtn" disabled>Redo</button>
           <button class="btn" id="cancelBtn">Cancel</button>
@@ -391,7 +392,7 @@ require([
   const editor = $("editor"), fieldsEl = $("fields");
   const tPolygon = $("tPolygon"), tPoint = $("tPoint");
   const radiusRow = $("radiusRow"), radiusVal = $("radiusVal"), radiusUnit = $("radiusUnit");
-  const reshapeBtn = $("reshapeBtn"), deleteBtn = $("deleteBtn"), saveBtn = $("saveBtn");
+  const deleteBtn = $("deleteBtn"), saveBtn = $("saveBtn");
 
   // ---- collapsible workflow ----
   const flowToggle = $("flowToggle");
@@ -429,7 +430,7 @@ require([
 
   // ---- state ----
   let layer, view, sketchVM, sketchLayer;
-  let mode = "idle";          // idle | add | edit | reshape | split | carve
+  let mode = "idle";          // idle | add | edit | reshape | split | carve | merge
   let selected = null;        // graphic being edited (existing feature)
   let oidField = "OBJECTID";
   let incidentValues = [];    // distinct existing incident names
@@ -441,6 +442,10 @@ require([
   let splitParts = null;
   let saving = false;
   let partitionDrawing = null;
+  let originalFeature = null;
+  let mergeMembers = [];
+  let mergeBusy = false;
+  let selectionEpoch = 0;
 
   function toast(msg, kind){
     toastEl.textContent = msg;
@@ -632,10 +637,10 @@ require([
     $("cancelBtn").onclick = resetAll;
     saveBtn.onclick    = onSave;
     deleteBtn.onclick  = onDelete;
-    reshapeBtn.onclick = onReshape;
     $("splitBtn").onclick = () => startPartition("split");
     $("carveBtn").onclick = () => startPartition("carve");
-    $("verticesBtn").onclick = editVertices;
+    $("editDrawingBtn").onclick = editVertices;
+    $("mergeBtn").onclick = startMerge;
     $("undoBtn").onclick = () => { if (!saving && sketchVM.canUndo()) sketchVM.undo(); };
     $("redoBtn").onclick = () => { if (!saving && sketchVM.canRedo()) sketchVM.redo(); };
   }
@@ -686,10 +691,12 @@ require([
           $("hint").textContent = "Inner zone ready (clipped to the original boundary). Give it a name and Save to remove that area from the original zone.";
         }
         saveBtn.disabled = false;
+        $("editDrawingBtn").style.display = "";
       } catch(err){
         sketchLayer.removeAll();
         selected = null;
         splitParts = null;
+        $("editDrawingBtn").style.display = "none";
         saveBtn.disabled = true;
         toast(err.message || String(err), "err");
         $("hint").textContent = err.message || String(err);
@@ -708,16 +715,30 @@ require([
       }
       selected = graphic;            // pending new feature (no OID yet); form already open
       saveBtn.disabled = false;
-      $("hint").textContent = "Shape ready — review attributes and Save.";
+      sketchVM.update(selected, { tool: "reshape" });
+      vertexHint();
     }
     // reshape completes via Save, not here
   }
 
   // ---- click existing feature ----
   function onMapClick(evt){
-    if (saving || ["add", "reshape", "split", "carve"].includes(mode)) return;
+    if (saving || ["split", "carve"].includes(mode)) return;
     if (measurement && measurement.activeTool) return;   // don't select while measuring
     view.hitTest(evt).then(res => {
+      if (saving) return;
+      if (mode === "merge"){
+        const hit = res.results.find(r => r.graphic && r.graphic.layer === layer);
+        if (hit) addMergeZone(hit.graphic);
+        return;
+      }
+      if (selected && res.results.some(r => r.graphic === selected)){
+        if (sketchVM.state !== "active") sketchVM.update(selected, { tool: "reshape" });
+        vertexHint();
+        return;
+      }
+      // Finish or cancel the current edit before changing to another record.
+      if (["add", "reshape"].includes(mode)) return;
       const hit = res.results.find(r => r.graphic && r.graphic.layer === layer);
       if (!hit) return;
       selectFeature(hit.graphic);
@@ -725,20 +746,23 @@ require([
   }
 
   function selectFeature(graphic){
+    const epoch = ++selectionEpoch;
     const oid = graphic.attributes[oidField];
     // web map layers often return only popup fields on click — fetch all fields
     layer.queryFeatures({ objectIds: [oid], outFields: ["*"], returnGeometry: true, outSpatialReference: view.spatialReference })
       .then(fs => {
+        if (saving || epoch !== selectionEpoch) return;
         const full = fs.features[0] || graphic;
         resetEditorOnly();
         selected = full;
         mode = "edit";
         layer.definitionExpression = origDef;
         openForm(full.attributes, "Edit zone");
-        reshapeBtn.style.display = "";
         deleteBtn.style.display = "";
         clearHighlight();
         if (layerView) highlightHandle = layerView.highlight(oid);
+        originalFeature = full.clone();
+        beginVertexEditing();
       })
       .catch(err => toast("Couldn't load that zone: " + (err.message || err), "err"));
   }
@@ -894,10 +918,10 @@ require([
 
     // new features have no OID yet → no reshape/delete
     const isNew = !attrs[oidField];
-    reshapeBtn.style.display = isNew ? "none" : "";
     $("splitBtn").style.display = isNew || layer.geometryType !== "polygon" ? "none" : "";
     $("carveBtn").style.display = isNew || layer.geometryType !== "polygon" ? "none" : "";
-    $("verticesBtn").style.display = "";
+    $("mergeBtn").style.display = isNew || layer.geometryType !== "polygon" ? "none" : "";
+    $("editDrawingBtn").style.display = "none";
     deleteBtn.style.display  = isNew ? "none" : "";
     editor.classList.add("show");
   }
@@ -957,9 +981,13 @@ require([
 
   function startPartition(kind){
     if (saving || !selected || selected.attributes[oidField] == null || layer.geometryType !== "polygon") return;
+    if (sketchVM.state === "active") sketchVM.complete();
     const original = selected.clone();
+    Object.assign(original.attributes, readForm());
+    const snapshot = (originalFeature || selected).clone();
     resetAll();
     sourceZone = original;
+    originalFeature = snapshot;
     mode = kind;
     openForm(original.attributes, kind === "split" ? "Split zone attributes" : "New inner zone attributes");
     if (kind === "carve"){
@@ -967,7 +995,7 @@ require([
       const input = nameField && Array.from(fieldsEl.querySelectorAll("[data-field]")).find(el => el.dataset.field === nameField.name);
       if (input) input.value = "";
     }
-    [reshapeBtn, deleteBtn, $("splitBtn"), $("carveBtn")].forEach(b => b.style.display = "none");
+    [deleteBtn, $("splitBtn"), $("carveBtn"), $("mergeBtn")].forEach(b => b.style.display = "none");
     saveBtn.disabled = true;
     const excl = `${oidField} <> ${original.attributes[oidField]}`;
     layer.definitionExpression = origDef ? `(${origDef}) AND ${excl}` : excl;
@@ -986,11 +1014,121 @@ require([
       sketchLayer.add(partitionDrawing);
       sketchVM.update(partitionDrawing, { tool: "reshape" });
     } else if (mode === "edit") {
-      onReshape();
+      beginVertexEditing();
     } else if (selected) {
       sketchVM.update(selected, { tool: "reshape" });
     } else return;
     $("hint").textContent = "Drag a vertex to move it. Right-click a vertex to delete it; drag a midpoint to add one. Undo / Redo apply during this edit. Click off the shape to finish, then Save.";
+  }
+
+  function zoneLabel(feature){
+    const field = editableFields().find(f => ruleFor(f) === "text");
+    return String(field && feature.attributes[field.name] || `Zone ${feature.attributes[oidField]}`);
+  }
+
+  function connectedZones(features){
+    if (!features.length) return false;
+    const reached = new Set([0]);
+    let changed = true;
+    while (changed){
+      changed = false;
+      features.forEach((f,i) => {
+        if (!reached.has(i) && Array.from(reached).some(j => geometryEngine.intersects(f.geometry, features[j].geometry))){
+          reached.add(i); changed = true;
+        }
+      });
+    }
+    return reached.size === features.length;
+  }
+
+  function startMerge(){
+    if (saving || !selected || selected.attributes[oidField] == null || layer.geometryType !== "polygon") return;
+    if (sketchVM.state === "active") sketchVM.complete();
+    mergeMembers = [{ feature: selected.clone(), original: (originalFeature || selected).clone() }];
+    mode = "merge";
+    [deleteBtn, $("splitBtn"), $("carveBtn"), $("mergeBtn"), $("editDrawingBtn"), $("undoBtn"), $("redoBtn")].forEach(b => b.style.display = "none");
+    $("editorTitle").textContent = "Merged zone attributes";
+    updateMergePreview();
+  }
+
+  async function addMergeZone(graphic){
+    if (saving || mergeBusy || mode !== "merge") return;
+    const id = graphic.attributes[oidField];
+    if (mergeMembers.some(m => m.feature.attributes[oidField] === id)) return;
+    const epoch = selectionEpoch;
+    mergeBusy = true; saveBtn.disabled = true;
+    try {
+      const fs = await layer.queryFeatures({objectIds:[id],outFields:["*"],returnGeometry:true,outSpatialReference:selected.geometry.spatialReference});
+      if (epoch !== selectionEpoch || mode !== "merge") return;
+      const full = fs.features[0];
+      if (!full) throw new Error("That zone could not be loaded.");
+      const incident = findField(/incident/i);
+      if (incident && String(full.attributes[incident.name] ?? "").trim() !== String(mergeMembers[0].original.attributes[incident.name] ?? "").trim())
+        throw new Error("Choose zones from the same incident.");
+      if (!geometryEngine.intersects(selected.geometry, full.geometry))
+        throw new Error("Choose a zone that touches or overlaps the current selection.");
+      mergeMembers.push({feature:full.clone(),original:full.clone()});
+      updateMergePreview();
+    } catch(err){
+      toast(err.message || String(err), "err");
+    } finally {
+      if (epoch === selectionEpoch && mode === "merge"){
+        mergeBusy = false;
+        saveBtn.disabled = mergeMembers.length < 2 || !connectedZones(mergeMembers.map(m => m.feature));
+      }
+    }
+  }
+
+  function updateMergePreview(){
+    const features = mergeMembers.map(m => m.feature);
+    const union = geometryEngine.union(features.map(f => f.geometry));
+    if (!union || polygonArea(union) <= 0) throw new Error("The selected zones could not be merged.");
+    selected = new Graphic({geometry:union,attributes:{...features[0].attributes}});
+    sketchLayer.removeAll();
+    sketchLayer.add(new Graphic({geometry:union,symbol:previewSymbol(1)}));
+    const exclude = `${oidField} NOT IN (${features.map(f => f.attributes[oidField]).join(",")})`;
+    layer.definitionExpression = origDef ? `(${origDef}) AND ${exclude}` : exclude;
+    const list = $("mergeSelection");
+    list.style.display = "";
+    list.replaceChildren();
+    mergeMembers.forEach((m,i) => {
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0;";
+      const label = document.createElement("span");
+      label.textContent = `${zoneLabel(m.feature)}${i === 0 ? " (record retained)" : ""}`;
+      row.appendChild(label);
+      if (i){
+        const remove = document.createElement("button");
+        remove.className = "btn"; remove.textContent = "Remove";
+        remove.onclick = () => {
+          if (saving || mergeBusy) return;
+          mergeMembers.splice(i,1); updateMergePreview();
+        };
+        row.appendChild(remove);
+      }
+      list.appendChild(row);
+    });
+    const connected = connectedZones(features);
+    saveBtn.disabled = features.length < 2 || !connected;
+    $("hint").textContent = !connected
+      ? "The selection has a gap. Add a connecting zone or remove disconnected zones before saving."
+      : `${features.length} zone(s) selected. Click more touching zones on the map. The first record is retained; review its name, status and incident above. Save merges the boundaries and removes the other records. Cancel leaves all records unchanged.`;
+  }
+
+  async function checkMergeSources(spatialReference){
+    const reader = new FeatureLayer({url:layer.url,gdbVersion:layer.gdbVersion});
+    try {
+      for (let offset=0;offset<mergeMembers.length;offset+=100){
+        const members = mergeMembers.slice(offset,offset+100);
+        const fs = await reader.queryFeatures({objectIds:members.map(m=>m.original.attributes[oidField]),outFields:["*"],returnGeometry:true,outSpatialReference:spatialReference});
+        if (fs.exceededTransferLimit) throw new Error("The merge selection could not be fully checked. No changes saved.");
+        for (const m of members){
+          const f = fs.features.find(f=>f.attributes[oidField] === m.original.attributes[oidField]);
+          if (!f || !geometryEngine.equals(f.geometry,m.original.geometry) || editableFields().some(field => f.attributes[field.name] !== m.original.attributes[field.name]))
+            throw new Error(`${zoneLabel(m.original)} changed since selection. Cancel and select the zones again.`);
+        }
+      }
+    } finally { reader.destroy(); }
   }
 
   // Query IDs first so overlap checks cannot silently miss a transfer-limited page.
@@ -1028,12 +1166,12 @@ require([
 
   // ---- save all geometry changes together, rolling back the whole batch on failure ----
   async function onSave(){
-    if (saving || !selected) return;
+    if (saving || mergeBusy || !selected) return;
     if (sketchVM.state === "active") sketchVM.complete();
     if (!selected) return;
     const attrs = readForm();
 
-    if (["add", "split", "carve"].includes(mode)){
+    if (["add", "split", "carve", "merge"].includes(mode)){
       const missing = requiredFieldNames().filter(n => attrs[n] == null || attrs[n] === "");
       if (missing.length){
         toast("Set status, incident, and zone name before creating the zone.", "err");
@@ -1045,7 +1183,7 @@ require([
     try {
       const geom = geometryEngine.simplify(selected.geometry);
       if (!geom || polygonArea(geom) <= 0) throw new Error("The zone needs a valid polygon with an area.");
-      const addFeatures = [], updateFeatures = [];
+      const addFeatures = [], updateFeatures = [], deleteFeatures = [];
       const excludedIds = [];
       if (sourceZone){
         const id = sourceZone.attributes[oidField];
@@ -1058,10 +1196,17 @@ require([
         try {
           fresh = await reader.queryFeatures({objectIds:[id],outFields:["*"],returnGeometry:true,outSpatialReference:geom.spatialReference});
         } finally { reader.destroy(); }
-        if (!fresh.features[0] || !geometryEngine.equals(fresh.features[0].geometry, sourceZone.geometry))
+        if (!fresh.features[0] || !geometryEngine.equals(fresh.features[0].geometry, (originalFeature || sourceZone).geometry))
           throw new Error("The original zone changed. Cancel and select it again before splitting.");
       }
-      if (mode === "split"){
+      if (mode === "merge"){
+        if (mergeMembers.length < 2 || !connectedZones(mergeMembers.map(m => m.feature)))
+          throw new Error("Select at least two zones connected by touching or overlapping boundaries.");
+        await checkMergeSources(geom.spatialReference);
+        excludedIds.push(...mergeMembers.map(m => m.original.attributes[oidField]));
+        updateFeatures.push(new Graphic({geometry:geom,attributes:{...attrs,[oidField]:excludedIds[0]}}));
+        deleteFeatures.push(...excludedIds.slice(1).map(objectId=>({objectId})));
+      } else if (mode === "split"){
         if (!splitParts || splitParts.length < 2) throw new Error("Finish the split line first.");
         updateFeatures.push(new Graphic({ geometry: splitParts[0], attributes: { ...attrs, [oidField]: sourceZone.attributes[oidField] } }));
         const nameField = editableFields().find(f => ruleFor(f) === "text");
@@ -1093,13 +1238,15 @@ require([
         overlaps = await overlapEdits(footprint, attrs, excludedIds);
         updateFeatures.push(...overlaps);
       }
-      if ((sourceZone || overlaps.length) && !confirm(
+      if (mode === "merge" && !confirm(
+        `Merge these ${mergeMembers.length} zones into "${attrs[editableFields().find(f=>ruleFor(f)==="text")?.name] || zoneLabel(mergeMembers[0].feature)}"?\n\n${mergeMembers.map(m=>zoneLabel(m.feature)).join("\n")}\n\nKeep the first record and the attributes shown in the form. Remove ${deleteFeatures.length} other record(s)${overlaps.length ? ` and trim ${overlaps.length} other overlapping zone(s)` : ""}. This cannot be undone after saving.`)) return;
+      if (mode !== "merge" && (sourceZone || overlaps.length) && !confirm(
         `Save ${addFeatures.length} new zone(s), update ${updateFeatures.length} existing zone(s)${overlaps.length ? ` (including ${overlaps.length} overlapping zone(s) in this incident)` : ""}?\n\nShared areas will be removed from the affected original zones. These saved changes cannot be undone with the sketch Undo button.`)) return;
-      const res = await layer.applyEdits({ addFeatures, updateFeatures }, { rollbackOnFailureEnabled: true });
-      const results = [...(res.addFeatureResults || []), ...(res.updateFeatureResults || [])];
+      const res = await layer.applyEdits({ addFeatures, updateFeatures, deleteFeatures }, { rollbackOnFailureEnabled: true });
+      const results = [...(res.addFeatureResults || []), ...(res.updateFeatureResults || []), ...(res.deleteFeatureResults || [])];
       const failed = results.find(r => r.error);
       if (failed) throw failed.error;
-      if (results.length !== addFeatures.length + updateFeatures.length) throw new Error("Incomplete save response. Reload the layer and check the zones before trying again.");
+      if (results.length !== addFeatures.length + updateFeatures.length + deleteFeatures.length) throw new Error("Incomplete save response. Reload the layer and check the zones before trying again.");
       setSaving(false);
       toast("Zones saved", "ok");
       resetAll();
@@ -1132,7 +1279,7 @@ require([
   }
 
   // ---- reshape existing geometry ----
-  function onReshape(){
+  function beginVertexEditing(){
     if (saving) return;
     if (!selected || !selected.attributes[oidField]) return;
     clearHighlight();
@@ -1145,7 +1292,11 @@ require([
     sketchLayer.add(g);
     selected = g;
     sketchVM.update(g, { tool: "reshape" });
-    $("hint").textContent = "Drag vertices to move them; right-click a vertex to delete it. Drag a midpoint to add a vertex. Undo / Redo correct this edit; Save applies it.";
+    vertexHint();
+  }
+
+  function vertexHint(){
+    $("hint").textContent = "Edit attributes and vertices directly. Drag a vertex to move it; right-click to delete it. Drag a midpoint to add one. Click the shape to resume handles if needed. Undo / Redo correct the current sketch; Save applies changes, Cancel discards them.";
   }
 
   // ---- reset ----
@@ -1160,8 +1311,14 @@ require([
     if (layer) layer.definitionExpression = origDef;
     mode = "idle"; selected = null;
     sourceZone = null; splitParts = null; partitionDrawing = null;
+    originalFeature = null; mergeMembers = []; mergeBusy = false; selectionEpoch++;
+    $("mergeSelection").style.display = "none";
+    $("mergeSelection").replaceChildren();
+    $("editDrawingBtn").style.display = "none";
     $("undoBtn").disabled = true;
     $("redoBtn").disabled = true;
+    $("undoBtn").style.display = "";
+    $("redoBtn").style.display = "";
     saveBtn.disabled = false;
     tPolygon.setAttribute("aria-pressed","false");
     tPoint.setAttribute("aria-pressed","false");
