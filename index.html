@@ -32,14 +32,19 @@
   <link rel="preconnect" href="https://js.arcgis.com" crossorigin>
   <link rel="preconnect" href="https://services2.arcgis.com" crossorigin>
 
-  <link rel="stylesheet" href="shared-styles.css?v=20261109-spacing10">
+  <link rel="stylesheet" href="shared-styles.css?v=20261109-depth11">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="home.css?v=20261109-spacing10">
+  <link rel="stylesheet" href="home.css?v=20261109-depth11">
 
 <style id="zone-information-layout">
 #welcomeDialog{width:min(980px,calc(100% - 24px));max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);padding:0;border:1px solid #ccd8e4;border-radius:14px;color:#162b40;overflow:hidden;font-family:Arial,sans-serif}
 #welcomeDialog:not([open]){display:none}#welcomeDialog[open]{display:flex;flex-direction:column}#welcomeDialog .welcome-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;padding:14px 18px;border-bottom:1px solid #e0e6ee}#welcomeDialog h2{margin:0;font-size:21px}#welcomeDialog .welcome-scroll{min-height:0;overflow-y:auto;padding:12px 16px;overscroll-behavior:contain}#welcomeDialog .welcome-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}#welcomeDialog .welcome-status{border:0;padding:13px;border-radius:10px;box-shadow:none}#welcomeDialog h3{font-size:15px;line-height:1.3;margin:0 0 7px}#welcomeDialog p{font-size:14px;line-height:1.45;margin:0;color:#162b40}#welcomeDialog .welcome-footer{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:12px 16px;flex-shrink:0;border-top:1px solid #e0e6ee}#welcomeDialog .welcome-status.ready{background:#f8dadd}#welcomeDialog .welcome-status.set{background:#fff36a}#welcomeDialog .welcome-status.go{background:#41f56e}#welcomeDialog .welcome-status.shelter{background:#8dc8f8}#welcomeDialog .welcome-status.access{background:#d9c5f4}#welcomeDialog .welcome-status.planning{background:#b8bec7}
 @media(max-width:680px){#welcomeDialog{width:calc(100% - 12px)}#welcomeDialog .welcome-header{padding:10px 12px}#welcomeDialog .welcome-scroll{padding:9px 10px}#welcomeDialog .welcome-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#welcomeDialog .welcome-status{padding:10px}#welcomeDialog h3{font-size:14px}#welcomeDialog p{font-size:13px;line-height:1.4}#welcomeDialog .welcome-footer{grid-template-columns:1fr 1fr;padding:10px;gap:8px}#welcomeDialog .welcome-footer label{grid-column:1/-1}#welcomeDialog .home-btn{min-height:40px;font-size:12px}}
+
+#welcomeDialog .welcome-status{border:2px solid var(--card-edge);box-shadow:0 4px 0 var(--card-edge),0 9px 16px #18334c18;transform:translateY(-2px)}
+#welcomeDialog .welcome-status.ready{--card-edge:#b66f7b}#welcomeDialog .welcome-status.set{--card-edge:#a58c14}#welcomeDialog .welcome-status.go{--card-edge:#21974a}#welcomeDialog .welcome-status.shelter{--card-edge:#357fb6}#welcomeDialog .welcome-status.access{--card-edge:#8b62b5}#welcomeDialog .welcome-status.planning{--card-edge:#707c8b}
+#welcomeDialog .welcome-grid{gap:16px}#welcomeDialog .welcome-scroll{padding-bottom:20px}
+@media(max-width:680px){#welcomeDialog .welcome-grid{gap:12px}#welcomeDialog .welcome-status{box-shadow:0 3px 0 var(--card-edge),0 6px 10px #18334c14}}
 </style>
 </head>
 <body class="home-map-page">
@@ -65,7 +70,7 @@
   <main id="main-content">
     <section class="overview-card" aria-label="County incident map">
       <div class="overview-top">
-        <div class="overview-toolbar"><form id="addressForm" class="home-address-search"><label for="addressSearch" class="visually-hidden">Find your address</label><div><input id="addressSearch" type="search" placeholder="Street address, city" autocomplete="street-address"><button class="home-btn" type="submit">Search</button></div></form></div>
+        <div class="overview-toolbar"><form id="addressForm" class="home-address-search"><label for="addressSearch">Address Search</label><div><input id="addressSearch" type="search" placeholder="Street address, city" autocomplete="street-address"><button class="home-btn" type="submit">Search</button></div></form></div>
         <p id="mapMessage" class="map-message" role="status"></p>
         <section class="incident-summary-panel" aria-labelledby="incidentsTitle">
           <div class="incident-strip-heading"><div><h2 id="incidentsTitle">Incidents</h2><span id="incidentCount" class="count-pill">—</span></div><a class="lite-link" href="evac-lite.html">Lightweight map →</a></div>
@@ -199,12 +204,12 @@
   </div>
 
 
-<script src="shared.js?v=20261109-spacing10"></script>
-<script src="zone-status.js?v=20261109-spacing10"></script>
+<script src="shared.js?v=20261109-depth11"></script>
+<script src="zone-status.js?v=20261109-depth11"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.vectorgrid@1.3.0/dist/Leaflet.VectorGrid.bundled.js"></script>
-<script src="home-config.js?v=20261109-spacing10"></script>
-<script src="home.js?v=20261109-spacing10" defer></script>
+<script src="home-config.js?v=20261109-depth11"></script>
+<script src="home.js?v=20261109-depth11" defer></script>
 </body>
 </html>

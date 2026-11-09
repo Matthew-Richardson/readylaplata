@@ -197,7 +197,8 @@
   async function initMap() {
     if(!window.L || !L.esri){mapFailure('The interactive map could not load.');return;}
     try {
-      view=L.map('viewDiv',{dragging:false,touchZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,scrollWheelZoom:false,zoomSnap:0.25}).fitBounds(countyBounds,{padding:[20,20]});
+      view=L.map('viewDiv',{dragging:true,touchZoom:true,doubleClickZoom:true,boxZoom:true,keyboard:true,scrollWheelZoom:false,zoomSnap:0.25}).fitBounds(countyBounds,{padding:[20,20]});
+      syncMapInteraction();
       view.createPane('zoneLabels');view.getPane('zoneLabels').style.zIndex=480;view.getPane('zoneLabels').style.pointerEvents='none';
       view.createPane('incidentPins');view.getPane('incidentPins').style.zIndex=675;
       zoneLabelLayer=L.layerGroup().addTo(view);
@@ -305,8 +306,22 @@
       try{view.setView([position.coords.latitude,position.coords.longitude],13);$('mapMessage').textContent='Your reported location is approximate. Confirm your address and zone.';}catch(_){}finally{button.disabled=false;}
     },()=>{button.disabled=false;$('mapMessage').textContent='Location could not be obtained. You can search for your address on the map.';},{timeout:10000});
   });
+  let pageScrolling=false,scrollIdleTimer;
+  function syncMapInteraction(){
+    if(!view)return;
+    const expanded=$('mapFrame').classList.contains('is-expanded');
+    const enabled=expanded || !pageScrolling;
+    for(const handler of ['dragging','touchZoom','doubleClickZoom','boxZoom','keyboard'])view[handler][enabled?'enable':'disable']();
+    // Wheel gestures keep scrolling the page outside the expanded map.
+    view.scrollWheelZoom[expanded?'enable':'disable']();
+    $('mapFrame').classList.toggle('is-page-scrolling',pageScrolling && !expanded);
+  }
+  window.addEventListener('scroll',()=>{
+    pageScrolling=true;syncMapInteraction();clearTimeout(scrollIdleTimer);
+    scrollIdleTimer=setTimeout(()=>{pageScrolling=false;syncMapInteraction();},200);
+  },{passive:true});
   function expandMap(expanded){
-    $('mapFrame').classList.toggle('is-expanded',expanded);$('mapFullscreenBtn').setAttribute('aria-pressed',String(expanded));$('mapFullscreenBtn').textContent=expanded?'Close expanded map':'Expand map';document.body.style.overflow=expanded?'hidden':'';if(view){for(const handler of ['dragging','touchZoom','doubleClickZoom','boxZoom','keyboard','scrollWheelZoom'])view[handler][expanded?'enable':'disable']();setTimeout(()=>view.invalidateSize(),0);}
+    $('mapFrame').classList.toggle('is-expanded',expanded);$('mapFullscreenBtn').setAttribute('aria-pressed',String(expanded));$('mapFullscreenBtn').textContent=expanded?'Close expanded map':'Expand map';document.body.style.overflow=expanded?'hidden':'';if(view){syncMapInteraction();setTimeout(()=>view.invalidateSize(),0);}
   }
   $('mapFullscreenBtn').addEventListener('click',()=>expandMap($('mapFullscreenBtn').getAttribute('aria-pressed')!=='true'));
   document.addEventListener('keydown',event=>{if(event.key==='Escape')expandMap(false);});
