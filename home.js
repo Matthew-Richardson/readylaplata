@@ -24,21 +24,21 @@
   }
   function openWelcome() { if (!welcome.open) welcome.showModal(); }
   function closeWelcome() {
-    if ($('welcomeRemember').checked) safeStorage(localStorage,'setItem','readylpc-welcome-dismissed-v1','1');
-    safeStorage(sessionStorage,'setItem','readylpc-welcome-seen-v1','1');
+    if ($('welcomeRemember').checked) safeStorage(localStorage,'setItem','readylpc-zone-info-dismissed-v2','1');
+    safeStorage(sessionStorage,'setItem','readylpc-zone-info-seen-v2','1');
     welcome.close();
   }
   $('welcomeClose').addEventListener('click',closeWelcome);
   $('welcomeContinue').addEventListener('click',closeWelcome);
   welcome.addEventListener('close',()=>{
-    safeStorage(sessionStorage,'setItem','readylpc-welcome-seen-v1','1');
+    safeStorage(sessionStorage,'setItem','readylpc-zone-info-seen-v2','1');
     initAnnouncement();
   });
   $('infoButton').addEventListener('click',openWelcome);
   $('reopenWelcome').addEventListener('click',openWelcome);
   $('welcomeAlerts').addEventListener('click',()=>{closeWelcome();$('coderedButton').click();});
   R.initCoderedOverlay(DOM); R.initCallerIdOverlay(DOM); R.initDrillBanner(DOM);
-  if (!safeStorage(localStorage,'getItem','readylpc-welcome-dismissed-v1') && !safeStorage(sessionStorage,'getItem','readylpc-welcome-seen-v1')) openWelcome();
+  if (!safeStorage(localStorage,'getItem','readylpc-zone-info-dismissed-v2') && !safeStorage(sessionStorage,'getItem','readylpc-zone-info-seen-v2')) openWelcome();
   else initAnnouncement();
 
   async function json(url) {
@@ -50,7 +50,6 @@
   function popupFor(name, feature) {
     const node=document.createElement('div');
     if (feature) {
-      if(Z.key(statusName(feature))==='Access'){const info=document.createElement('p');info.textContent='Road access is affected. Review incident details for access conditions and instructions. This designation is not a shelter-in-place order.';node.appendChild(info);}
       const status=document.createElement('p');
       status.textContent='Status: '+statusName(feature); node.appendChild(status);
       if(zoneFields.zone){const zone=document.createElement('p');zone.textContent='Zone: '+((feature.properties || feature.attributes)[zoneFields.zone]||'Unnamed zone');node.appendChild(zone);}
@@ -85,10 +84,13 @@
       card.classList.toggle('is-selected',name===chosenIncident);
       const focus=document.createElement('button');focus.type='button';focus.className='incident-focus';focus.textContent=name;focus.setAttribute('aria-label','Show '+name+' on the map');focus.addEventListener('click',()=>focusIncident(name));
       const badges=document.createElement('div');badges.className='incident-badges';
-      for(const status of Array.from(entry.statuses).sort((a,b)=>statusPriority(a)-statusPriority(b)||a.localeCompare(b))){
-        const style=Z.styles[Z.key(status)],badge=document.createElement('span');badge.className='status-badge';badge.textContent=Z.key(status)==='Access'?style.label:status;if(Z.key(status)==='Access')badge.classList.add('access-hatch');badge.style.background=style.fill;badge.style.borderColor=style.stroke;badge.style.color=style.text;badges.appendChild(badge);
+      for(const status of Object.keys(STATUS_PRIORITY)){
+        const count=entry.counts[status];if(!count)continue;
+        const style=Z.styles[status],badge=document.createElement('span');badge.className='status-badge';
+        badge.textContent=status+' '+count;badge.setAttribute('aria-label',count+' '+style.label+' zone'+(count===1?'':'s'));
+        if(status==='Access')badge.classList.add('access-hatch');badge.style.background=style.fill;badge.style.borderColor=style.stroke;badge.style.color=style.text;badges.appendChild(badge);
       }
-      const link=document.createElement('a');link.href='evac.html?incident='+encodeURIComponent(name);link.textContent='Incident details →';
+      const link=document.createElement('a');link.href='evac.html?incident='+encodeURIComponent(name);link.textContent='Details →';
       card.append(focus,badges,link);container.appendChild(card);
     }
     $('incidentCount').textContent=incidents.size;
@@ -146,8 +148,8 @@
       features.forEach(feature=>{
         const name=String(feature.properties[zoneFields.incident]||'').trim();if(!name)return;
         let entry=next.get(name);
-        if(!entry){entry={statuses:new Set(),extent:L.latLngBounds(),point:null,marker:null};next.set(name,entry);}
-        entry.statuses.add(statusName(feature));
+        if(!entry){entry={statuses:new Set(),counts:{Go:0,Shelter:0,Set:0,Access:0,Planning:0},extent:L.latLngBounds(),point:null,marker:null};next.set(name,entry);}
+        entry.statuses.add(statusName(feature));entry.counts[Z.key(statusName(feature))]++;
         const bounds=L.geoJSON(feature).getBounds();
         if(bounds.isValid())entry.extent.extend(bounds);
       });
@@ -171,12 +173,12 @@
         entry.marker.on('click',()=>focusIncident(name));entry.marker.addTo(pinLayer);
       });
       renderIncidentList();lastIncidentSuccess=Date.now();
-      $('incidentState').dataset.error='false';$('incidentState').textContent=incidents.size?'Select an incident to zoom to its location.':'No incidents are currently shown in the county zone layer.';
+      $('incidentState').dataset.error='false';$('incidentState').hidden=incidents.size>0;$('incidentState').textContent=incidents.size?'':'No incidents are currently shown in the county zone layer.';
       $('lastLoaded').textContent='Source: La Plata County OEM · Updated '+localTime(lastIncidentSuccess);
       if(firstLoad && chosenIncident)await focusIncident(chosenIncident);
       firstLoad=false;
     } catch(err){
-      console.error('Incidents:',err);$('incidentState').dataset.error='true';
+      console.error('Incidents:',err);$('incidentState').hidden=false;$('incidentState').dataset.error='true';
       $('incidentState').textContent=lastIncidentSuccess?'Unable to refresh. Showing incident data from '+localTime(lastIncidentSuccess)+'.':'County incidents could not be loaded. Try Refresh information or the lightweight map.';
     } finally {incidentsBusy=false;}
   }

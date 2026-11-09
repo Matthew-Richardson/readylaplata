@@ -32,9 +32,15 @@
   <link rel="preconnect" href="https://js.arcgis.com" crossorigin>
   <link rel="preconnect" href="https://services2.arcgis.com" crossorigin>
 
-  <link rel="stylesheet" href="shared-styles.css">
+  <link rel="stylesheet" href="shared-styles.css?v=20261108-topbar8">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="home.css">
+  <link rel="stylesheet" href="home.css?v=20261108-topbar8">
+
+<style id="zone-information-layout">
+#welcomeDialog{width:min(980px,calc(100% - 24px));max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);padding:0;border:1px solid #ccd8e4;border-radius:14px;color:#162b40;overflow:hidden;font-family:Arial,sans-serif}
+#welcomeDialog:not([open]){display:none}#welcomeDialog[open]{display:flex;flex-direction:column}#welcomeDialog .welcome-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;padding:14px 18px;border-bottom:1px solid #e0e6ee}#welcomeDialog h2{margin:0;font-size:21px}#welcomeDialog .welcome-scroll{min-height:0;overflow-y:auto;padding:12px 16px;overscroll-behavior:contain}#welcomeDialog .welcome-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}#welcomeDialog .welcome-status{border:0;padding:13px;border-radius:10px;box-shadow:none}#welcomeDialog h3{font-size:15px;line-height:1.3;margin:0 0 7px}#welcomeDialog p{font-size:14px;line-height:1.45;margin:0;color:#162b40}#welcomeDialog .welcome-footer{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:12px 16px;flex-shrink:0;border-top:1px solid #e0e6ee}#welcomeDialog .welcome-status.ready{background:#f8dadd}#welcomeDialog .welcome-status.set{background:#fff36a}#welcomeDialog .welcome-status.go{background:#41f56e}#welcomeDialog .welcome-status.shelter{background:#8dc8f8}#welcomeDialog .welcome-status.access{background:#d9c5f4}#welcomeDialog .welcome-status.planning{background:#b8bec7}
+@media(max-width:680px){#welcomeDialog{width:calc(100% - 12px)}#welcomeDialog .welcome-header{padding:10px 12px}#welcomeDialog .welcome-scroll{padding:9px 10px}#welcomeDialog .welcome-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#welcomeDialog .welcome-status{padding:10px}#welcomeDialog h3{font-size:14px}#welcomeDialog p{font-size:13px;line-height:1.4}#welcomeDialog .welcome-footer{grid-template-columns:1fr 1fr;padding:10px;gap:8px}#welcomeDialog .welcome-footer label{grid-column:1/-1}#welcomeDialog .home-btn{min-height:40px;font-size:12px}}
+</style>
 </head>
 <body class="home-map-page">
 <a href="#main-content" class="skip-nav">Skip to main content</a>
@@ -51,27 +57,15 @@
                 </button><button id="coderedButton" class="home-nav-btn" type="button">
                   <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                   <span>LPC Alerts</span>
-                </button><button id="announcementAlertBtn" class="home-nav-btn" type="button" aria-label="View county announcements">Updates</button></nav><a href="tel:+19703858700" class="home-call-link">
+                </button><button id="announcementAlertBtn" class="home-nav-btn" type="button" aria-label="View county announcements">Updates</button></nav><a href="tel:+19703858700" class="home-call-link" aria-label="Call the La Plata County call center at 970-385-8700">
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                 <span><span class="call-label">Call Center</span><span class="call-number">(970) 385-8700</span></span>
               </a></div>
 </header>
   <main id="main-content">
     <section class="overview-card" aria-label="County incident map">
-      <div class="overview-layout">
-        <aside class="incident-sidebar" aria-labelledby="incidentsTitle">
-          <div class="sidebar-heading"><h3 id="incidentsTitle">Incidents</h3><span id="incidentCount" class="count-pill">—</span></div>
-          <p id="incidentState" class="feed-state" role="status">Loading county incidents…</p>
-          <div id="incidentList" class="incident-list"></div>
-          <a class="lite-link" href="evac-lite.html">Open the lightweight map →</a>
-        </aside>
-        <div class="map-column">
-          <div id="mapFrame" class="home-map-frame">
-            <div id="viewDiv" role="region" aria-label="La Plata County incident map"></div>
-            <div id="mapLoading" class="home-map-loading" role="status">Loading overview map…</div>
-          </div>
-          <form id="addressForm" class="home-address-search"><label for="addressSearch">Find your address</label><div><input id="addressSearch" type="search" placeholder="Street address, city" autocomplete="street-address"><button class="home-btn" type="submit">Search</button></div></form>
-          <div class="home-map-tools">
+      <div class="overview-top">
+        <div class="overview-toolbar"><form id="addressForm" class="home-address-search"><label for="addressSearch" class="visually-hidden">Find your address</label><div><input id="addressSearch" type="search" placeholder="Street address, city" autocomplete="street-address"><button class="home-btn" type="submit">Search</button></div></form><div class="home-map-tools">
             <button id="refreshAll" class="home-btn" type="button">Refresh</button>
             <button id="mapResetBtn" class="home-btn" type="button">County view</button>
             <button id="myLocationBtn" class="home-btn" type="button">My location</button>
@@ -79,9 +73,8 @@
             <label><input id="roadsToggle" type="checkbox" checked> Roads</label>
             <label><input id="roadLayerToggle" type="checkbox" checked> Road information</label>
             <label><input id="poiLayerToggle" type="checkbox" checked> EvacPOIs</label>
-          </div>
-          <p id="mapMessage" class="map-message" role="status"></p>
-          <div class="home-legend" aria-label="Zone colors">
+          </div></div>
+        <div class="home-legend" aria-label="Zone colors">
             <span><i style="background:#fff36a;border-color:#967800"></i>Set</span>
             <span><i style="background:#41f56e;border-color:#15803d"></i>Go</span>
             <span><i style="background:#8dc8f8;border-color:#1e6eb6"></i>Shelter</span>
@@ -89,14 +82,21 @@
             <span><i style="background:#b8bec7;border-color:#667180"></i>Planning</span>
             <span><i class="road-line"></i>Road impact</span><span><i class="poi-key">i</i>EvacPOIs</span>
           </div>
-          <p class="map-footnote">Zone colors describe the mapped status. Review the incident details and follow official instructions. Planning is not a protective-action order.</p>
-        </div>
+        <p id="mapMessage" class="map-message" role="status"></p>
+        <section class="incident-summary-panel" aria-labelledby="incidentsTitle">
+          <div class="incident-strip-heading"><div><h2 id="incidentsTitle">Incidents</h2><span id="incidentCount" class="count-pill">—</span></div><a class="lite-link" href="evac-lite.html">Lightweight map →</a></div>
+          <p id="incidentState" class="feed-state" role="status">Loading county incidents…</p>
+          <div id="incidentList" class="incident-list"></div>
+        </section>
       </div>
-      <p id="lastLoaded" class="home-timestamp">Source: La Plata County Office of Emergency Management · Waiting for incident data</p>
+      <div id="mapFrame" class="home-map-frame">
+            <div id="viewDiv" role="region" aria-label="La Plata County incident map"></div>
+            <div id="mapLoading" class="home-map-loading" role="status">Loading overview map…</div>
+          </div>
     </section>
 
   </main>
-  <footer class="home-footer"><p>La Plata County Office of Emergency Management · For immediate emergencies, call 911.</p><button id="reopenWelcome" class="home-btn" type="button">Preparedness &amp; map information</button></footer>
+  <footer class="home-footer"><div><p>La Plata County Office of Emergency Management · For immediate emergencies, call 911.</p><p id="lastLoaded" class="footer-updated">Waiting for incident data</p></div><button id="reopenWelcome" class="home-btn" type="button">Preparedness &amp; map information</button></footer>
 </div>
 <dialog id="welcomeDialog" class="welcome-dialog" aria-labelledby="welcomeTitle">
   <div class="welcome-header"><h2 id="welcomeTitle">Zone information</h2><button id="welcomeClose" class="home-btn" type="button" aria-label="Close welcome information">×</button></div>
@@ -171,9 +171,9 @@
         <div class="callerid-download callerid-download--top">
           <button type="button" class="callerid-download-btn" onclick="ReadyLaPlata.downloadVCard()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-            Add to Contacts Automatically
+            Save LPC Alerts contact
           </button>
-          <p class="callerid-download-hint"><strong>Tap 'CREATE NEW CONTACT' inside your phone's app</strong></p>
+          <p class="callerid-download-hint"><strong>Open the downloaded contact and save it in your contacts app.</strong></p>
         </div>
         
         <div class="callerid-note">
@@ -197,12 +197,12 @@
   </div>
 
 
-<script src="shared.js"></script>
-<script src="zone-status.js"></script>
+<script src="shared.js?v=20261108-topbar8"></script>
+<script src="zone-status.js?v=20261108-topbar8"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.vectorgrid@1.3.0/dist/Leaflet.VectorGrid.bundled.js"></script>
-<script src="home-config.js"></script>
-<script src="home.js" defer></script>
+<script src="home-config.js?v=20261108-topbar8"></script>
+<script src="home.js?v=20261108-topbar8" defer></script>
 </body>
 </html>

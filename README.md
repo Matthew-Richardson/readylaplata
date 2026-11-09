@@ -13,3 +13,5 @@ Publish the source files together to the existing county web directory to update
 The access-impact frontend status is `Access` (also recognizes `Access Impact Area`, `Road Closure Area`, and `Isolated`). It describes road access conditions, not a protective-action order. Use a distinct zone name/ID and publish access details through the incident information. Update the layer domain separately when ready; these changes do not alter AGOL data or schema.
 
 The overview fits the full county boundary (including the north edge) with padding. Zone names are drawn below incident markers and labels. The information dialog uses a compact six-card grid; the preparedness checklist can be expanded when needed.
+
+Overview controls, search, legend, and compact incident cards sit above the map. Incident cards show zone counts by status and scroll horizontally on phones. Only the footer appears below the map.

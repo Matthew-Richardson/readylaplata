@@ -155,12 +155,16 @@
 
   // ========== LPC ALERTS CALLER ID OVERLAY INIT ==========
   const initCallerIdOverlay = (elements) => {
-    const { callerIdButton, callerIdOverlay, callerIdClose } = elements;
+    const { callerIdButton, callerIdOverlay, callerIdClose, coderedOverlay } = elements;
     if (!callerIdButton || !callerIdOverlay) return;
 
     const toggle = createOverlayToggle(callerIdOverlay);
 
-    callerIdButton.addEventListener('click', () => toggle(true));
+    const toggleSignup = coderedOverlay ? createOverlayToggle(coderedOverlay) : null;
+    callerIdButton.addEventListener('click', () => {
+      if (coderedOverlay?.classList.contains('is-open')) toggleSignup(false);
+      toggle(true);
+    });
     callerIdClose?.addEventListener('click', () => toggle(false));
     callerIdOverlay.addEventListener('click', e => { if (e.target === callerIdOverlay) toggle(false); });
 
@@ -378,7 +382,7 @@
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   // ========== DRILL BANNER INIT ==========
