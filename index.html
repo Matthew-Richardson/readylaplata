@@ -57,11 +57,7 @@
               </a></div>
 </header>
   <main id="main-content">
-    <section class="overview-card" aria-labelledby="mapTitle">
-      <div class="overview-heading">
-        <div><span class="eyebrow">La Plata County, Colorado</span><h2 id="mapTitle">Know what’s happening.</h2><p>Explore incidents and zones. Select an incident for its latest details.</p></div>
-        <button id="refreshAll" class="home-btn" type="button">Refresh information</button>
-      </div>
+    <section class="overview-card" aria-label="County incident map">
       <div class="overview-layout">
         <aside class="incident-sidebar" aria-labelledby="incidentsTitle">
           <div class="sidebar-heading"><h3 id="incidentsTitle">Incidents</h3><span id="incidentCount" class="count-pill">—</span></div>
@@ -76,6 +72,7 @@
           </div>
           <form id="addressForm" class="home-address-search"><label for="addressSearch">Find your address</label><div><input id="addressSearch" type="search" placeholder="Street address, city" autocomplete="street-address"><button class="home-btn" type="submit">Search</button></div></form>
           <div class="home-map-tools">
+            <button id="refreshAll" class="home-btn" type="button">Refresh</button>
             <button id="mapResetBtn" class="home-btn" type="button">County view</button>
             <button id="myLocationBtn" class="home-btn" type="button">My location</button>
             <button id="mapFullscreenBtn" class="home-btn" type="button" aria-pressed="false">Expand map</button>
@@ -89,7 +86,7 @@
             <span><i style="background:#41f56e;border-color:#15803d"></i>Go</span>
             <span><i style="background:#8dc8f8;border-color:#1e6eb6"></i>Shelter</span>
             <span><i class="access-hatch"></i>Access Impact Area</span>
-            <span><i style="background:#b8bec7;border-color:#667180"></i>Planning / All clear</span>
+            <span><i style="background:#b8bec7;border-color:#667180"></i>Planning</span>
             <span><i class="road-line"></i>Road impact</span><span><i class="poi-key">i</i>EvacPOIs</span>
           </div>
           <p class="map-footnote">Zone colors describe the mapped status. Review the incident details and follow official instructions. Planning is not a protective-action order.</p>
@@ -97,81 +94,28 @@
       </div>
       <p id="lastLoaded" class="home-timestamp">Source: La Plata County Office of Emergency Management · Waiting for incident data</p>
     </section>
-    <section class="weather-card" aria-labelledby="weatherTitle">
-      <div class="section-heading"><div><span class="eyebrow">National Weather Service</span><h2 id="weatherTitle">Weather warnings &amp; alerts</h2><p>Active warnings, watches and advisories affecting La Plata County.</p></div><a href="https://www.weather.gov/gjt/" target="_blank" rel="noopener noreferrer">NWS Grand Junction ↗</a></div>
-      <p id="nwsState" class="feed-state" role="status">Loading NWS alerts…</p>
-      <div id="nwsAlerts" class="nws-alerts"></div>
-      <p id="nwsUpdated" class="home-timestamp">Source: National Weather Service · Times shown in Mountain Time</p>
-    </section>
+
   </main>
   <footer class="home-footer"><p>La Plata County Office of Emergency Management · For immediate emergencies, call 911.</p><button id="reopenWelcome" class="home-btn" type="button">Preparedness &amp; map information</button></footer>
 </div>
 <dialog id="welcomeDialog" class="welcome-dialog" aria-labelledby="welcomeTitle">
-  <div class="welcome-header"><div><span class="eyebrow">Welcome to ReadyLaPlata</span><h2 id="welcomeTitle">Stay informed. Be ready.</h2></div><button id="welcomeClose" class="home-btn" type="button" aria-label="Close welcome information">×</button></div>
-  <div class="welcome-scroll"><p class="welcome-intro">Your starting point for county incidents, evacuation zones and NWS weather alerts. Explore the map, then open an incident for details.</p>
-<div class="evac-stages">
-                <div class="stage-header-main">
-                  <div class="stage-tagline">La Plata County</div>
-                  <div class="stage-headline">Stay Ready, Year-Round</div>
-                  <div class="stage-body" style="margin-top:8px;max-width:780px;margin-left:auto;margin-right:auto;font-size:16px;line-height:1.55;">
-                    <p>La Plata County Office of Emergency Management (<strong>LPCOEM</strong>) — uses the Ready, Set, Go! system to establish evacuation zones. Use the incident map to confirm your zone. During an incident your zone name and area is subject to change.</p>
-                  </div>
-                </div>
-
-                <div class="stage-subhead">Ready, Set, Go! System</div>
-
-                <div class="rsg-layout">
-                  <div class="rsg-card rsg-card--ready">
-                    <div class="rsg-stripe rsg-stripe--ready"></div>
-                    <div class="rsg-content">
-                      <div class="rsg-header">
-                        <h2 class="rsg-title">Ready</h2>
-                        <span class="rsg-label">Be Ready, Stay Safe</span>
-                      </div>
-                      <ul class="rsg-bullets">
-                        <li><strong>Stay Informed</strong> — Sign up for LPC Alerts, enable Gov't Alerts, use Watch Duty</li>
-                        <li><strong>Make a Plan</strong> — People, Pets, Photos, Papers, and Pills</li>
-                        <li><strong>Fire Ready</strong> — Mitigation, "Go Kit" with protective clothing and masks</li>
-                        <li><strong>Know Your Routes</strong> — Don't hesitate on evacuation orders, know multiple ways out</li>
-                      </ul>
-                    </div>
-                  </div>
-                  <div class="rsg-pair">
-                    <div class="rsg-card rsg-card--set">
-                      <div class="rsg-stripe rsg-stripe--set"></div>
-                      <div class="rsg-content">
-                        <div class="rsg-header">
-                          <h2 class="rsg-title">Set</h2>
-                          <span class="rsg-label">Pre-Evacuation</span>
-                        </div>
-                        <div class="rsg-body">
-                          <p>Voluntary evacuation. Evacuation orders are likely — be prepared to leave at a moment's notice.</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="rsg-card rsg-card--go">
-                      <div class="rsg-stripe rsg-stripe--go"></div>
-                      <div class="rsg-content">
-                        <div class="rsg-header">
-                          <h2 class="rsg-title">Go</h2>
-                          <span class="rsg-label">Evacuate Now</span>
-                        </div>
-                        <div class="rsg-body">
-                          <p>Leave immediately. Imminent threat to life. Area is closed to public access.</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-    <div class="welcome-extra">
-      <section class="welcome-status shelter"><h3>Shelter · Shelter in place</h3><p>Remain inside or move indoors when instructed. Review the incident details for the specific protective actions to take.</p></section>
-      <section class="welcome-status access"><h3>Access Impact Area · Road access affected</h3><p>Purple hatching identifies an area affected by road closures or access limitations. It is not a shelter-in-place or evacuation order. Review incident details for limited access, no road access, affected roads and current instructions.</p></section>
-      <section class="welcome-status planning"><h3>Planning · Grey map areas</h3><p>Planning, all-clear and other informational areas use grey. Planning does not mean an evacuation or shelter order is in effect. Check the incident’s status and instructions.</p></section>
+  <div class="welcome-header"><h2 id="welcomeTitle">Zone information</h2><button id="welcomeClose" class="home-btn" type="button" aria-label="Close welcome information">×</button></div>
+  <div class="welcome-scroll">
+    <div class="welcome-grid">
+      <section class="welcome-status ready"><h3>Ready</h3><p>Stay informed and prepare your household.</p><details class="ready-checklist"><summary>Preparedness checklist</summary><ul>
+        <li>Sign up for LPC Alerts, enable government alerts, and use Watch Duty.</li>
+        <li>Plan for people, pets, photos, papers and pills.</li>
+        <li>Prepare your property and a go kit with protective clothing and masks.</li>
+        <li>Know multiple routes out. Don’t hesitate when ordered to evacuate.</li>
+      </ul></details></section>
+      <section class="welcome-status set"><h3>Set · Pre-evacuation</h3><p>Voluntary evacuation. Evacuation orders are likely. Be ready to leave at a moment’s notice.</p></section>
+      <section class="welcome-status go"><h3>Go · Evacuate now</h3><p>Leave immediately. Imminent threat to life. The area is closed to public access.</p></section>
+      <section class="welcome-status shelter"><h3>Shelter · Shelter in place</h3><p>Remain inside or move indoors when instructed. Follow the incident’s specific protective actions.</p></section>
+      <section class="welcome-status access"><h3>Access Impact Area</h3><p>Road closures may limit or cut off access. Check incident details. This is not an evacuation or shelter order.</p></section>
+      <section class="welcome-status planning"><h3>Planning</h3><p>Planning areas are informational, not an evacuation or shelter order. Check incident details.</p></section>
     </div>
-    <button id="welcomeAlerts" class="home-btn primary" type="button">Sign up for LPC Alerts</button>
   </div>
-  <div class="welcome-footer"><label><input id="welcomeRemember" type="checkbox"> Don’t show this automatically again</label><button id="welcomeContinue" class="home-btn primary" type="button">View the map</button></div>
+  <div class="welcome-footer"><label><input id="welcomeRemember" type="checkbox"> Don’t show automatically again</label><button id="welcomeAlerts" class="home-btn" type="button">LPC Alerts signup</button><button id="welcomeContinue" class="home-btn primary" type="button">View the map</button></div>
 </dialog>
   <!-- LPC Alerts Overlay -->
   <div id="coderedOverlay" class="codered-overlay" aria-hidden="true">
