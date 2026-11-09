@@ -86,7 +86,7 @@
       for(const status of Object.keys(STATUS_PRIORITY)){
         const count=entry.counts[status];if(!count)continue;
         const style=Z.styles[status],badge=document.createElement('span');badge.className='status-badge';
-        badge.textContent=status+' '+count;badge.setAttribute('aria-label',count+' '+style.label+' zone'+(count===1?'':'s'));
+        badge.textContent=style.label+' '+count;badge.setAttribute('aria-label',count+' '+style.label+' zone'+(count===1?'':'s'));
         if(status==='Access')badge.classList.add('access-hatch');badge.style.background=style.fill;badge.style.borderColor=style.stroke;badge.style.color=style.text;badges.appendChild(badge);
       }
       const link=document.createElement('a');link.href='evac.html?incident='+encodeURIComponent(name);link.textContent='Details →';

@@ -4,7 +4,7 @@
   const styles = Object.freeze({
     Set: { fill: '#fff36a', stroke: '#967800', label: 'Set', text: '#413500' },
     Go: { fill: '#41f56e', stroke: '#15803d', label: 'Go', text: '#124726' },
-    Shelter: { fill: '#8dc8f8', stroke: '#1e6eb6', label: 'Shelter', text: '#124d7d' },
+    Shelter: { fill: '#8dc8f8', stroke: '#1e6eb6', label: 'Shelter-In-Place', text: '#124d7d' },
     Access: { fill: '#d9c5f4', stroke: '#824ab6', label: 'Access Impact Area', text: '#593278', hatch: true },
     Planning: { fill: '#b8bec7', stroke: '#667180', label: 'Planning', text: '#313c49' }
   });
