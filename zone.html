@@ -364,7 +364,7 @@ const CONFIG = {
   editLayerTitle: "",
 
   // Evac status choices (override any domain on the status field).
-  statusOptions:  ["Planning", "Set", "Go"],
+  statusOptions:  ["Planning", "Set", "Go", "Shelter", "Access"],
 
   featureLayer:   "https://services.arcgis.com/XXXX/arcgis/rest/services/EvacZones/FeatureServer/0"
 };
@@ -934,7 +934,7 @@ require([
   }
 
   // Field-specific overrides, matched against name OR alias.
-  const STATUS_COLORS = { Planning: "#9aa3ad", Set: "#f2c43d", Go: "#3aae66" };
+  const STATUS_COLORS = { Planning: "#9aa3ad", Set: "#f2c43d", Go: "#3aae66", Shelter: "#8dc8f8", Access: "#b79ae8" };
 
   function ruleFor(f){
     const hay = (f.name + " " + (f.alias || ""));

@@ -12,6 +12,7 @@
   let incidentsBusy = false, nwsBusy = false, lastIncidentSuccess = null, lastNwsSuccess = null;
   let chosenIncident = new URLSearchParams(location.search).get('incident') || '';
   let firstLoad = true, announcementInitialized = false;
+  let operationalLayers = [];
   const welcome = $('welcomeDialog');
   function safeStorage(storage, method, key, value) { try { return storage[method](key,value); } catch (_) { return null; } }
   function initAnnouncement() {
@@ -48,6 +49,7 @@
   function popupFor(name, feature) {
     const node=document.createElement('div');
     if (feature) {
+      if(Z.key(statusName(feature))==='Access'){const info=document.createElement('p');info.textContent='Road access is affected. Review incident details for access conditions and instructions. This designation is not a shelter-in-place order.';node.appendChild(info);}
       const status=document.createElement('p');
       status.textContent='Status: '+statusName(feature); node.appendChild(status);
       if(zoneFields.zone){const zone=document.createElement('p');zone.textContent='Zone: '+((feature.properties || feature.attributes)[zoneFields.zone]||'Unnamed zone');node.appendChild(zone);}
@@ -75,7 +77,7 @@
       const focus=document.createElement('button');focus.type='button';focus.className='incident-focus';focus.textContent=name;focus.setAttribute('aria-label','Show '+name+' on the map');focus.addEventListener('click',()=>focusIncident(name));
       const badges=document.createElement('div');badges.className='incident-badges';
       for(const status of Array.from(entry.statuses).sort()){
-        const style=Z.styles[Z.key(status)],badge=document.createElement('span');badge.className='status-badge';badge.textContent=status;badge.style.background=style.fill;badge.style.borderColor=style.stroke;badge.style.color=style.text;badges.appendChild(badge);
+        const style=Z.styles[Z.key(status)],badge=document.createElement('span');badge.className='status-badge';badge.textContent=Z.key(status)==='Access'?style.label:status;if(Z.key(status)==='Access')badge.classList.add('access-hatch');badge.style.background=style.fill;badge.style.borderColor=style.stroke;badge.style.color=style.text;badges.appendChild(badge);
       }
       const link=document.createElement('a');link.href='evac.html?incident='+encodeURIComponent(name);link.textContent='Incident details →';
       card.append(focus,badges,link);container.appendChild(card);
@@ -106,7 +108,7 @@
         if(bounds.isValid())entry.extent.extend(bounds);
       });
       incidents=new Map(Array.from(next.entries()).sort(([a],[b])=>a.localeCompare(b)));
-      const drawingOrder={Planning:0,Set:1,Shelter:2,Go:3};
+      const drawingOrder={Planning:0,Access:1,Set:2,Shelter:3,Go:4};
       features.sort((a,b)=>drawingOrder[Z.key(statusName(a))]-drawingOrder[Z.key(statusName(b))]);
       zoneLayer.clearLayers();zoneLayer.addData({type:'FeatureCollection',features});
       pinLayer.clearLayers();
@@ -141,17 +143,77 @@
       if(!zoneFields.status || !zoneFields.incident)throw new Error('The zone layer is missing its status or incident field.');
       zoneLayer=L.geoJSON(null,{
         style:feature=>{const style=Z.styles[Z.key(statusName(feature))];return {fillColor:style.fill,color:style.stroke,weight:2,fillOpacity:0.45};},
-        onEachFeature:(feature,layer)=>layer.bindPopup(()=>{const name=String(feature.properties[zoneFields.incident]||'Incident');const content=document.createElement('div'),title=document.createElement('strong');title.textContent=name;content.append(title,popupFor(name,feature));return content;})
+        onEachFeature:(feature,layer)=>{ layer.on('add',()=>Z.applyHatch(layer,statusName(feature))); layer.bindPopup(()=>{const name=String(feature.properties[zoneFields.incident]||'Incident');const content=document.createElement('div'),title=document.createElement('strong');title.textContent=name;content.append(title,popupFor(name,feature));return content;}); }
       }).addTo(view);
-      if(C.roadClosuresUrl){
-        const roads=L.esri.featureLayer({url:C.roadClosuresUrl,style:()=>({color:'#b72832',weight:4,fillOpacity:0.18})}).addTo(view);
-        $('roadLayerControl').hidden=false;$('roadLayerToggle').addEventListener('change',()=>{$('roadLayerToggle').checked?roads.addTo(view):view.removeLayer(roads);});
-        roads.on('load',()=>$('mapMessage').textContent='');
-        roads.on('requesterror',()=>$('mapMessage').textContent='Road closure information could not be loaded. Check official road reports.');
-      }
+      initOperationalLayers();
       mapReady=true;$('mapLoading').hidden=true;
       await refreshIncidents();
     }catch(err){console.error('Map initialization:',err);mapFailure('The interactive map could not load county information.');}
+  }
+  function operationalPopup(properties,kind){
+    const node=document.createElement('div');node.className='operational-popup';
+    const heading=document.createElement('strong');heading.textContent=properties.label || kind;node.appendChild(heading);
+    const value=kind==='Road information'?properties.roadstatus:properties.pointtype;
+    if(value){const line=document.createElement('p');line.textContent=String(value);node.appendChild(line);}
+    return node;
+  }
+  function roadStyle(properties){
+    const status=String(properties.roadstatus||'').toLowerCase();
+    if(/clos|impass|wash/.test(status))return {color:'#c02e3a',weight:5,opacity:0.95,dashArray:'9 5'};
+    if(/limit|restrict|caution|one lane/.test(status))return {color:'#bd7d0d',weight:5,opacity:0.95,dashArray:'6 4'};
+    if(/open/.test(status))return {color:'#267553',weight:4,opacity:0.9};
+    return {color:'#8051a7',weight:4,opacity:0.9};
+  }
+  function poiIcon(properties){
+    const value=String(properties.pointtype||'Information').toLowerCase();
+    const type=/clos|block/.test(value)?'closure':/warn|hazard|danger/.test(value)?'warning':/shelter|reception/.test(value)?'shelter':'info';
+    const mark={closure:'×',warning:'!',shelter:'S',info:'i'}[type];
+    return L.divIcon({className:'evac-poi-icon '+type,html:'<span>'+mark+'</span>',iconSize:[28,28],iconAnchor:[14,14]});
+  }
+  function initOperationalLayers(){
+    const failures=new Set();
+    const updateFailures=()=>$('mapMessage').textContent=failures.size?'Some map information is unavailable: '+Array.from(failures).join(', ')+'.':'';
+    const attach=(layer,name,toggle)=>{
+      $(toggle).addEventListener('change',()=>$(toggle).checked?layer.addTo(view):view.removeLayer(layer));
+      layer.on('requesterror tileerror',()=>{failures.add(name);updateFailures();});
+      layer.on('load',()=>{failures.delete(name);updateFailures();});
+      return layer;
+    };
+    if(C.roadsTilesUrl && L.vectorGrid){
+      view.createPane('countyRoads');view.getPane('countyRoads').style.zIndex=420;view.getPane('countyRoads').style.pointerEvents='none';
+      // Esri tiles also contain label records with unknown geometry type (0).
+      // VectorGrid renders only MVT Point/LineString/Polygon records (1–3).
+      const RoadVectorGrid=L.VectorGrid.Protobuf.extend({
+        _getVectorTilePromise:function(coords){
+          return L.VectorGrid.Protobuf.prototype._getVectorTilePromise.call(this,coords).then(tile=>{
+            Object.values(tile.layers || {}).forEach(layer=>{
+              if(Array.isArray(layer.features))layer.features=layer.features.filter(feature=>[1,2,3].includes(feature.type));
+            });
+            return tile;
+          }).catch(error=>{this.fire('tileerror',{error});return {layers:{}};});
+        }
+      });
+      const roads=new RoadVectorGrid(C.roadsTilesUrl,{
+        pane:'countyRoads',rendererFactory:L.canvas.tile,interactive:false,minZoom:9,maxNativeZoom:21,
+        vectorTileLayerStyles:{
+          Roads:(props,zoom)=>({color:Number(props._symbol)<2?'#52677e':'#81909e',weight:Number(props._symbol)<2?2.2:(zoom>=13?1.5:0.8),opacity:0.9,fill:false}),
+          'County Boundary':[],'Roads/label':[]
+        },attribution:'Roads: La Plata County'
+      }).addTo(view);
+      attach(roads,'County roads','roadsToggle');
+    }else { $('roadsToggle').disabled=true;failures.add('County roads');updateFailures(); }
+    view.createPane('roadImpacts');view.getPane('roadImpacts').style.zIndex=430;
+    const roadInfo=L.esri.featureLayer({url:C.roadClosuresUrl,where:"roadstatus IS NULL OR LOWER(roadstatus) <> 'inactive'",pane:'roadImpacts',style:feature=>roadStyle(feature.properties),onEachFeature:(feature,layer)=>{
+      if(feature.properties.label){const name=document.createElement('span');name.textContent=feature.properties.label;layer.bindTooltip(name,{direction:'top'});}
+    }}).addTo(view);
+    roadInfo.bindPopup(layer=>operationalPopup(layer.feature.properties,'Road information'));
+    attach(roadInfo,'Road information','roadLayerToggle');
+    const pois=L.esri.featureLayer({url:C.evacPoisUrl,where:"pointtype IS NULL OR LOWER(pointtype) <> 'inactive'",pointToLayer:(feature,latlng)=>L.marker(latlng,{icon:poiIcon(feature.properties),title:String(feature.properties.label || feature.properties.pointtype || 'Evacuation information')}),onEachFeature:(feature,layer)=>{
+      if(feature.properties.label){const name=document.createElement('span');name.textContent=feature.properties.label;layer.bindTooltip(name,{direction:'top'});}
+    }}).addTo(view);
+    pois.bindPopup(layer=>operationalPopup(layer.feature.properties,'Evacuation information'));
+    attach(pois,'EvacPOIs','poiLayerToggle');
+    operationalLayers=[roadInfo,pois];
   }
   function mapFailure(message){
     const loading=$('mapLoading');loading.hidden=false;loading.replaceChildren();
@@ -227,19 +289,12 @@
       console.warn('NWS alerts:',err);$('nwsState').dataset.error='true';$('nwsState').textContent=lastNwsSuccess?'NWS refresh failed. Previously loaded bulletins may be out of date; check NWS Grand Junction. Last successful check: '+localTime(lastNwsSuccess)+'.':'NWS alerts are temporarily unavailable. Check NWS Grand Junction for current warnings.';
     }finally{nwsBusy=false;}
   }
-  async function loadPastIncidents(){
-    try{
-      const rows=await json('pastincident.json');if(!Array.isArray(rows))throw new Error('Unexpected history response');
-      rows.sort((a,b)=>new Date(b.liftedDate||b.startDate||0)-new Date(a.liftedDate||a.startDate||0));
-      $('pastIncidentsTable').innerHTML=rows.length?'<table class="history-table"><thead><tr><th>Incident</th><th>Start date</th><th>Evacuations lifted</th></tr></thead><tbody>'+rows.map(row=>'<tr><td>'+esc(row.name||'—')+'</td><td>'+esc(row.startDate||'—')+'</td><td>'+esc(row.liftedDate||'—')+'</td></tr>').join('')+'</tbody></table>':'No past incidents recorded.';
-    }catch(_){$('pastIncidentsTable').textContent='Past incidents are temporarily unavailable.';}
-  }
   async function refreshAll(){
     $('refreshAll').disabled=true;
-    try{await Promise.allSettled([refreshIncidents(),refreshNws()]);}finally{$('refreshAll').disabled=false;}
+    try{operationalLayers.forEach(layer=>layer.refresh());await Promise.allSettled([refreshIncidents(),refreshNws()]);}finally{$('refreshAll').disabled=false;}
   }
   $('refreshAll').addEventListener('click',refreshAll);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshAll();});
   setInterval(()=>{if(!document.hidden)refreshAll();},C.refreshMs);
-  initMap();refreshNws();loadPastIncidents();
+  initMap();refreshNws();
 })();

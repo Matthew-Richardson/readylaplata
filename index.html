@@ -40,34 +40,22 @@
 <a href="#main-content" class="skip-nav">Skip to main content</a>
 <div class="home-shell">
   <div id="siteBanner" class="site-banner"></div>
-<header class="brand-banner" role="banner">
-          <div class="brand-row">
-            <div class="brand-group">
-              <img src="logo.png" alt="La Plata County Logo" class="header-logo" width="160" height="auto" loading="eager" fetchpriority="high" decoding="async">
-              <div class="brand-text">
-                <h1 class="site-name">ReadyLaPlata</h1>
-                <div class="site-subtitle">Incidents &amp; Public Safety Map</div>
-              </div>
-            </div>
-            <nav class="banner-nav" aria-label="Site navigation">
-              <div class="nav-buttons">
-                <button id="infoButton" class="nav-btn" type="button">
+<header class="home-brand-banner" role="banner">
+  <div class="home-brand-group">
+    <img src="logo.png" alt="La Plata County Logo" class="home-brand-logo" width="136" height="48">
+    <div><h1 class="home-site-name">ReadyLaPlata</h1><p class="home-site-subtitle">Incidents &amp; Public Safety Map</p></div>
+  </div>
+  <div class="home-header-actions"><nav class="home-brand-nav" aria-label="Site navigation"><button id="infoButton" class="home-nav-btn" type="button">
                   <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                   <span>Information</span>
-                </button>
-                <button id="announcementAlertBtn" class="nav-btn" type="button" aria-label="View county announcements">Updates</button>
-                <button id="coderedButton" class="nav-btn" type="button">
+                </button><button id="coderedButton" class="home-nav-btn" type="button">
                   <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                   <span>LPC Alerts</span>
-                </button>
-              </div>
-              <a href="tel:+19703858700" class="call-center-link">
+                </button><button id="announcementAlertBtn" class="home-nav-btn" type="button" aria-label="View county announcements">Updates</button></nav><a href="tel:+19703858700" class="home-call-link">
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                 <span><span class="call-label">Call Center</span><span class="call-number">(970) 385-8700</span></span>
-              </a>
-            </nav>
-          </div>
-        </header>
+              </a></div>
+</header>
   <main id="main-content">
     <section class="overview-card" aria-labelledby="mapTitle">
       <div class="overview-heading">
@@ -91,14 +79,18 @@
             <button id="mapResetBtn" class="home-btn" type="button">County view</button>
             <button id="myLocationBtn" class="home-btn" type="button">My location</button>
             <button id="mapFullscreenBtn" class="home-btn" type="button" aria-pressed="false">Expand map</button>
-            <label id="roadLayerControl" hidden><input id="roadLayerToggle" type="checkbox" checked> Road closures</label>
+            <label><input id="roadsToggle" type="checkbox" checked> Roads</label>
+            <label><input id="roadLayerToggle" type="checkbox" checked> Road information</label>
+            <label><input id="poiLayerToggle" type="checkbox" checked> EvacPOIs</label>
           </div>
           <p id="mapMessage" class="map-message" role="status"></p>
           <div class="home-legend" aria-label="Zone colors">
             <span><i style="background:#fff36a;border-color:#967800"></i>Set</span>
             <span><i style="background:#41f56e;border-color:#15803d"></i>Go</span>
-            <span><i style="background:#b79ae8;border-color:#7140ad"></i>Shelter</span>
+            <span><i style="background:#8dc8f8;border-color:#1e6eb6"></i>Shelter</span>
+            <span><i class="access-hatch"></i>Access Impact Area</span>
             <span><i style="background:#b8bec7;border-color:#667180"></i>Planning / All clear</span>
+            <span><i class="road-line"></i>Road impact</span><span><i class="poi-key">i</i>EvacPOIs</span>
           </div>
           <p class="map-footnote">Zone colors describe the mapped status. Review the incident details and follow official instructions. Planning is not a protective-action order.</p>
         </div>
@@ -111,7 +103,6 @@
       <div id="nwsAlerts" class="nws-alerts"></div>
       <p id="nwsUpdated" class="home-timestamp">Source: National Weather Service · Times shown in Mountain Time</p>
     </section>
-    <details class="history-card"><summary>Past incidents</summary><div id="pastIncidentsTable" class="history-body">Loading past incidents…</div><p class="map-footnote">Even after evacuations are lifted, emergency personnel may still be active in the area. Follow posted signs and instructions.</p></details>
   </main>
   <footer class="home-footer"><p>La Plata County Office of Emergency Management · For immediate emergencies, call 911.</p><button id="reopenWelcome" class="home-btn" type="button">Preparedness &amp; map information</button></footer>
 </div>
@@ -175,6 +166,7 @@
               </div>
     <div class="welcome-extra">
       <section class="welcome-status shelter"><h3>Shelter · Shelter in place</h3><p>Remain inside or move indoors when instructed. Review the incident details for the specific protective actions to take.</p></section>
+      <section class="welcome-status access"><h3>Access Impact Area · Road access affected</h3><p>Purple hatching identifies an area affected by road closures or access limitations. It is not a shelter-in-place or evacuation order. Review incident details for limited access, no road access, affected roads and current instructions.</p></section>
       <section class="welcome-status planning"><h3>Planning · Grey map areas</h3><p>Planning, all-clear and other informational areas use grey. Planning does not mean an evacuation or shelter order is in effect. Check the incident’s status and instructions.</p></section>
     </div>
     <button id="welcomeAlerts" class="home-btn primary" type="button">Sign up for LPC Alerts</button>
@@ -265,6 +257,7 @@
 <script src="zone-status.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.vectorgrid@1.3.0/dist/Leaflet.VectorGrid.bundled.js"></script>
 <script src="home-config.js"></script>
 <script src="home.js" defer></script>
 </body>

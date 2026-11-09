@@ -330,7 +330,8 @@
     const STATUS_DATA = {
       SET: { label: 'SET - Pre-Evacuation', color: '#fff36a', text: 'Voluntary Evacuation;<br>Evacuation orders are likely' },
       GO: { label: 'GO - Evacuate Now', color: '#41f56e', text: '<strong>LEAVE NOW.</strong> Immediate threat to life.<br>This area is closed to public access.' },
-      SHELTER: { label: 'SHELTER - Shelter in Place', color: '#b79ae8', text: 'Remain inside or move indoors when instructed. Follow the specific instructions for this incident.' },
+      SHELTER: { label: 'SHELTER - Shelter in Place', color: '#8dc8f8', text: 'Remain inside or move indoors when instructed. Follow the specific instructions for this incident.' },
+      ACCESS: { label: 'Access Impact Area', color: '#d9c5f4', text: 'Road access is affected. Review incident details for access conditions, affected roads and current instructions. This designation is not a shelter-in-place or evacuation order.' },
       PLANNING: { label: 'Planning / All clear', color: '#b8bec7', text: 'Informational areas. Planning is not a protective-action order. Review the actual zone status and incident instructions.' }
     };
 
@@ -373,7 +374,7 @@
 
       const boxClass = statusCode === 'GO' ? ' evac-box-go' : statusCode === 'SET' ? ' evac-box-set' : '';
 
-      return `<div class="evac-box${boxClass}" style="background:${data.color}">
+      return `<div class="evac-box${boxClass}" style="--status-accent:${data.color}">
         <div class="evac-title">${data.label}</div>
         <div class="evac-body">
           <div>The following zones are under ${statusCode} status for <strong>${INCIDENT ? escHTML(INCIDENT) : 'this incident'}</strong>.</div>
@@ -429,10 +430,11 @@
         }
 
         if (data.exceededTransferLimit) throw new Error('The zone list is incomplete. Please use the map and refresh.');
-        const groups = {SET:[],GO:[],SHELTER:[],PLANNING:[]};
+        const groups = {SET:[],GO:[],SHELTER:[],ACCESS:[],PLANNING:[]};
         for (const f of data.features) groups[ReadyLaPlataZones.key(f.attributes.STATUS).toUpperCase()].push(f);
         DOM.evacRow.innerHTML = buildBox('SET',groups.SET) + buildBox('GO',groups.GO)
           + (groups.SHELTER.length ? buildBox('SHELTER',groups.SHELTER) : '')
+          + (groups.ACCESS.length ? buildBox('ACCESS',groups.ACCESS) : '')
           + (groups.PLANNING.length ? buildBox('PLANNING',groups.PLANNING) : '');
       } catch (err) {
         console.error('Error loading evacuation zones:', err);
