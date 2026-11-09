@@ -13,7 +13,7 @@
   let countyBounds = C.countyBounds;
   let chosenIncident = new URLSearchParams(location.search).get('incident') || '';
   let firstLoad = true, announcementInitialized = false;
-  let operationalLayers = [], currentZoneFeatures = [];
+  let operationalLayers = [], currentZoneFeatures = [], currentAddressMatch=null, addressRequestId=0;
   const welcome = $('welcomeDialog');
   function safeStorage(storage, method, key, value) { try { return storage[method](key,value); } catch (_) { return null; } }
   function initAnnouncement() {
@@ -34,7 +34,7 @@
     safeStorage(sessionStorage,'setItem','readylpc-zone-info-seen-v2','1');
     initAnnouncement();
   });
-  $('infoButton').addEventListener('click',openWelcome);
+  $('infoButton').addEventListener('click',()=>{resetOverview();openWelcome();});
   $('welcomeAlerts').addEventListener('click',()=>{closeWelcome();$('coderedButton').click();});
   R.initCoderedOverlay(DOM); R.initCallerIdOverlay(DOM); R.initDrillBanner(DOM);
   if (!safeStorage(localStorage,'getItem','readylpc-zone-info-dismissed-v2') && !safeStorage(sessionStorage,'getItem','readylpc-zone-info-seen-v2')) openWelcome();
@@ -188,7 +188,9 @@
       renderIncidentList();lastIncidentSuccess=Date.now();
       $('incidentState').dataset.error='false';$('incidentState').hidden=incidents.size>0;$('incidentState').textContent=incidents.size?'':'No incidents are currently shown in the county zone layer.';
       $('lastLoaded').textContent='Updated '+localTime(lastIncidentSuccess);
+      if(currentAddressMatch)renderAddressResult();
       if(firstLoad && chosenIncident)await focusIncident(chosenIncident);
+      else if(firstLoad)requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20]});});
       firstLoad=false;
     } catch(err){
       console.error('Incidents:',err);$('incidentState').hidden=false;$('incidentState').dataset.error='true';
@@ -200,7 +202,7 @@
     try {
       view=L.map('viewDiv',{dragging:true,touchZoom:true,doubleClickZoom:true,boxZoom:true,keyboard:true,scrollWheelZoom:true,zoomSnap:0.25}).fitBounds(countyBounds,{padding:[20,20]});
       syncMapInteraction();
-      new ResizeObserver(()=>{view.invalidateSize();if(!chosenIncident)view.fitBounds(countyBounds,{padding:[16,16]});}).observe($('viewDiv'));
+      new ResizeObserver(()=>view.invalidateSize({pan:false})).observe($('viewDiv'));
       view.createPane('zoneLabels');view.getPane('zoneLabels').style.zIndex=480;view.getPane('zoneLabels').style.pointerEvents='none';
       view.createPane('incidentPins');view.getPane('incidentPins').style.zIndex=675;
       zoneLabelLayer=L.layerGroup().addTo(view);
@@ -343,36 +345,72 @@
       return true;
     });
   }
+  function setIncidentsMinimized(minimized){
+    const panel=$('incidentList').closest('.incident-summary-panel');
+    panel.classList.toggle('is-minimized',minimized);
+    $('incidentListToggle').setAttribute('aria-expanded',String(!minimized));
+    $('incidentListToggle').textContent=minimized?'Show incidents':'Hide incidents';
+  }
+  $('incidentListToggle').addEventListener('click',()=>setIncidentsMinimized($('incidentList').closest('.incident-summary-panel').classList.contains('is-minimized')?false:true));
+  function resetOverview(){
+    addressRequestId++;currentAddressMatch=null;chosenIncident='';
+    $('addressSearch').value='';$('addressSearch').blur();$('addressForm').querySelector('button').disabled=false;
+    $('addressIncidentResult').replaceChildren();$('addressIncidentResult').hidden=true;$('mapMessage').textContent='';
+    setIncidentsMinimized(false);$('incidentListToggle').hidden=true;
+    $('incidentList').scrollLeft=0;document.querySelectorAll('.incident-item').forEach(el=>el.classList.remove('is-selected'));
+    $('mapOptionsToggle').setAttribute('aria-expanded','false');$('mapOptionsToggle').closest('.overview-card').classList.remove('is-options-open');
+    for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle']){if(!$(id).checked){$(id).checked=true;$(id).dispatchEvent(new Event('change'));}}
+    const url=new URL(location.href);url.searchParams.delete('incident');history.replaceState(null,'',url);
+    expandMap(false);
+    if(view){view.closePopup();requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20]});});}
+  }
   function addressIncidentContent(match){
     const content=document.createElement('div');
-    const address=document.createElement('strong');address.textContent=match.address;content.appendChild(address);
-    const names=new Set(currentZoneFeatures.filter(feature=>zoneContainsAddress(feature.geometry,match.location.x,match.location.y)).map(feature=>String(feature.properties[zoneFields.incident]||'').trim()).filter(Boolean));
+    const heading=document.createElement('div');heading.className='address-result-heading';
+    const title=document.createElement('div'),label=document.createElement('span');label.className='address-result-label';label.textContent='Your address';
+    const address=document.createElement('strong');address.textContent=match.address;title.append(label,address);
+    const reset=document.createElement('button');reset.type='button';reset.className='home-btn';reset.textContent='Reset';reset.addEventListener('click',resetOverview);heading.append(title,reset);content.appendChild(heading);
+    const matches=currentZoneFeatures.filter(feature=>zoneContainsAddress(feature.geometry,match.location.x,match.location.y));
     const message=document.createElement('p');
-    message.textContent=!lastIncidentSuccess?'Incident zones are still loading. Search again once loading finishes.':names.size?'This address is within '+(names.size===1?'an incident zone.':'overlapping incident zones.')+' Open the incident for instructions.':'No current incident zone is shown at this address. Check official updates for changing conditions.';
+    message.textContent=!lastIncidentSuccess?'Incident zones are still loading. Results will update when loading finishes.':matches.length?'Your address is within '+matches.length+' mapped zone'+(matches.length===1?'':'s')+'. Review every status below.':'No current incident zone is shown at this address. Check official updates for changing conditions.';
     content.appendChild(message);
-    for(const name of incidents.keys()){
-      if(!names.has(name))continue;
-      const link=document.createElement('a');link.className='home-btn primary';link.href='evac.html?incident='+encodeURIComponent(name);link.textContent='Open incident: '+name;content.appendChild(link);
+    const groups=document.createElement('div');groups.className='address-incident-groups';
+    for(const name of [...incidents.keys(),'']){
+      const zones=matches.filter(feature=>String(feature.properties[zoneFields.incident]||'').trim()===name);if(!zones.length)continue;
+      zones.sort((a,b)=>statusPriority(statusName(a))-statusPriority(statusName(b)));
+      const group=document.createElement('section');group.className='address-incident-group';
+      const title=document.createElement('h3');title.textContent=name||'Zones without an assigned incident';group.appendChild(title);
+      const list=document.createElement('ul');list.className='address-zone-list';
+      for(const feature of zones){
+        const status=Z.key(statusName(feature)),style=Z.styles[status];
+        const item=document.createElement('li'),badge=document.createElement('span');badge.className='status-badge';badge.textContent=style.label;badge.style.background=style.fill;badge.style.borderColor=style.stroke;badge.style.color=style.text;if(status==='Access')badge.classList.add('access-hatch');
+        const zone=document.createElement('span');zone.textContent=String((zoneFields.zone && feature.properties[zoneFields.zone])||'Unnamed zone');item.append(badge,zone);list.appendChild(item);
+      }
+      const link=document.createElement('a');link.className='home-btn primary';link.href='evac.html?incident='+encodeURIComponent(name);link.textContent='Open incident →';
+      group.appendChild(list);if(name)group.appendChild(link);groups.appendChild(group);
     }
+    content.appendChild(groups);
+    const note=document.createElement('p');note.className='address-result-note';note.textContent='Address location is approximate. Confirm your zone and follow incident instructions.';content.appendChild(note);
     return content;
+  }
+  function renderAddressResult(){
+    if(!currentAddressMatch)return;
+    $('addressIncidentResult').replaceChildren(addressIncidentContent(currentAddressMatch));$('addressIncidentResult').hidden=false;
   }
   $('addressForm').addEventListener('submit',async event=>{
     event.preventDefault();if(!view)return;
     const text=$('addressSearch').value.trim();if(!text)return;
     $('addressSearch').blur();
+    const requestId=++addressRequestId;
     const button=$('addressForm').querySelector('button');button.disabled=true;
-    $('addressIncidentResult').hidden=true;
     try {
       const data=await json('https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?'+new URLSearchParams({SingleLine:text,f:'json',outSR:'4326',maxLocations:'1',searchExtent:[countyBounds[0][1],countyBounds[0][0],countyBounds[1][1],countyBounds[1][0]].join(',')}));
+      if(requestId!==addressRequestId)return;
       const match=data.candidates?.[0];
       if(!match){$('mapMessage').textContent='No address match was found in La Plata County. Try the full street address and city.';return;}
-      view.setView([match.location.y,match.location.x],15);
-      const content=addressIncidentContent(match);
-      $('addressIncidentResult').replaceChildren(content);$('addressIncidentResult').hidden=false;
-      L.popup().setLatLng([match.location.y,match.location.x]).setContent(content.cloneNode(true)).openOn(view);
-      $('mapMessage').textContent='Address location is approximate. Confirm the mapped zone and incident instructions.';
-    }catch(_){$('mapMessage').textContent='Address search is unavailable. You can browse the map or try again.';}
-    finally {button.disabled=false;}
+      view.closePopup();currentAddressMatch=match;renderAddressResult();$('incidentListToggle').hidden=false;setIncidentsMinimized(true);$('mapMessage').textContent='';
+    }catch(_){if(requestId===addressRequestId)$('mapMessage').textContent='Address search is unavailable. You can browse the map or try again.';}
+    finally {if(requestId===addressRequestId)button.disabled=false;}
   });
 
   async function refreshAll(){
