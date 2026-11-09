@@ -261,11 +261,6 @@
           <button class="btn" id="cancelBtn">Cancel</button>
           <button class="btn danger" id="deleteBtn">Delete</button>
         </div>
-        <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line);">
-          <div class="section-label">Geometry checker · advisory only</div>
-          <button class="btn" id="geoCheckBtn">Check geometry</button>
-          <div id="geoCheckResults" class="hint" role="status" aria-live="polite" style="white-space:pre-line;">Run a check to review the current draft. Results never block Save.</div>
-        </div>
       </div>
 
       <!-- Alert workflow -->
@@ -452,7 +447,6 @@ require([
   let mergeMembers = [];
   let mergeBusy = false;
   let selectionEpoch = 0;
-  let geometryCheckEpoch = 0;
 
   function toast(msg, kind){
     toastEl.textContent = msg;
@@ -580,7 +574,6 @@ require([
     });
     sketchVM.on("create", e => { if (e.state === "complete") onSketchComplete(e.graphic); });
     sketchVM.on(["create", "update", "undo", "redo"], () => {
-      invalidateGeometryCheck();
       $("undoBtn").disabled = !sketchVM.canUndo();
       $("redoBtn").disabled = !sketchVM.canRedo();
     });
@@ -648,10 +641,6 @@ require([
     $("splitBtn").onclick = () => startPartition("split");
     $("carveBtn").onclick = () => startPartition("carve");
     $("eraseBtn").onclick = () => startPartition("erase");
-    $("geoCheckBtn").onclick = checkGeometry;
-    $("trimOverlaps").onchange = invalidateGeometryCheck;
-    fieldsEl.addEventListener("input", invalidateGeometryCheck);
-    fieldsEl.addEventListener("change", invalidateGeometryCheck);
     $("editDrawingBtn").onclick = editVertices;
     $("mergeBtn").onclick = startMerge;
     $("undoBtn").onclick = () => { if (!saving && sketchVM.canUndo()) sketchVM.undo(); };
@@ -1014,111 +1003,6 @@ require([
     return remainder;
   }
 
-  function invalidateGeometryCheck(){
-    geometryCheckEpoch++;
-    $("geoCheckResults").textContent = "Draft changed or not yet checked. Run Check geometry for current results. Results never block Save.";
-  }
-
-  function areaSquareMeters(geometry){
-    const sr = geometry.spatialReference;
-    const geodesic = sr && (sr.isWGS84 || sr.isWebMercator || [4326,3857,102100,102113].includes(sr.wkid));
-    return Math.abs(geodesic ? geometryEngine.geodesicArea(geometry,"square-meters") : geometryEngine.planarArea(geometry,"square-meters"));
-  }
-
-  function signedRingArea(ring){
-    let sum = 0;
-    for (let i=0;i<ring.length;i++){
-      const a = ring[i], b = ring[(i+1)%ring.length];
-      sum += a[0]*b[1] - b[0]*a[1];
-    }
-    return sum / 2;
-  }
-
-  function geometryMetrics(geometry){
-    const simple = geometryEngine.isSimple(geometry);
-    let smallParts = 0, holes = 0;
-    // ArcGIS polygon outer rings are clockwise, inner rings counterclockwise.
-    // Only count rings as holes / parts when topology is already simple.
-    if (simple) for (const ring of geometry.rings || []){
-      const signed = signedRingArea(ring);
-      if (signed > 0) holes++;
-      if (signed < 0){
-        const part = geometry.clone();
-        part.rings = [ring];
-        if (areaSquareMeters(part) < 100) smallParts++;
-      }
-    }
-    return {simple,smallParts,holes};
-  }
-
-  function checkerDrafts(){
-    if (!selected) return [];
-    if (mode === "split") return splitParts || [];
-    if (mode === "carve"){
-      const {zone,remainder} = carveGeometry(sourceZone.geometry, selected.geometry);
-      return [zone,remainder];
-    }
-    return [selected.geometry];
-  }
-
-  // Read-only diagnostics: this function never changes controls, geometry, or
-  // save state. Failures and warnings are displayed only in the results panel.
-  async function checkGeometry(){
-    const epoch = ++geometryCheckEpoch;
-    const result = $("geoCheckResults");
-    const notes = [];
-    let reader;
-    try {
-      const drafts = checkerDrafts();
-      if (!drafts.length){
-        result.textContent = "Finish drawing or select a zone to check. Save does not require a geometry check.";
-        return;
-      }
-      result.textContent = "Checking current draft… You can still Save.";
-      const metrics = drafts.map(geometryMetrics);
-      const invalid = metrics.filter(m=>!m.simple).length;
-      const small = metrics.reduce((sum,m)=>sum+m.smallParts,0);
-      notes.push(invalid ? `Review: ${invalid} draft shape(s) have self-intersections or other topology issues.` : "Draft topology: no self-intersections or other simplicity issues detected.");
-      notes.push(small ? `Review: ${small} small polygon part(s) under 100 m²; possible slivers.` : "Small parts: none under 100 m² detected.");
-      const footprint = geometryEngine.union(drafts);
-      if (!footprint) throw new Error("The draft coverage could not be combined for neighbor checks.");
-      const ignored = [selected.attributes[oidField],sourceZone && sourceZone.attributes[oidField],...mergeMembers.map(m=>m.original.attributes[oidField])].filter(id=>id!=null);
-      const incident = findField(/incident/i);
-      const attrs = readForm();
-      const neighbors = [], overlapping = [];
-      reader = new FeatureLayer({url:layer.url,gdbVersion:layer.gdbVersion,definitionExpression:origDef});
-      const ids = await reader.queryObjectIds({where:"1=1",geometry:footprint.extent || footprint,spatialRelationship:"intersects"}) || [];
-      if (epoch !== geometryCheckEpoch) return;
-      for (let offset=0;offset<ids.length;offset+=100){
-        const batch = ids.slice(offset,offset+100);
-        const fs = await reader.queryFeatures({objectIds:batch,outFields:["*"],returnGeometry:true,outSpatialReference:footprint.spatialReference});
-        if (epoch !== geometryCheckEpoch) return;
-        if (fs.exceededTransferLimit || fs.features.length !== batch.length)
-          throw new Error("Some neighboring zones could not be read; neighbor checks are incomplete.");
-        for (const f of fs.features){
-          if (ignored.includes(f.attributes[oidField])) continue;
-          if (incident && String(f.attributes[incident.name]??"").trim() !== String(attrs[incident.name]??"").trim()) continue;
-          neighbors.push(f.geometry);
-          const shared = geometryEngine.intersect(footprint,f.geometry);
-          if (shared && polygonArea(shared)>0) overlapping.push(zoneLabel(f));
-        }
-      }
-      notes.push(overlapping.length
-        ? `Review: overlaps with ${overlapping.length} other zone(s): ${overlapping.slice(0,8).join(", ")}${overlapping.length>8 ? ", …" : ""}. ${$("trimOverlaps").checked && mode!=="erase" ? "Overlap removal is enabled for Save." : "Overlap removal is off for this operation."}`
-        : "Other zones: no area overlaps found in the same incident and layer.");
-      const coverage = geometryEngine.union([footprint,...neighbors]);
-      if (!coverage) throw new Error("Local coverage could not be checked for enclosed holes.");
-      const coverageMetrics = geometryMetrics(coverage);
-      const holes = coverageMetrics.holes;
-      notes.push(!coverageMetrics.simple ? "Local coverage topology needs review; enclosed-hole check is incomplete."
-        : holes ? `Review: ${holes} enclosed hole(s) in local coverage. These may be intentional, including erased areas.` : "Local coverage: no enclosed holes detected.");
-      notes.push("Open gaps and intended coverage boundaries are not assessed. Diagnostics show the current draft before optional overlap removal.");
-      if (epoch===geometryCheckEpoch) result.textContent = notes.join("\n\n") + "\n\nAdvisory only — Save remains available.";
-    } catch(err){
-      if (epoch===geometryCheckEpoch) result.textContent = [...notes,`Check incomplete: ${err.message || err}`,"Advisory only — you can still Save."].join("\n\n");
-    } finally { if (reader) reader.destroy(); }
-  }
-
   function previewSymbol(i){
     return { type: "simple-fill", color: i ? [242,196,61,0.35] : [31,111,194,0.25],
       outline: { color: i ? "#f2c43d" : "#5ca9ef", width: 2 } };
@@ -1226,7 +1110,6 @@ require([
   }
 
   function updateMergePreview(){
-    invalidateGeometryCheck();
     const features = mergeMembers.map(m => m.feature);
     const union = geometryEngine.union(features.map(f => f.geometry));
     if (!union || polygonArea(union) <= 0) throw new Error("The selected zones could not be merged.");
@@ -1460,7 +1343,6 @@ require([
     mode = "idle"; selected = null;
     sourceZone = null; splitParts = null; partitionDrawing = null;
     originalFeature = null; mergeMembers = []; mergeBusy = false; selectionEpoch++;
-    invalidateGeometryCheck();
     $("mergeSelection").style.display = "none";
     $("mergeSelection").replaceChildren();
     $("editDrawingBtn").style.display = "none";
