@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Evac Zone Editor</title>
+
+<link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/light/main.css" />
+<script src="https://js.arcgis.com/4.30/"></script>
+
+<style>
+  :root {
+    --bg:        #0c1219;
+    --panel:     #14202e;
+    --panel-2:   #1c2c3e;
+    --line:      #2b3d52;
+    --ink:       #e8eef5;
+    --ink-dim:   #93a4b8;
+    --accent:    #1f6fc2;   /* county blue */
+    --accent-hi: #2f86db;   /* lighter blue for hover/borders */
+    --accent-ink:#ffffff;
+    --danger:    #e5564e;
+    --ok:        #4fb477;
+    --r: 6px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; }
+  body {
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #app { display:grid; grid-template-columns: 320px 1fr; height:100%; }
+  @media (max-width: 720px){
+    #app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    #panel { max-height: 45vh; overflow:auto; }
+  }
+
+  /* ---------- left panel ---------- */
+  #panel { background: var(--panel); border-right: 1px solid var(--line); display:flex; flex-direction:column; }
+  .head { padding: 12px 14px; background:#fff; border-bottom: 3px solid var(--accent); }
+  .head .brand { display:flex; align-items:center; gap:10px; }
+  .head .seal { height: 40px; width:auto; flex:0 0 auto; }
+  .head .org { font-size: 15px; font-weight: 800; color:#13283d; line-height: 1.05; }
+  .head .org-sub { font-size: 11px; color:#5c6b7c; font-weight:600; }
+  .head .tool-name {
+    margin-top: 10px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700;
+  }
+  .head .layer { margin-top: 2px; font-size: 12.5px; font-weight: 600; color:#5c6b7c; }
+
+  .body { padding: 14px 16px; overflow:auto; flex:1; }
+  .section-label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-dim); margin: 4px 0 8px; }
+
+  /* ---------- alert workflow ---------- */
+  .flow { margin-top: 24px; padding-top: 6px; border-top: 1px solid var(--line); }
+  .flow-toggle {
+    display:flex; align-items:center; justify-content:space-between; width:100%;
+    background:none; border:none; cursor:pointer; padding:12px 0 4px; color:inherit;
+  }
+  .flow-toggle .section-label { margin:0; }
+  .flow-toggle .chev { color:var(--ink-dim); font-size:12px; transition:transform .15s; }
+  .flow.collapsed .chev { transform:rotate(-90deg); }
+  .flow.collapsed .flow-steps { display:none; }
+  .flow-steps { padding-top: 12px; }
+  .flow .step { display:flex; gap:11px; position:relative; padding-bottom: 16px; }
+  .flow .step:not(:last-child)::before {
+    content:""; position:absolute; left:12px; top:27px; bottom:-1px; width:2px; background:var(--line);
+  }
+  .flow .num {
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%; z-index:1;
+    background:var(--panel-2); border:1px solid var(--line);
+    display:grid; place-items:center; font-size:13px; font-weight:700; color:var(--ink-dim);
+  }
+  .flow .step.active .num { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .flow .step-body { flex:1; min-width:0; }
+  .flow .step-title { font-weight:600; font-size:13.5px; color:var(--ink); }
+  .flow .step-sub { font-size:11.5px; color:var(--ink-dim); margin-top:2px; line-height:1.4; }
+  .flow .tag {
+    display:inline-block; margin-top:7px; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--accent-hi); border:1px solid var(--accent-hi); border-radius:4px; padding:1px 6px; font-weight:600;
+  }
+  .flow .links { display:flex; flex-direction:column; gap:6px; margin-top:9px; }
+  .flow a.flink {
+    display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink); text-decoration:none;
+    padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--panel-2); font-weight:500;
+  }
+  .flow a.flink:hover { border-color:var(--accent-hi); color:#fff; }
+  .flow a.flink .sub {
+    flex:0 0 auto; font-size:10px; font-weight:700; color:var(--accent-hi);
+    background:rgba(47,134,219,.14); border-radius:3px; padding:1px 5px;
+  }
+  .flow a.flink .arrow { margin-left:auto; color:var(--ink-dim); font-size:13px; }
+  .flow a.flink:hover .arrow { color:var(--accent-hi); }
+
+  .tools { display:grid; gap: 8px; }
+  .tool {
+    display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+    padding: 11px 12px; border-radius: var(--r); cursor:pointer;
+    background: var(--panel-2); color: var(--ink);
+    border: 1px solid var(--line); font: inherit; font-weight: 500;
+  }
+  .tool:hover { border-color: var(--accent); }
+  .tool[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .tool .k { font-size: 18px; line-height: 1; width: 20px; text-align:center; }
+
+  .hint { color: var(--ink-dim); font-size: 12.5px; margin: 12px 2px 0; min-height: 18px; }
+
+  /* radius row */
+  .radius-row { display:none; gap:8px; margin-top: 10px; }
+  .radius-row.show { display:flex; }
+  .radius-row input { width: 90px; }
+  .radius-row select { width: 90px; }
+
+  /* ---------- attribute form ---------- */
+  #editor { display:none; margin-top: 4px; }
+  #editor.show { display:block; }
+  .field { margin-bottom: 11px; }
+  .field label { display:block; font-size: 11px; letter-spacing:.04em; color: var(--ink-dim); margin-bottom: 4px; text-transform: uppercase; }
+  input, select, textarea {
+    width:100%; padding: 9px 10px; border-radius: var(--r);
+    background: #0e1218; border: 1px solid var(--line); color: var(--ink); font: inherit;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
+
+  .actions { display:flex; gap:8px; margin-top: 14px; flex-wrap: wrap; }
+  .btn { flex:1; min-width: 92px; padding: 10px 12px; border-radius: var(--r); border:1px solid var(--line); cursor:pointer; font: inherit; font-weight:600; background: var(--panel-2); color: var(--ink); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn.danger  { background: transparent; color: var(--danger); border-color: var(--danger); flex: 0 0 auto; min-width: 0; }
+  .btn:disabled { opacity:.4; cursor:default; }
+
+  /* status swatch chooser */
+  .status-opts { display:flex; gap:6px; }
+  .status-opt {
+    flex:1; display:flex; align-items:center; gap:7px; justify-content:center;
+    padding: 9px 6px; border:1px solid var(--line); border-radius: var(--r);
+    background: var(--panel-2); color: var(--ink); font: inherit; font-weight:500; cursor:pointer;
+  }
+  .status-opt:hover { border-color: var(--accent-hi); }
+  .status-opt[aria-pressed="true"] { border-color: var(--accent-hi); box-shadow: inset 0 0 0 1px var(--accent-hi); }
+  .status-opt .sw { width:14px; height:14px; border-radius:3px; border:1px solid rgba(255,255,255,.3); flex:0 0 auto; }
+
+  /* incident row + refresh */
+  .incident-row { display:flex; gap:6px; }
+  .incident-row select { flex:1; }
+  .icon-btn {
+    flex:0 0 auto; width:38px; border:1px solid var(--line); border-radius: var(--r);
+    background: var(--panel-2); color: var(--ink-dim); cursor:pointer; font-size:15px;
+  }
+  .icon-btn:hover { color: var(--ink); border-color: var(--accent-hi); }
+
+  /* small field hint */
+  .fhint { font-size: 11.5px; color: var(--ink-dim); margin-top: 5px; line-height:1.35; }
+
+  /* measurement tool buttons */
+  .measure-tools { display:flex; gap:6px; padding:8px; }
+  .measure-tools button {
+    padding:7px 11px; border:1px solid #c9ccd1; border-radius:5px; background:#fff;
+    color:#26303c; cursor:pointer; font:13px system-ui; font-weight:500;
+  }
+  .measure-tools button:hover { background:#eef4fb; border-color: var(--accent); }
+
+  /* ---------- map ---------- */
+  #viewDiv { height:100%; width:100%; }
+
+  /* ---------- sign-in gate ---------- */
+  #gate {
+    position: fixed; inset:0; display:none; place-items:center; z-index: 50;
+    background: radial-gradient(120% 120% at 50% 0%, #1a212b 0%, #0c0f14 70%);
+  }
+  #gate.show { display:grid; }
+  .card { text-align:center; padding: 36px 40px; }
+  .card h2 { margin: 0 0 6px; font-size: 20px; }
+  .card p { color: var(--ink-dim); margin: 0 0 22px; max-width: 320px; }
+  .card .btn { display:inline-block; padding: 11px 28px; }
+  .signin-err { margin-top:16px; color: var(--danger); font-size:12.5px; max-width:320px; line-height:1.45; }
+
+  /* ---------- toast ---------- */
+  #toast {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--panel-2); color: var(--ink); border:1px solid var(--line);
+    padding: 10px 16px; border-radius: var(--r); opacity:0; transition: .2s; z-index: 60; font-size: 13px;
+    border-left: 3px solid var(--accent);
+  }
+  #toast.show { opacity:1; transform: translateX(-50%) translateY(0); }
+  #toast.err  { border-left-color: var(--danger); }
+  #toast.ok   { border-left-color: var(--ok); }
+
+  .status { padding: 10px 16px; border-top:1px solid var(--line); color: var(--ink-dim); font-size: 12px; }
+  .status b { color: var(--ink); font-weight:600; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <aside id="panel">
+    <div class="head">
+      <div class="brand">
+        <img class="seal" src="https://cms9files.revize.com/laplata/_assets_/images/logo.png"
+             alt="La Plata County" onerror="this.style.display='none'" />
+        <div class="brand-text">
+          <div class="org">La Plata County</div>
+          <div class="org-sub">Office of Emergency Management</div>
+        </div>
+      </div>
+      <div class="tool-name">Evacuation Zone Editor</div>
+      <div class="layer" id="layerName">Loading…</div>
+    </div>
+
+    <div class="body">
+      <div id="layerPickWrap" style="display:none; margin-bottom:16px;">
+        <div class="section-label">Layer to edit</div>
+        <select id="layerPick" aria-label="Layer to edit"></select>
+      </div>
+
+      <div class="section-label">Add a zone</div>
+      <div class="tools">
+        <button class="tool" id="tPolygon" aria-pressed="false">
+          <span class="k">▱</span> Draw polygon
+        </button>
+        <button class="tool" id="tPoint" aria-pressed="false">
+          <span class="k">◎</span> Point + radius
+        </button>
+      </div>
+
+      <div class="radius-row" id="radiusRow">
+        <input type="number" id="radiusVal" value="0.5" min="0.01" step="0.1" aria-label="Buffer radius" />
+        <select id="radiusUnit" aria-label="Radius unit">
+          <option value="miles" selected>miles</option>
+          <option value="kilometers">km</option>
+          <option value="feet">feet</option>
+          <option value="meters">meters</option>
+        </select>
+      </div>
+
+      <p class="hint" id="hint">Pick a tool, or click an existing zone to edit it.</p>
+
+      <div id="editor">
+        <div class="section-label" id="editorTitle" style="margin-top:18px;">Zone attributes</div>
+        <div id="fields"></div>
+        <div class="actions">
+          <button class="btn primary" id="saveBtn">Save</button>
+          <button class="btn" id="reshapeBtn">Reshape</button>
+          <button class="btn" id="cancelBtn">Cancel</button>
+          <button class="btn danger" id="deleteBtn">Delete</button>
+        </div>
+      </div>
+
+      <!-- Alert workflow -->
+      <div class="flow">
+        <button class="flow-toggle" id="flowToggle" type="button" aria-expanded="true">
+          <span class="section-label">Alert workflow</span>
+          <span class="chev">▾</span>
+        </button>
+
+        <div class="flow-steps" id="flowSteps">
+          <div class="step active">
+            <div class="num">1</div>
+            <div class="step-body">
+              <div class="step-title">Edit evacuation zones</div>
+              <div class="step-sub">Draw, buffer, and set status here.</div>
+              <span class="tag">You are here</span>
+              <div class="links">
+                <a class="flink" href="https://readylaplata.org" target="_blank" rel="noopener">
+                  <span class="sub">1a</span> Verify zones on ReadyLaPlata <span class="arrow">↗</span>
+                </a>
+                <a class="flink" href="https://gis.lpcgov.org/readylpc/staff/editor.html" target="_blank" rel="noopener">
+                  <span class="sub">1b</span> Update incident resources <span class="arrow">↗</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="num">2</div>
+            <div class="step-body">
+              <div class="step-title">Export &amp; craft alert</div>
+              <div class="step-sub">Export the zone, then write the initial or update message.</div>
+              <div class="links">
+                <a class="flink" href="https://gis.lpcgov.org/readylpc/alert.html" target="_blank" rel="noopener">
+                  ReadyLPC Alert Tool <span class="arrow">↗</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="num">3</div>
+            <div class="step-body">
+              <div class="step-title">Send on Regroup</div>
+              <div class="step-sub">Add the map area, then create the message.</div>
+              <div class="links">
+                <a class="flink" href="https://app.regroup.com/orgs/LPCAlerts/map_regions" target="_blank" rel="noopener">
+                  Map Regions <span class="arrow">↗</span>
+                </a>
+                <a class="flink" href="https://app.regroup.com/orgs/LPCAlerts/messages/new?ad_hoc_message=true" target="_blank" rel="noopener">
+                  New Message <span class="arrow">↗</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status" id="status">Not signed in</div>
+  </aside>
+
+  <div id="viewDiv"></div>
+</div>
+
+<div id="gate">
+  <div class="card">
+    <h2>LPC OEM — Evacuation Zone Editor</h2>
+    <p>Sign in with your ArcGIS Online account to load and edit evacuation zones.</p>
+    <button class="btn primary" id="signInBtn">Sign in</button>
+    <div id="signInErr" class="signin-err"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ------------------------------------------------------------
+   portalUrl      Your org URL, e.g. https://lpcgis.maps.arcgis.com
+   appId          OPTIONAL. Leave blank to use the built-in
+                  username/password sign-in dialog (no app
+                  registration). Only set this if you switch back
+                  to OAuth (see the auth block below).
+
+   Map source:
+   webMapId       AGOL web map item ID. Loads its basemap, extent, and
+                  layers. The tool auto-finds the editable feature
+                  layer(s); a picker appears if there's more than one.
+   editLayerTitle Optional. Pin editing to one layer by exact title.
+
+   featureLayer   Used only if webMapId is left blank — REST URL of a
+                  single evac-zone layer ending in /0.
+   ============================================================ */
+const CONFIG = {
+  appId:          "",
+  portalUrl:      "https://lpcgis.maps.arcgis.com",
+
+  webMapId:       "70dbdef4bf2e4cafbd1f8aa0b8383ddc",
+  editLayerTitle: "",
+
+  // Evac status choices (override any domain on the status field).
+  statusOptions:  ["Planning", "Set", "Go"],
+
+  featureLayer:   "https://services.arcgis.com/XXXX/arcgis/rest/services/EvacZones/FeatureServer/0"
+};
+
+require([
+  "esri/identity/OAuthInfo",
+  "esri/identity/IdentityManager",
+  "esri/Map",
+  "esri/WebMap",
+  "esri/views/MapView",
+  "esri/layers/FeatureLayer",
+  "esri/layers/GraphicsLayer",
+  "esri/widgets/Sketch/SketchViewModel",
+  "esri/widgets/BasemapToggle",
+  "esri/widgets/LayerList",
+  "esri/widgets/Expand",
+  "esri/widgets/Measurement",
+  "esri/widgets/Search",
+  "esri/geometry/geometryEngine",
+  "esri/Graphic"
+], (OAuthInfo, esriId, Map, WebMap, MapView, FeatureLayer, GraphicsLayer, SketchVM, BasemapToggle, LayerList, Expand, Measurement, Search, geometryEngine, Graphic) => {
+
+  // ---- DOM ----
+  const $ = id => document.getElementById(id);
+  const gate = $("gate"), toastEl = $("toast");
+  const editor = $("editor"), fieldsEl = $("fields");
+  const tPolygon = $("tPolygon"), tPoint = $("tPoint");
+  const radiusRow = $("radiusRow"), radiusVal = $("radiusVal"), radiusUnit = $("radiusUnit");
+  const reshapeBtn = $("reshapeBtn"), deleteBtn = $("deleteBtn"), saveBtn = $("saveBtn");
+
+  // ---- collapsible workflow ----
+  const flowToggle = $("flowToggle");
+  if (flowToggle) flowToggle.onclick = () => {
+    const flow = flowToggle.closest(".flow");
+    const collapsed = flow.classList.toggle("collapsed");
+    flowToggle.setAttribute("aria-expanded", String(!collapsed));
+  };
+
+  // ---- auth (no app registration) ----
+  // Without OAuth, IdentityManager shows its own username/password dialog the
+  // first time a secured resource is requested, and gets a token via the
+  // portal's generateToken endpoint. Works for built-in ArcGIS accounts.
+  const signHost = CONFIG.portalUrl + "/sharing";
+  const signInErr = $("signInErr");
+
+  function doSignIn(){
+    signInErr.textContent = "";
+    esriId.getCredential(signHost)
+      .then(() => start())
+      .catch(err => {
+        gate.classList.add("show");
+        signInErr.textContent =
+          "Sign-in didn't complete. If your organization uses an enterprise/SSO login " +
+          "(not a username/password you set in ArcGIS), this tool needs the OAuth sign-in path instead.";
+        console.error("Sign-in failed:", err);
+      });
+  }
+
+  $("signInBtn").onclick = doSignIn;
+
+  // Force a fresh ArcGIS sign-in on every page load.
+  try { esriId.destroyCredentials(); } catch (e) {}
+  doSignIn();
+
+  // ---- state ----
+  let layer, view, sketchVM, sketchLayer;
+  let mode = "idle";          // idle | add | edit | reshape
+  let selected = null;        // graphic being edited (existing feature)
+  let oidField = "OBJECTID";
+  let incidentValues = [];    // distinct existing incident names
+  let measurement = null;     // measurement widget (guard clicks while active)
+  let origDef = null;         // the layer's own definitionExpression (preserve it)
+  let layerView = null;       // active layer's view, for highlighting
+  let highlightHandle = null; // current highlight
+
+  function toast(msg, kind){
+    toastEl.textContent = msg;
+    toastEl.className = "show" + (kind ? " " + kind : "");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => toastEl.className = "", 2600);
+  }
+
+  function start(){
+    gate.classList.remove("show");
+    $("status").innerHTML = "Signed in";
+    sketchLayer = new GraphicsLayer();
+
+    if (CONFIG.webMapId){
+      const webmap = new WebMap({ portalItem: { id: CONFIG.webMapId } });
+      view = new MapView({ container: "viewDiv", map: webmap });
+      webmap.when(() => {
+        webmap.add(sketchLayer);  // keep sketch graphics on top
+        const feats = webmap.allLayers.filter(l => l.type === "feature").toArray();
+        Promise.all(feats.map(l => l.load().catch(() => null))).then(() => {
+          let editable = feats.filter(isEditable);
+          if (CONFIG.editLayerTitle){
+            const pin = editable.filter(l => (l.title || "").toLowerCase() === CONFIG.editLayerTitle.toLowerCase());
+            if (pin.length) editable = pin;
+          }
+          if (!editable.length){
+            fail(new Error("No editable feature layers in this web map. Confirm editing is enabled on the layer."));
+            return;
+          }
+          initSketchAndEvents();
+          buildLayerPicker(editable);
+          setActiveLayer(editable[0]);
+        });
+      }).catch(fail);
+
+    } else {
+      layer = new FeatureLayer({ url: CONFIG.featureLayer, outFields: ["*"] });
+      const map = new Map({ basemap: "topo-vector", layers: [layer, sketchLayer] });
+      view = new MapView({ container: "viewDiv", map, zoom: 11 });
+      layer.when(() => {
+        initSketchAndEvents();
+        setActiveLayer(layer);
+        view.goTo(layer.fullExtent).catch(() => {});
+      }).catch(fail);
+    }
+  }
+
+  function isEditable(l){
+    if (l.editingEnabled === false) return false;
+    const c = l.capabilities;
+    if (c && c.operations) return !!(c.operations.supportsUpdate || c.operations.supportsAdd || c.operations.supportsDelete);
+    return true; // capabilities unknown → assume editable
+  }
+
+  function buildLayerPicker(list){
+    const wrap = $("layerPickWrap"), sel = $("layerPick");
+    if (list.length <= 1){ wrap.style.display = "none"; return; }
+    sel.innerHTML = "";
+    list.forEach((l, i) => {
+      const o = document.createElement("option");
+      o.value = i; o.textContent = l.title || ("Layer " + i);
+      sel.appendChild(o);
+    });
+    sel.onchange = () => setActiveLayer(list[+sel.value]);
+    wrap.style.display = "";
+  }
+
+  function setActiveLayer(l){
+    clearHighlight();
+    layer = l;
+    layer.outFields = ["*"];
+    origDef = layer.definitionExpression || null;
+    oidField = layer.objectIdField || "OBJECTID";
+    layerView = null;
+    view.whenLayerView(layer).then(lv => { layerView = lv; }).catch(() => {});
+    $("layerName").textContent = layer.title || "Evac Zones";
+    $("status").innerHTML = `Editing <b>${layer.title || "layer"}</b>`;
+    loadIncidentValues();
+    resetAll();
+  }
+
+  function findField(re){
+    return layer.fields.find(f => re.test(f.name) || re.test(f.alias || ""));
+  }
+
+  // Pull the distinct list of incident names already in the layer so the
+  // incident dropdown offers current incidents plus "new".
+  function loadIncidentValues(){
+    const f = findField(/incident/i);
+    if (!f) return;
+    layer.queryFeatures({
+      where: "1=1",
+      outFields: [f.name],
+      returnDistinctValues: true,
+      returnGeometry: false
+    }).then(fs => {
+      incidentValues = fs.features
+        .map(x => x.attributes[f.name])
+        .filter(v => v != null && String(v).trim() !== "");
+      incidentValues.sort((a, b) => String(a).localeCompare(String(b)));
+      repopulateIncident();   // update the dropdown if the form is open
+    }).catch(err => console.warn("Incident list query failed:", err));
+  }
+
+  // Rebuild the incident <select> options in place, preserving the current pick.
+  function repopulateIncident(){
+    const sel = fieldsEl.querySelector("select[data-incident='select']");
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = "";
+    addOpt(sel, "", "—", cur === "" || cur == null);
+    incidentValues.forEach(v => addOpt(sel, v, v, v === cur));
+    addOpt(sel, "__NEW__", "＋ New incident…", cur === "__NEW__");
+  }
+
+  function initSketchAndEvents(){
+    if (sketchVM) return;
+    sketchVM = new SketchVM({ view, layer: sketchLayer });
+    sketchVM.on("create", e => { if (e.state === "complete") onSketchComplete(e.graphic); });
+
+    // Snapping: to in-progress geometry (self) and to feature layers in the map.
+    sketchVM.snappingOptions = {
+      enabled: true,
+      selfEnabled: true,
+      featureSources: view.map.allLayers
+        .filter(l => l.type === "feature")
+        .map(l => ({ layer: l, enabled: true }))
+    };
+
+    view.popupEnabled = false;                                   // no popups; we highlight instead
+    view.highlightOptions = { color: [31, 111, 194], haloOpacity: 0.95, fillOpacity: 0.25 };
+
+    view.ui.add(new BasemapToggle({ view, nextBasemap: "hybrid" }), "bottom-right");
+
+    // Address search (Esri World Geocoder)
+    view.ui.add(new Search({ view, popupEnabled: false }), "top-left");
+
+    // Layer on/off
+    view.ui.add(new Expand({
+      view, expandIcon: "layers", expandTooltip: "Layers", group: "tr",
+      content: new LayerList({ view })
+    }), "top-right");
+
+    // Measure (distance / area)
+    measurement = new Measurement({ view });
+    const mBox = document.createElement("div");
+    mBox.className = "measure-tools";
+    mBox.innerHTML =
+      '<button data-m="distance">Distance</button>' +
+      '<button data-m="area">Area</button>' +
+      '<button data-m="clear">Clear</button>';
+    mBox.addEventListener("click", e => {
+      const m = e.target.getAttribute("data-m");
+      if (!m) return;
+      if (m === "distance") measurement.activeTool = "distance";
+      else if (m === "area") measurement.activeTool = "area";
+      else { measurement.clear(); }
+    });
+    view.ui.add(new Expand({
+      view, expandIcon: "measure", expandTooltip: "Measure", group: "tr", content: mBox
+    }), "top-right");
+    view.ui.add(measurement, "bottom-left");
+
+    wireTools();
+    view.on("click", onMapClick);
+  }
+
+  function fail(err){
+    toast("Load failed: " + (err.message || err), "err");
+    $("layerName").textContent = "Failed to load";
+    $("status").textContent = "Error";
+  }
+
+  // ---- tools ----
+  function wireTools(){
+    tPolygon.onclick = () => toggleTool("polygon");
+    tPoint.onclick   = () => toggleTool("point");
+    $("cancelBtn").onclick = resetAll;
+    saveBtn.onclick    = onSave;
+    deleteBtn.onclick  = onDelete;
+    reshapeBtn.onclick = onReshape;
+  }
+
+  function toggleTool(kind){
+    const btn = kind === "polygon" ? tPolygon : tPoint;
+    const already = btn.getAttribute("aria-pressed") === "true";
+    resetAll();
+    if (already) return;
+
+    btn.setAttribute("aria-pressed", "true");
+    radiusRow.classList.toggle("show", kind === "point");
+    mode = "add";
+    selected = null;                 // geometry not drawn yet
+    sketchVM.create(kind);
+    openForm(null, "New zone");       // show attributes immediately
+    saveBtn.disabled = true;          // can't save until a shape exists
+    $("hint").textContent = kind === "polygon"
+      ? "Fill attributes, then click to add vertices (double-click to finish)."
+      : "Fill attributes, then click once to drop the center point.";
+  }
+
+  // ---- new geometry finished ----
+  function onSketchComplete(graphic){
+    if (mode === "add"){
+      if (graphic.geometry.type === "point"){
+        const r = parseFloat(radiusVal.value);
+        if (!(r > 0)) { toast("Enter a radius first.", "err"); return; }
+        const poly = geometryEngine.geodesicBuffer(graphic.geometry, r, radiusUnit.value);
+        sketchLayer.removeAll();
+        graphic = new Graphic({ geometry: poly });
+        sketchLayer.add(graphic);
+      }
+      selected = graphic;            // pending new feature (no OID yet); form already open
+      saveBtn.disabled = false;
+      $("hint").textContent = "Shape ready — review attributes and Save.";
+    }
+    // reshape completes via Save, not here
+  }
+
+  // ---- click existing feature ----
+  function onMapClick(evt){
+    if (mode === "add" || mode === "reshape") return;
+    if (measurement && measurement.activeTool) return;   // don't select while measuring
+    view.hitTest(evt).then(res => {
+      const hit = res.results.find(r => r.graphic && r.graphic.layer === layer);
+      if (!hit) return;
+      selectFeature(hit.graphic);
+    });
+  }
+
+  function selectFeature(graphic){
+    const oid = graphic.attributes[oidField];
+    // web map layers often return only popup fields on click — fetch all fields
+    layer.queryFeatures({ objectIds: [oid], outFields: ["*"], returnGeometry: true })
+      .then(fs => {
+        const full = fs.features[0] || graphic;
+        resetEditorOnly();
+        selected = full;
+        mode = "edit";
+        layer.definitionExpression = null;
+        openForm(full.attributes, "Edit zone");
+        reshapeBtn.style.display = "";
+        deleteBtn.style.display = "";
+        clearHighlight();
+        if (layerView) highlightHandle = layerView.highlight(oid);
+      })
+      .catch(err => toast("Couldn't load that zone: " + (err.message || err), "err"));
+  }
+
+  // ---- build attribute form from editable fields ----
+  const SKIP = /^(objectid|globalid|shape|shape_|created|creator|editor|edited|creationdate|editdate|last_edited|gdb_)/i;
+
+  function editableFields(){
+    return layer.fields.filter(f =>
+      f.editable !== false &&
+      f.name !== oidField &&
+      f.type !== "oid" &&
+      f.type !== "global-id" &&
+      f.type !== "geometry" &&
+      !SKIP.test(f.name)
+    );
+  }
+
+  function openForm(attrs, title){
+    $("editorTitle").textContent = title;
+    fieldsEl.innerHTML = "";
+    attrs = attrs || {};
+    loadIncidentValues();   // refresh the active-incident list each time the form opens
+
+    editableFields().forEach(f => {
+      const wrap = document.createElement("div");
+      wrap.className = "field";
+      const label = document.createElement("label");
+      label.textContent = (f.alias || f.name);
+      wrap.appendChild(label);
+
+      const rule = ruleFor(f);
+
+      // ---- STATUS: colored swatch chooser ----
+      if (rule === "status"){
+        const hidden = document.createElement("input");
+        hidden.type = "hidden";
+        hidden.dataset.field = f.name;
+        hidden.dataset.ftype = f.type;
+        hidden.value = attrs[f.name] != null ? attrs[f.name] : "";
+
+        const box = document.createElement("div");
+        box.className = "status-opts";
+        CONFIG.statusOptions.forEach(s => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "status-opt";
+          b.setAttribute("aria-pressed", String(attrs[f.name] === s));
+          const sw = document.createElement("span");
+          sw.className = "sw";
+          sw.style.background = STATUS_COLORS[s] || "#9aa3ad";
+          const lbl = document.createElement("span");
+          lbl.textContent = s;
+          b.appendChild(sw); b.appendChild(lbl);
+          b.onclick = () => {
+            hidden.value = s;
+            box.querySelectorAll(".status-opt").forEach(x => x.setAttribute("aria-pressed", "false"));
+            b.setAttribute("aria-pressed", "true");
+          };
+          box.appendChild(b);
+        });
+        wrap.appendChild(box);
+        wrap.appendChild(hidden);
+        fieldsEl.appendChild(wrap);
+        return;
+      }
+
+      // ---- INCIDENT: existing values + refresh + new ----
+      if (rule === "incident"){
+        const row = document.createElement("div");
+        row.className = "incident-row";
+
+        const sel = document.createElement("select");
+        sel.dataset.incident = "select";
+        sel.dataset.field = f.name;
+        sel.dataset.ftype = f.type;
+        const cur = attrs[f.name];
+        addOpt(sel, "", "—", cur == null);
+        const vals = incidentValues.slice();
+        if (cur != null && cur !== "" && !vals.includes(cur)) vals.unshift(cur);
+        vals.forEach(v => addOpt(sel, v, v, v === cur));
+        addOpt(sel, "__NEW__", "＋ New incident…", false);
+
+        const refresh = document.createElement("button");
+        refresh.type = "button";
+        refresh.className = "icon-btn";
+        refresh.textContent = "↻";
+        refresh.title = "Reload active incidents";
+        refresh.onclick = () => loadIncidentValues();
+
+        const newInput = document.createElement("input");
+        newInput.type = "text";
+        newInput.placeholder = "New incident name";
+        newInput.dataset.incident = "new";
+        newInput.style.marginTop = "8px";
+        newInput.style.display = "none";
+
+        sel.addEventListener("change", () => {
+          const isNew = sel.value === "__NEW__";
+          newInput.style.display = isNew ? "block" : "none";
+          if (isNew) newInput.focus();
+        });
+
+        row.appendChild(sel);
+        row.appendChild(refresh);
+        wrap.appendChild(row);
+        wrap.appendChild(newInput);
+        fieldsEl.appendChild(wrap);
+        return;
+      }
+
+      // ---- generic controls ----
+      let input, extra = null;
+
+      if (rule === "text"){
+        input = document.createElement("input");
+        input.type = "text";
+        if (f.length) input.maxLength = f.length;
+        if (attrs[f.name] != null) input.value = attrs[f.name];
+        extra = document.createElement("div");
+        extra.className = "fhint";
+        extra.textContent = "Convention: first 3 letters of incident + “-” + number, starting at 1 (e.g. BLU-1).";
+
+      } else if (f.domain && f.domain.type === "coded-value"){
+        input = document.createElement("select");
+        addOpt(input, "", "—", attrs[f.name] == null);
+        f.domain.codedValues.forEach(cv => addOpt(input, cv.code, cv.name, attrs[f.name] === cv.code));
+
+      } else if (f.type === "date"){
+        input = document.createElement("input");
+        input.type = "datetime-local";
+        if (attrs[f.name] != null) input.value = toLocalInput(attrs[f.name]);
+
+      } else if (["integer","small-integer","double","single","long"].includes(f.type)){
+        input = document.createElement("input");
+        input.type = "number";
+        if (f.type === "double" || f.type === "single") input.step = "any";
+        if (attrs[f.name] != null) input.value = attrs[f.name];
+
+      } else {
+        input = document.createElement("input");
+        input.type = "text";
+        if (f.length) input.maxLength = f.length;
+        if (attrs[f.name] != null) input.value = attrs[f.name];
+      }
+
+      input.dataset.field = f.name;
+      input.dataset.ftype = f.type;
+      wrap.appendChild(input);
+      if (extra) wrap.appendChild(extra);
+      fieldsEl.appendChild(wrap);
+    });
+
+    // new features have no OID yet → no reshape/delete
+    const isNew = !attrs[oidField];
+    reshapeBtn.style.display = isNew ? "none" : "";
+    deleteBtn.style.display  = isNew ? "none" : "";
+    editor.classList.add("show");
+  }
+
+  // Field-specific overrides, matched against name OR alias.
+  const STATUS_COLORS = { Planning: "#9aa3ad", Set: "#f2c43d", Go: "#3aae66" };
+
+  function ruleFor(f){
+    const hay = (f.name + " " + (f.alias || ""));
+    if (/status/i.test(hay))   return "status";
+    if (/incident/i.test(hay)) return "incident";
+    if (/zone[_ ]?name|^name$/i.test(hay)) return "text";
+    return null;
+  }
+
+  function addOpt(sel, value, text, selected){
+    const o = document.createElement("option");
+    o.value = value; o.textContent = text;
+    if (selected) o.selected = true;
+    sel.appendChild(o);
+  }
+
+  function readForm(){
+    const out = {};
+    fieldsEl.querySelectorAll("[data-field]").forEach(el => {
+      const name = el.dataset.field, t = el.dataset.ftype;
+      let v = el.value;
+      // incident dropdown set to "new" → read the adjacent text input
+      if (el.dataset.incident === "select" && v === "__NEW__"){
+        const inp = el.closest(".field").querySelector("[data-incident='new']");
+        v = inp ? inp.value.trim() : "";
+      }
+      if (v === "") { out[name] = null; return; }
+      if (["integer","small-integer","long"].includes(t)) v = parseInt(v, 10);
+      else if (["double","single"].includes(t)) v = parseFloat(v);
+      else if (t === "date") v = new Date(v).getTime();
+      out[name] = v;
+    });
+    return out;
+  }
+
+  // Names of the three required fields (status / incident / zone name).
+  function requiredFieldNames(){
+    return editableFields()
+      .filter(f => ["status", "incident", "text"].includes(ruleFor(f)))
+      .map(f => f.name);
+  }
+
+  // ---- save (add or update) ----
+  function onSave(){
+    if (!selected) return;
+    const attrs = readForm();
+
+    if (mode === "add"){
+      const missing = requiredFieldNames().filter(n => attrs[n] == null || attrs[n] === "");
+      if (missing.length){
+        toast("Set status, incident, and zone name before creating the zone.", "err");
+        return;
+      }
+    }
+
+    const geom = selected.geometry;
+    saveBtn.disabled = true;
+
+    let op;
+    if (mode === "edit" || mode === "reshape"){
+      attrs[oidField] = selected.attributes[oidField];
+      op = layer.applyEdits({ updateFeatures: [ new Graphic({ geometry: geom, attributes: attrs }) ] });
+    } else {
+      op = layer.applyEdits({ addFeatures: [ new Graphic({ geometry: geom, attributes: attrs }) ] });
+    }
+
+    op.then(res => {
+      const r = (res.addFeatureResults[0] || res.updateFeatureResults[0]);
+      if (r && r.error) throw r.error;
+      toast(mode === "add" ? "Zone added" : "Zone saved", "ok");
+      resetAll();
+      layer.refresh();   // force redraw so the edit shows immediately
+    }).catch(err => {
+      toast("Save failed: " + (err.message || err), "err");
+    }).then(() => saveBtn.disabled = false);
+  }
+
+  // ---- delete ----
+  function onDelete(){
+    if (!selected || !selected.attributes[oidField]) return;
+    if (!confirm("Delete this zone? This can't be undone.")) return;
+    layer.applyEdits({ deleteFeatures: [{ objectId: selected.attributes[oidField] }] })
+      .then(res => {
+        const r = res.deleteFeatureResults[0];
+        if (r && r.error) throw r.error;
+        toast("Zone deleted", "ok");
+        resetAll();
+        layer.refresh();
+      })
+      .catch(err => toast("Delete failed: " + (err.message || err), "err"));
+  }
+
+  function clearHighlight(){
+    if (highlightHandle){ highlightHandle.remove(); highlightHandle = null; }
+  }
+
+  // ---- reshape existing geometry ----
+  function onReshape(){
+    if (!selected || !selected.attributes[oidField]) return;
+    clearHighlight();
+    mode = "reshape";
+    // hide the original on the feature layer so we don't see a duplicate
+    const excl = `${oidField} <> ${selected.attributes[oidField]}`;
+    layer.definitionExpression = origDef ? `(${origDef}) AND ${excl}` : excl;
+    const g = new Graphic({ geometry: selected.geometry.clone(), attributes: { ...selected.attributes } });
+    sketchLayer.removeAll();
+    sketchLayer.add(g);
+    selected = g;
+    sketchVM.update(g);
+    $("hint").textContent = "Drag vertices to reshape, then Save.";
+  }
+
+  // ---- reset ----
+  function resetEditorOnly(){
+    editor.classList.remove("show");
+  }
+  function resetAll(){
+    try { sketchVM && sketchVM.cancel(); } catch(e){}
+    clearHighlight();
+    sketchLayer && sketchLayer.removeAll();
+    if (layer) layer.definitionExpression = origDef;
+    mode = "idle"; selected = null;
+    saveBtn.disabled = false;
+    tPolygon.setAttribute("aria-pressed","false");
+    tPoint.setAttribute("aria-pressed","false");
+    radiusRow.classList.remove("show");
+    resetEditorOnly();
+    $("hint").textContent = "Pick a tool, or click an existing zone to edit it.";
+  }
+
+  // ---- helpers ----
+  function toLocalInput(epochMs){
+    const d = new Date(epochMs);
+    const pad = n => String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+});
+</script>
+</body>
+</html>
