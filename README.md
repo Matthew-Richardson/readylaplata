@@ -30,7 +30,7 @@ The whole desktop incident card zooms to zones, including its status badges and 
 
 Evacuation zones require the Short Integer LIVE field in the public view. Home map definitions, incident queries, address checks and the lightweight map use LIVE = 1, excluding 0 and null. Existing web map definition filters are preserved with AND. In-flight deactivations are rechecked in batch queries; no filter falls back to all features. Include LIVE in the hosted view before deploying this version. This site change does not alter the AGOL hosted view definition itself.
 
-## Update Shelter and Access map styling
+## Update all evacuation-zone map styles
 
 Download `scripts/update_evac_webmap_styles.py` to `C:\GIS\update_evac_webmap_styles.py`. In ArcGIS Pro, sign into the portal that owns web map `58a8bb313db64271a55e7960cb839f64` with permission to edit that map. Open the Python window and run:
 
@@ -38,6 +38,6 @@ Download `scripts/update_evac_webmap_styles.py` to `C:\GIS\update_evac_webmap_st
 exec(open(r"C:\GIS\update_evac_webmap_styles.py", encoding="utf-8-sig").read())
 ```
 
-The script updates the web map's evacuation-zone renderer and labels: blue **Shelter-In-Place** and purple diagonal hatching for **Access Impact Area**. Labels show the zone name and public status on separate lines. Other statuses retain their existing symbols. Existing generic labels remain for other statuses. This updates the AGOL web map consumed by Home; it does not change the source service's default style or ArcGIS Pro project layers.
+The script updates the web map's evacuation-zone renderer and labels for all five statuses: green **Go**, yellow **Set**, blue **Shelter-In-Place**, purple diagonal hatching for **Access Impact Area**, and gray **Planning**. Labels show the zone name and public status on separate lines. Planning is for testing, with no all-clear wording. Existing generic labels and symbols remain only for unrecognized statuses. The script also upgrades maps styled with the earlier Shelter/Access script. This updates the AGOL web map consumed by Home; it does not change the source service's default style or ArcGIS Pro project layers.
 
 It saves original and proposed web map JSON under `Documents\ReadyLaPlata_Backups` before writing and verifies the saved layer settings. Reload the website afterward. Feature data, LIVE filters, popups, other layers and hosted-view settings are preserved. Rerunning is safe; a concurrent edit aborts the write. Set `DRY_RUN = True` near the top to save a preview without updating the map, or `LABEL_INCLUDE_STATUS = False` for zone-name-only labels. Advanced renderers with unrelated expressions, multiple fields, grouped values or visual variables stop for manual review. Keep the original JSON backup to restore the web map's prior item data if needed.

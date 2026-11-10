@@ -3,7 +3,7 @@ r"""Run in ArcGIS Pro's Python window while signed into the web map's portal.
 exec(open(r"C:\GIS\update_evac_webmap_styles.py", encoding="utf-8-sig").read())
 
 Updates the web map only. Does not edit features, source service styles, LIVE,
-view settings, other layers, or the styles for other statuses. Requires map
+view settings, or other layers. Styles all five evacuation statuses. Requires map
 owner/admin editing rights. Original and proposed JSON are saved before updating.
 """
 from collections.abc import Mapping
@@ -19,8 +19,20 @@ DRY_RUN = False  # True saves a preview without changing the web map.
 BACKUP_DIR = Path.home() / "Documents" / "ReadyLaPlata_Backups"
 LABEL_FONT_SIZE = 12
 LABEL_INCLUDE_STATUS = True  # Zone name, then public status on the next line.
-STYLE_MARKER = "// ReadyLaPlata Shelter/Access v1"
+STYLE_MARKER = "// ReadyLaPlata all zone statuses v2"
 STYLES = {
+    "Go": {
+        "label": "Go",
+        "aliases": ["go"],
+        "fill": [65, 245, 110, 128], "outline": [21, 128, 61, 255],
+        "text": [18, 71, 38, 255], "style": "esriSFSSolid",
+    },
+    "Set": {
+        "label": "Set",
+        "aliases": ["set"],
+        "fill": [255, 243, 106, 128], "outline": [150, 120, 0, 255],
+        "text": [65, 53, 0, 255], "style": "esriSFSSolid",
+    },
     "Shelter": {
         "label": "Shelter-In-Place",
         "aliases": ["shelter", "shelter-in-place", "shelter in place"],
@@ -32,6 +44,12 @@ STYLES = {
         "aliases": ["access", "access impact area", "road closure area", "road access impact", "isolated"],
         "fill": [130, 74, 182, 180], "outline": [130, 74, 182, 255],
         "text": [89, 50, 120, 255], "style": "esriSFSBackwardDiagonal",
+    },
+    "Planning": {
+        "label": "Planning",
+        "aliases": ["planning"],
+        "fill": [184, 190, 199, 128], "outline": [102, 113, 128, 255],
+        "text": [49, 60, 73, 255], "style": "esriSFSSolid",
     },
 }
 
@@ -68,9 +86,12 @@ def field_name(metadata, wanted):
     raise ValueError(f"Zone service does not expose {wanted}.")
 
 
-def renderer_expression(status_field):
-    lines = [STYLE_MARKER, f"var raw = Text($feature[{json.dumps(status_field)}]);", "var status = Lower(raw);"]
+def renderer_expression(status_field, legacy=False):
+    marker = "// ReadyLaPlata Shelter/Access v1" if legacy else STYLE_MARKER
+    lines = [marker, f"var raw = Text($feature[{json.dumps(status_field)}]);", "var status = Lower(raw);"]
     for key, style in STYLES.items():
+        if legacy and key not in ("Shelter", "Access"):
+            continue
         lines.append(f'if (IndexOf({json.dumps(style["aliases"])}, status) >= 0) {{ return {json.dumps(key)}; }}')
     return "\n".join(lines + ["return raw;"])
 
@@ -87,7 +108,7 @@ def updated_renderer(old, status_field):
                   "defaultLabel": old.get("label") or "Other zones", "uniqueValueInfos": []}
     elif old.get("type") == "uniqueValue":
         existing_expression = old.get("valueExpression")
-        if ((existing_expression and existing_expression != expression)
+        if ((existing_expression and existing_expression not in (expression, renderer_expression(status_field, legacy=True)))
                 or old.get("field2") or old.get("field3")
                 or (not existing_expression and str(old.get("field1", "")).lower() != status_field.lower())):
             raise ValueError("Existing zone renderer is not a simple STATUS renderer; no update made.")
@@ -166,7 +187,7 @@ def apply_update(item, metadata, backup_dir=BACKUP_DIR, dry_run=DRY_RUN):
     original = plain(item.get_data())
     proposed = update_webmap_data(original, plain(metadata))
     if proposed == original:
-        print("Shelter and Access styles already match. No changes needed.")
+        print("All five zone styles and labels already match. No changes needed.")
         return
     backup_dir = Path(backup_dir)
     backup_dir.mkdir(parents=True, exist_ok=True)
@@ -187,8 +208,8 @@ def apply_update(item, metadata, backup_dir=BACKUP_DIR, dry_run=DRY_RUN):
     saved = plain(item.get_data())
     if target_layers(saved) != target_layers(proposed):
         raise RuntimeError("Update returned success but verification differs. Inspect the map and backup; no automatic rollback attempted.")
-    print("Verified: blue Shelter-In-Place, purple hatched Access Impact Area, and matching zone labels.")
-    print("Reload ReadyLaPlata to see the updated web map. Other statuses retain their existing symbols.")
+    print("Verified: Go (green), Set (yellow), Shelter-In-Place (blue), Access Impact Area (purple hatch), Planning (gray), and matching labels.")
+    print("Reload ReadyLaPlata to see the updated web map. Feature attributes and LIVE filters are unchanged.")
 
 
 def main():
