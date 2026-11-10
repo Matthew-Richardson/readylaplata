@@ -247,3 +247,10 @@ html:has(.home-map-page),body.home-map-page{height:100%;overflow:hidden}.home-ma
 
 .home-legend .legend-icon-road,.home-legend .legend-icon-warning,.home-legend .legend-icon-info{display:inline-flex;width:18px;height:18px;flex:0 0 18px}
 .home-legend .legend-icon-info{font-style:normal;justify-content:center;align-items:center}
+
+/* Stretch each native zoom button across its card; details remains a separate action. */
+.incident-sidebar .incident-item{position:relative;isolation:isolate;cursor:pointer}
+.incident-sidebar .incident-focus::after,.incident-sidebar .incident-mobile-tab::after{content:"";position:absolute;inset:0;z-index:1;cursor:pointer;border-radius:inherit}
+.incident-sidebar .incident-details-button,.incident-sidebar .incident-mobile-info{position:relative;z-index:2}
+.incident-sidebar .incident-item:hover{border-color:#80a6d1}
+.incident-sidebar .incident-focus:focus-visible::after,.incident-sidebar .incident-mobile-tab:focus-visible::after{outline:3px solid #e9a829;outline-offset:-3px}
