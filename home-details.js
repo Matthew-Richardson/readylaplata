@@ -37,7 +37,7 @@
       const list=node('ul','incident-zone-list');
       for(const zone of zones){
         const style=window.ReadyLaPlataZones.styles[zone.status],row=node('li','incident-zone-row');
-        row.append(node('strong','incident-zone-name',zone.name));
+        const zoneName=node('strong','incident-zone-name',zone.name);zoneName.title=zone.name;row.append(zoneName);
         const status=node('span','incident-zone-status'),symbol=node('span','incident-status-symbol');symbol.setAttribute('aria-hidden','true');
         symbol.style.background=style.fill;symbol.style.borderColor=style.stroke;if(style.hatch)symbol.classList.add('access-hatch');
         status.append(symbol,node('span','',style.label));row.append(status);list.append(row);

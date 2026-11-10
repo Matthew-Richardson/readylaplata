@@ -45,3 +45,5 @@ It saves original and proposed web map JSON under `Documents\ReadyLaPlata_Backup
 Layer load warnings identify the failing AGOL layer by name and log its URL and error in the browser console. Warnings clear when that layer recovers, remain separate from address-search feedback, and ignore cancelled requests. Refresh retries failed published layers as well as refreshing zones, road information and POIs.
 
 Incident resource windows list every LIVE = 1 zone associated with the selected incident, showing readable zone names and status text beside colored symbols. The list refreshes with incident data, marks last-known data when refresh fails, and remains available if support resources fail to load. Tapping a live zone polygon opens the same incident support window. Native road/POI popups are unchanged.
+
+Zone-layer matching supports ArcGIS SDK service URLs with separate numeric layerId values, including layer 0. This also fixes road/POI toggle matching. Zone taps use rendered hits with a spatial-query fallback. Run `node tests/home-map.test.cjs` to check normalized layer URLs, live-zone selection, missing attributes, query errors and rapid selection changes.

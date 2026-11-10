@@ -53,9 +53,15 @@
     const webmap=new WebMap({portalItem:{id:C.webmapId}});
     await webmap.load();
     const all=()=>webmap.allLayers.toArray();
-    const matches=(layer,url)=>String(layer.url||'').replace(/\/$/,'').toLowerCase()===url.replace(/\/$/,'').toLowerCase();
+    const cleanUrl=url=>String(url||'').split('?')[0].replace(/\/+$/,'').toLowerCase();
+    const matches=(layer,url)=>{
+      const base=cleanUrl(layer.url),target=cleanUrl(url);
+      // FeatureLayer normalizes /FeatureServer/0 into url=/FeatureServer, layerId=0.
+      return base===target||(Number.isInteger(layer.layerId)&&base+'/'+layer.layerId===target);
+    };
     // Bind existing web map layers only. Rendering, labels and popups remain authored in AGOL.
     const zoneLayers=all().filter(l=>matches(l,C.zonesUrl));
+    if(!zoneLayers.length){console.error('Configured evacuation-zone layer not found in web map:',C.zonesUrl);$('mapMessage').textContent='The evacuation-zone layer could not be identified in this map.';}
 
     for(const layer of zoneLayers){
       layer.outFields=['*'];

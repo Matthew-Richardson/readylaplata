@@ -34,7 +34,7 @@
 
   <link rel="stylesheet" href="shared-styles.css?v=20261110-live38">
   <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/light/main.css">
-  <link rel="stylesheet" href="home.css?v=20261110-compact45">
+  <link rel="stylesheet" href="home.css?v=20261110-tap47">
 
 <style id="zone-information-layout">
 #welcomeDialog{width:min(980px,calc(100% - 24px));max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);padding:0;border:1px solid #ccd8e4;border-radius:14px;color:#162b40;overflow:hidden;font-family:Arial,sans-serif}
@@ -99,7 +99,7 @@
           </div>
       </div>
       <div id="mapOptions" class="map-options">
-        <div class="home-legend" aria-label="Map legend">
+        <div class="home-legend" aria-label="Map legend"><strong class="map-section-label">Legend</strong>
             <span><i style="background:#fff36a;border-color:#967800"></i>Set</span>
             <span><i style="background:#41f56e;border-color:#15803d"></i>Go</span>
             <span><i style="background:#8dc8f8;border-color:#1e6eb6"></i>Shelter-In-Place</span>
@@ -107,12 +107,12 @@
             <span><i style="background:#b8bec7;border-color:#667180"></i>Planning</span>
             <span><i class="road-line" aria-hidden="true"></i>Road impact</span><span><span class="legend-icon-road" aria-hidden="true"></span>Road closure</span><span><span class="legend-icon-warning" aria-hidden="true"></span>Warning</span><span><span class="legend-icon-info" aria-hidden="true">i</span>Info</span>
           </div>
-<div class="home-map-tools" aria-label="Map controls and layers"><div class="map-action-group">
+<div class="home-map-tools" aria-label="Map controls and layers"><div class="map-action-group"><strong class="map-section-label">Map controls</strong>
             <button id="refreshAll" class="home-btn" type="button">Refresh</button>
             <button id="mapResetBtn" class="home-btn" type="button">County view</button>
             <button id="myLocationBtn" class="home-btn" type="button">My location</button>
             <button id="mapFullscreenBtn" class="home-btn" type="button" aria-pressed="false">Expand map</button>
-          </div><div class="map-layer-group" role="group" aria-label="Map layers">
+          </div><div class="map-layer-group" role="group" aria-label="Map layers"><strong class="map-section-label">Layers</strong>
             <label><input id="roadsToggle" type="checkbox" checked> Roads</label>
             <label><input id="roadLayerToggle" type="checkbox" checked> Road information</label>
             <label><input id="poiLayerToggle" type="checkbox" checked> Info</label>
@@ -228,8 +228,8 @@
 <script src="zone-status.js?v=20261110-live38"></script>
 <script src="https://js.arcgis.com/4.31/" defer></script>
 <script src="home-config.js?v=20261110-live38"></script>
-<script src="home-map.js?v=20261110-tap46" defer></script>
-<script src="home-details.js?v=20261110-zones44" defer></script>
+<script src="home-map.js?v=20261110-tap47" defer></script>
+<script src="home-details.js?v=20261110-tap47" defer></script>
 <script src="home.js?v=20261110-zones44" defer></script>
 </body>
 </html>
