@@ -217,3 +217,12 @@ html:has(.home-map-page),body.home-map-page{height:100%;overflow:hidden}.home-ma
 }
 @media(max-width:760px) and (hover:hover){.incident-sidebar .incident-scroll:not(:disabled){opacity:.7}.incident-sidebar .incident-carousel:hover .incident-scroll:not(:disabled),.incident-sidebar .incident-scroll:focus-visible{opacity:1}}
 @media(max-width:760px){.incident-sidebar .incident-item{flex-basis:min(216px,100%);width:min(216px,100%)}}
+
+/* Independent zoom and information actions, with no nested buttons. */
+.incident-mobile-actions{display:none}
+@media(max-width:760px){
+ .incident-sidebar .incident-mobile-actions{display:flex;align-items:stretch;width:100%;height:44px}
+ .incident-sidebar .incident-mobile-tab{flex:1;min-width:0;width:auto;padding:8px 9px;gap:6px}
+ .incident-sidebar .incident-mobile-info{flex:0 0 44px;width:44px;min-height:44px;padding:0;display:flex;align-items:center;justify-content:center;border:0;border-left:1px solid #d4dfeb;background:#f0f5fb;color:#174f8a;font:700 21px Arial;cursor:pointer}
+ .incident-sidebar .incident-mobile-info:hover{background:#e1ebf7}
+}

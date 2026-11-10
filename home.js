@@ -83,8 +83,8 @@
     chosenIncident=name;
     document.querySelectorAll('.incident-item').forEach(el=>{const selected=el.dataset.incident===name;el.classList.toggle('is-selected',selected);el.querySelector('.incident-mobile-tab')?.setAttribute('aria-pressed',String(selected));});
     try {
+      window.ReadyLaPlataDetails.close();view.closePopup();
       if(entry.extent?.isValid()) view.fitBounds(entry.extent,{padding:[30,30],maxZoom:14});
-      openIncidentDetails(name);
     } catch(err){if(err.name!=='AbortError')console.warn('Incident navigation:',err);}
   }
   const STATUS_PRIORITY = Object.freeze({Go:0,Shelter:1,Set:2,Access:3,Planning:4});
@@ -113,8 +113,11 @@
       const tabName=document.createElement('span');tabName.className='incident-tab-name';tabName.textContent=name;
       const dots=document.createElement('span');dots.className='incident-tab-dots';dots.setAttribute('aria-hidden','true');
       const labels=[];for(const badge of badges.children){const dot=badge.cloneNode(true);dot.title=badge.textContent;labels.push(badge.textContent);dot.textContent='';dots.append(dot);}
-      tab.setAttribute('aria-label',name+'. '+labels.join(', ')+'. Open incident information');tab.title=name+' · '+labels.join(', ');tab.append(tabName,dots);tab.addEventListener('click',()=>focusIncident(name));
-      card.append(focus,badges,link,tab);container.appendChild(card);
+      tab.setAttribute('aria-label','Zoom to '+name+'. '+labels.join(', '));tab.title=name+' · '+labels.join(', ');tab.append(tabName,dots);tab.addEventListener('click',()=>focusIncident(name));
+      const mobileActions=document.createElement('div');mobileActions.className='incident-mobile-actions';
+      const info=incidentDetailsButton(name,'ⓘ');info.className='incident-mobile-info';info.setAttribute('aria-label','Incident information for '+name);info.title='Incident information';
+      mobileActions.append(tab,info);
+      card.append(focus,badges,link,mobileActions);container.appendChild(card);
     }
     $('incidentCount').textContent=incidents.size;
     requestAnimationFrame(updateIncidentArrows);
