@@ -222,6 +222,10 @@
     expandMap(false);
     if(view){view.closePopup();requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20]});});}
   }
+  function shortAddressLabel(match){
+    const value=String(match.attributes?.ShortLabel||match.address||'Address').split(',')[0].trim();
+    return value.replace(/\bCounty\s+(?:Road|Rd\.?)\s*/gi,'CR ').replace(/\s+/g,' ').trim();
+  }
   function addressIncidentContent(match){
     const content=document.createElement('div');
     const matches=currentZoneFeatures.filter(feature=>['Go','Set','Access','Shelter'].includes(Z.key(statusName(feature))) && zoneContainsAddress(feature.geometry,match.location.x,match.location.y));
@@ -232,8 +236,9 @@
     if(highest){const style=Z.styles[highest];content.style.setProperty('--report-color',style.fill);content.style.setProperty('--report-edge',style.stroke);banner.classList.add('has-zone');}
     const label=document.createElement('span');label.className='address-report-label';label.textContent='Address status';
     const headline=document.createElement('h2');headline.className='address-report-headline';
-    headline.textContent=!lastIncidentSuccess?'Checking zones…':highest?{Go:'Evacuate now',Shelter:'Shelter-In-Place',Set:'Prepare to leave',Access:'Road access impacted'}[highest]:'No listed zone';
-    const address=document.createElement('p');address.className='address-report-location';address.textContent=match.address;banner.append(label,headline,address);content.appendChild(banner);
+    const action=!lastIncidentSuccess?'Checking zones…':highest?{Go:'Evacuate Now',Shelter:'Shelter-In-Place',Set:'Prepare to Leave',Access:'Road Access Impacted'}[highest]:'No Listed Zone';
+    headline.textContent=shortAddressLabel(match)+' — '+action;
+    banner.append(label,headline);content.appendChild(banner);
     if(lastIncidentSuccess && !matches.length){const message=document.createElement('p');message.className='address-report-empty';message.textContent='No Go, Set, Access or Shelter-In-Place zone found.';content.appendChild(message);}
     const groups=document.createElement('div');groups.className='address-incident-groups';
     const moreLinks=[];
@@ -258,7 +263,7 @@
       addressMarker=view.markAddress(match);
     });
     const reset=document.createElement('button');reset.type='button';reset.className='home-btn';reset.textContent='Reset';reset.addEventListener('click',resetOverview);for(const link of moreLinks)actions.appendChild(link);actions.append(zoom,reset);content.appendChild(actions);
-    content.title='Address location is approximate. Confirm incident instructions.';
+    content.title=match.address+' · Address location is approximate. Confirm incident instructions.';
     return content;
   }
   function renderAddressResult(){

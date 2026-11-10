@@ -9,7 +9,7 @@
 - `zone-status.js`: shared Set, Go, Shelter-In-Place, Access Impact Area and Planning styles.
 - `evac.html`: detailed ArcGIS incident map. `evac-lite.html`: lightweight alternative.
 
-The desktop incident list scrolls vertically beside the left edge of the map. On phones it becomes a compact horizontal list above the map. Search is centered above the map. Address results use a full-width compact strip with color-coded zones and More info, Zoom to and Reset buttons. Only Go, Set, Access and Shelter zones appear in address results; overlapping zones are retained. Searching does not move the map until Zoom to is selected. Incident status badges show names without counts.
+The desktop incident list scrolls vertically beside the left edge of the map. On phones it becomes a compact horizontal list above the map. Search is centered above the map. Address results use a full-width centered strip with a solid status color, a short address/action statement, matching zone codes, and large More info, Zoom to and Reset buttons. Go takes priority, followed by Shelter-In-Place, Set and Access. Only Go, Set, Access and Shelter zones appear in address results; overlapping zones are retained. Searching does not move the map until Zoom to is selected. Incident status badges show names without counts.
 
 The overview uses Leaflet with Esri World Terrain Base without a label overlay, county Roads vector tiles, road information and EvacPOIs. Terrain native tiles extend through zoom 13 and are enlarged at closer zooms. County view fits the full boundary, including its north edge. Zone labels draw below incident markers and labels. Panning and zooming are enabled; expanded map remains available. Mobile legend and controls open in a bottom panel.
 
