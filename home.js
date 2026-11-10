@@ -132,7 +132,7 @@
       });
       currentZoneFeatures=features;
       incidents=new Map(Array.from(next.entries()).sort(compareIncidents));
-      view?.refreshZones();view?.renderIncidents(incidents);
+      view?.renderZones(features);view?.renderIncidents(incidents);
       renderIncidentList();lastIncidentSuccess=Date.now();
       $('incidentState').dataset.error='false';$('incidentState').hidden=incidents.size>0;$('incidentState').textContent=incidents.size?'':'No incidents are currently shown in the county zone layer.';
       $('lastLoaded').textContent='Updated '+localTime(lastIncidentSuccess);
@@ -167,7 +167,7 @@
       await view.fitBounds(countyBounds);
       mapReady=true;$('mapLoading').hidden=true;
       await refreshIncidents();
-    }catch(error){console.error('Map initialization:',error);mapFailure('The ArcGIS map requires a browser with WebGL2 support. If it does not load, use the lightweight map.');if(zoneFields){mapReady=true;await refreshIncidents();}}
+    }catch(error){console.error('Map initialization:',error);mapFailure('The map could not load. Try Refresh or use the lightweight map.');if(zoneFields){mapReady=true;await refreshIncidents();}}
   }
   $('mapResetBtn').addEventListener('click',()=>{if(view){view.closePopup();view.fitBounds(countyBounds,{padding:[20,20]});}});
   $('myLocationBtn').addEventListener('click',()=>{
@@ -178,7 +178,7 @@
       try{view.setView([position.coords.latitude,position.coords.longitude],13);$('mapMessage').textContent='Your reported location is approximate. Confirm your address and zone.';}catch(_){}finally{button.disabled=false;}
     },()=>{button.disabled=false;$('mapMessage').textContent='Location could not be obtained. You can search for your address on the map.';},{timeout:10000});
   });
-  function syncMapInteraction(){ /* ArcGIS MapView manages pan and zoom. */ }
+  function syncMapInteraction(){ /* The viewport map stays interactive. */ }
   $('mapOptionsToggle').addEventListener('click',()=>{
     const open=$('mapOptionsToggle').getAttribute('aria-expanded')!=='true';
     $('mapOptionsToggle').setAttribute('aria-expanded',String(open));
@@ -210,27 +210,11 @@
       return true;
     });
   }
-  function toggleIncidentPopover(open){
-    $('incidentPopover').hidden=!open;
-    $('incidentBadge').setAttribute('aria-expanded',String(open));
-    if(open){$('incidentList').closest('.incident-summary-panel').classList.remove('is-minimized');}
-  }
-  $('incidentBadge').addEventListener('click',()=>toggleIncidentPopover($('incidentBadge').getAttribute('aria-expanded')!=='true'));
-  $('incidentPopoverClose').addEventListener('click',()=>{toggleIncidentPopover(false);$('incidentBadge').focus();});
-  document.addEventListener('click',event=>{if(!$('incidentPopover').contains(event.target)&&!$('incidentBadge').contains(event.target))toggleIncidentPopover(false);});
-  document.addEventListener('keydown',event=>{if(event.key==='Escape')toggleIncidentPopover(false);});
-  function setIncidentsMinimized(minimized){
-    const panel=$('incidentList').closest('.incident-summary-panel');
-    panel.classList.toggle('is-minimized',minimized);if(minimized)toggleIncidentPopover(false);
-    $('incidentListToggle').setAttribute('aria-expanded',String(!minimized));
-    $('incidentListToggle').textContent=minimized?'Show incidents':'Hide incidents';
-  }
-  $('incidentListToggle').addEventListener('click',()=>setIncidentsMinimized($('incidentList').closest('.incident-summary-panel').classList.contains('is-minimized')?false:true));
   function resetOverview(){
     addressRequestId++;currentAddressMatch=null;chosenIncident='';if(addressMarker){addressMarker.remove();addressMarker=null;}
     $('addressSearch').value='';$('addressSearch').blur();$('addressForm').querySelector('button').disabled=false;
     $('addressIncidentResult').replaceChildren();$('addressIncidentResult').hidden=true;$('mapMessage').textContent='';
-    setIncidentsMinimized(false);toggleIncidentPopover(false);$('incidentListToggle').hidden=true;
+
     $('incidentList').scrollLeft=0;document.querySelectorAll('.incident-item').forEach(el=>el.classList.remove('is-selected'));
     $('mapOptionsToggle').setAttribute('aria-expanded','false');$('mapOptionsToggle').closest('.overview-card').classList.remove('is-options-open');
     for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle']){if(!$(id).checked){$(id).checked=true;$(id).dispatchEvent(new Event('change'));}}
@@ -252,18 +236,19 @@
     const address=document.createElement('p');address.className='address-report-location';address.textContent=match.address;banner.append(label,headline,address);content.appendChild(banner);
     if(lastIncidentSuccess && !matches.length){const message=document.createElement('p');message.className='address-report-empty';message.textContent='No Go, Set, Access or Shelter-In-Place zone found.';content.appendChild(message);}
     const groups=document.createElement('div');groups.className='address-incident-groups';
+    const moreLinks=[];
     for(const name of [...incidents.keys(),'']){
       const zones=matches.filter(feature=>String(feature.properties[zoneFields.incident]||'').trim()===name);if(!zones.length)continue;
       zones.sort((a,b)=>statusPriority(statusName(a))-statusPriority(statusName(b)));
       const group=document.createElement('section');group.className='address-incident-group';
-      if(name){const title=document.createElement('h3');title.textContent=name;group.appendChild(title);}
+      if(name)group.setAttribute('aria-label',name);
       const list=document.createElement('ul');list.className='address-zone-list';
       for(const feature of zones){
         const status=Z.key(statusName(feature)),style=Z.styles[status];
         const item=document.createElement('li'),badge=document.createElement('strong');item.className='address-zone-chip';badge.textContent=style.label;item.style.background=style.fill;item.style.borderColor=style.stroke;item.style.color=style.text;if(status==='Access')item.classList.add('access-hatch');
         const zone=document.createElement('span');zone.textContent=String((zoneFields.zone && feature.properties[zoneFields.zone])||'Unnamed zone');item.append(badge,zone);list.appendChild(item);
       }
-      group.appendChild(list);if(name){const link=document.createElement('a');link.className='address-incident-link';link.href='evac.html?incident='+encodeURIComponent(name);link.textContent='More info →';link.setAttribute('aria-label','More info about '+name);group.appendChild(link);}groups.appendChild(group);
+      group.appendChild(list);if(name){const link=document.createElement('a');link.className='home-btn';link.href='evac.html?incident='+encodeURIComponent(name);link.textContent='More info';link.setAttribute('aria-label','More info about '+name);moreLinks.push(link);}groups.appendChild(group);
     }
     content.appendChild(groups);
     const actions=document.createElement('div');actions.className='address-report-actions';
@@ -272,8 +257,8 @@
       if(addressMarker)addressMarker.remove();
       addressMarker=view.markAddress(match);
     });
-    const reset=document.createElement('button');reset.type='button';reset.className='home-btn';reset.textContent='Reset';reset.addEventListener('click',resetOverview);actions.append(zoom,reset);content.appendChild(actions);
-    const note=document.createElement('p');note.className='address-result-note';note.textContent='Approximate location. Confirm incident instructions.';content.appendChild(note);
+    const reset=document.createElement('button');reset.type='button';reset.className='home-btn';reset.textContent='Reset';reset.addEventListener('click',resetOverview);for(const link of moreLinks)actions.appendChild(link);actions.append(zoom,reset);content.appendChild(actions);
+    content.title='Address location is approximate. Confirm incident instructions.';
     return content;
   }
   function renderAddressResult(){
@@ -291,7 +276,7 @@
       if(requestId!==addressRequestId)return;
       const match=data.candidates?.[0];
       if(!match){$('mapMessage').textContent='No address match was found in La Plata County. Try the full street address and city.';return;}
-      view?.closePopup();if(addressMarker){addressMarker.remove();addressMarker=null;}currentAddressMatch=match;renderAddressResult();$('incidentListToggle').hidden=false;setIncidentsMinimized(true);$('mapMessage').textContent='';
+      view?.closePopup();if(addressMarker){addressMarker.remove();addressMarker=null;}currentAddressMatch=match;renderAddressResult();$('mapMessage').textContent='';
     }catch(_){if(requestId===addressRequestId)$('mapMessage').textContent='Address search is unavailable. You can browse the map or try again.';}
     finally {if(requestId===addressRequestId)button.disabled=false;}
   });
