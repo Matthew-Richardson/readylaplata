@@ -95,14 +95,17 @@
       for(const status of Object.keys(STATUS_PRIORITY)){
         const count=entry.counts[status];if(!count)continue;
         const style=Z.styles[status],badge=document.createElement('span');badge.className='status-badge';
-        badge.textContent=style.label;badge.setAttribute('aria-label',style.label+' zones present');
-        if(status==='Access')badge.classList.add('access-hatch');badge.style.background=style.fill;badge.style.borderColor=style.stroke;badge.style.color=style.text;badges.appendChild(badge);
+        badge.setAttribute('aria-label',style.label+' zones present');
+        const symbol=document.createElement('span');symbol.className='incident-status-symbol';symbol.setAttribute('aria-hidden','true');
+        if(status==='Access')symbol.classList.add('access-hatch');symbol.style.background=style.fill;symbol.style.borderColor=style.stroke;
+        const label=document.createElement('span');label.className='incident-status-label';label.textContent=style.label;
+        badge.append(symbol,label);badges.appendChild(badge);
       }
       const link=incidentDetailsButton(name,'Details →');
       const tab=document.createElement('button');tab.type='button';tab.className='incident-mobile-tab';tab.setAttribute('aria-pressed',String(name===chosenIncident));
       const tabName=document.createElement('span');tabName.className='incident-tab-name';tabName.textContent=name;
       const dots=document.createElement('span');dots.className='incident-tab-dots';dots.setAttribute('aria-hidden','true');
-      const labels=[];for(const badge of badges.children){const dot=badge.cloneNode(true);dot.title=badge.textContent;labels.push(badge.textContent);dot.textContent='';dots.append(dot);}
+      const labels=[];for(const badge of badges.children){const dot=badge.querySelector('.incident-status-symbol').cloneNode(true);dot.classList.remove('incident-status-symbol');dot.classList.add('status-badge');dot.title=badge.textContent;labels.push(badge.textContent);dots.append(dot);}
       tab.setAttribute('aria-label','Zoom to '+name+'. '+labels.join(', '));tab.title=name+' · '+labels.join(', ');tab.append(tabName,dots);tab.addEventListener('click',()=>focusIncident(name));
       const mobileActions=document.createElement('div');mobileActions.className='incident-mobile-actions';
       const info=incidentDetailsButton(name,'ⓘ');info.className='incident-mobile-info';info.setAttribute('aria-label','Incident information for '+name);info.title='Incident information';

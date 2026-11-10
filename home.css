@@ -277,5 +277,7 @@ html:has(.home-map-page),body.home-map-page{height:100%;overflow:hidden}.home-ma
 }
 @media(max-width:400px){.home-brand-logo{width:80px}.home-brand-group{gap:10px}.home-site-name{font-size:25px}.home-site-subtitle{font-size:10px}}
 
-/* White halo keeps black incident status text legible over fills and hatching. */
-.incident-sidebar .status-badge{color:#000!important;text-shadow:-1px -1px 0 #fff,0 -1px 0 #fff,1px -1px 0 #fff,-1px 0 0 #fff,1px 0 0 #fff,-1px 1px 0 #fff,0 1px 0 #fff,1px 1px 0 #fff}
+/* Status labels sit beside their colored symbols on the plain card surface. */
+.incident-sidebar .incident-badges>.status-badge{display:inline-flex;align-items:center;gap:6px;padding:0;border:0;background:transparent;color:#000;text-shadow:none}
+.incident-status-symbol{display:inline-block;flex:0 0 17px;width:17px;height:13px;border:1.5px solid;border-radius:3px}
+.incident-status-label{color:#000;font-weight:700}
