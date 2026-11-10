@@ -268,3 +268,14 @@ html:has(.home-map-page),body.home-map-page{height:100%;overflow:hidden}.home-ma
  .incident-sidebar .incident-details-button{grid-column:1/-1;justify-self:start;font-size:14px;min-height:38px;padding:6px 11px;margin:0}
  .incident-sidebar .feed-state{font-size:14px;line-height:1.5}
 }
+
+/* Keep the complete map subtitle on one line at every screen width. */
+.home-site-subtitle{max-width:none;white-space:nowrap;flex-shrink:0}
+@media(min-width:761px) and (max-width:1200px){
+ .home-brand-text{flex-direction:column;align-items:flex-start;gap:4px}
+ .home-site-subtitle{padding-left:0;border-left:0}
+}
+@media(max-width:400px){.home-brand-logo{width:80px}.home-brand-group{gap:10px}.home-site-name{font-size:25px}.home-site-subtitle{font-size:10px}}
+
+/* Black status text over the existing colored incident badges. */
+.incident-sidebar .status-badge{color:#000!important}
