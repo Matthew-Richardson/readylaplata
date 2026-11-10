@@ -47,3 +47,9 @@ Layer load warnings identify the failing AGOL layer by name and log its URL and 
 Incident resource windows list every LIVE = 1 zone associated with the selected incident, showing readable zone names and status text beside colored symbols. The list refreshes with incident data, marks last-known data when refresh fails, and remains available if support resources fail to load. Tapping a live zone polygon opens the same incident support window. Native road/POI popups are unchanged.
 
 Zone-layer matching supports ArcGIS SDK service URLs with separate numeric layerId values, including layer 0. This also fixes road/POI toggle matching. Zone taps use rendered hits with a spatial-query fallback. Run `node tests/home-map.test.cjs` to check normalized layer URLs, live-zone selection, missing attributes, query errors and rapid selection changes.
+
+## Staff zone editor
+
+`zone.html` edits the authenticated source web map. Status choices store Go, Set, Shelter, Access and Planning; Shelter displays as Shelter-In-Place and Access as Access Impact Area. The editor map uses the matching green/yellow/blue/purple hatch/gray styles without changing the source service's stored renderer.
+
+Public map visibility (LIVE) is an Active/Inactive dropdown storing integer 1/0. New and carved zones default to inactive; edits, splits, erases and merges retain the record's existing LIVE value unless changed in the form. Active zones require status, incident and zone name. Inactive zones remain available for editing. The source layer must expose an editable Short Integer field named LIVE (case-insensitive); the editor explains when it is unavailable and does not create fields automatically. Run `node tests/zone-editor.test.cjs` for status and LIVE control checks.

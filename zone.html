@@ -136,9 +136,9 @@
   .btn:disabled { opacity:.4; cursor:default; }
 
   /* status swatch chooser */
-  .status-opts { display:flex; gap:6px; }
+  .status-opts { display:flex; flex-wrap:wrap; gap:6px; }
   .status-opt {
-    flex:1; display:flex; align-items:center; gap:7px; justify-content:center;
+    flex:1 1 115px; display:flex; align-items:center; gap:7px; justify-content:center;
     padding: 9px 6px; border:1px solid var(--line); border-radius: var(--r);
     background: var(--panel-2); color: var(--ink); font: inherit; font-weight:500; cursor:pointer;
   }
@@ -364,7 +364,7 @@ const CONFIG = {
   editLayerTitle: "",
 
   // Evac status choices (override any domain on the status field).
-  statusOptions:  ["Planning", "Set", "Go", "Shelter", "Access"],
+  statusOptions:  ["Go", "Set", "Shelter", "Access", "Planning"],
 
   featureLayer:   "https://services.arcgis.com/XXXX/arcgis/rest/services/EvacZones/FeatureServer/0"
 };
@@ -519,6 +519,8 @@ require([
     clearHighlight();
     layer = l;
     layer.outFields = ["*"];
+    const statusField = layer.fields.find(f => /^status$/i.test(f.name));
+    if (statusField && layer.geometryType === "polygon") layer.renderer = editorStatusRenderer(statusField.name);
     origDef = layer.definitionExpression || null;
     oidField = layer.objectIdField || "OBJECTID";
     layerView = null;
@@ -791,6 +793,12 @@ require([
     $("editorTitle").textContent = title;
     fieldsEl.innerHTML = "";
     attrs = attrs || {};
+    const liveField = editableFields().find(f => ruleFor(f) === "live");
+    if (!liveField){
+      const hint = document.createElement("p");hint.className = "fhint";
+      hint.textContent = "LIVE is missing or not editable on this layer. Use an editable Short Integer field named LIVE (1 = active, 0 = inactive) to control public visibility.";
+      fieldsEl.appendChild(hint);
+    }
     loadIncidentValues();   // refresh the active-incident list each time the form opens
 
     editableFields().forEach(f => {
@@ -801,6 +809,16 @@ require([
       wrap.appendChild(label);
 
       const rule = ruleFor(f);
+      if (rule === "live"){
+        label.textContent = "Public map visibility (LIVE)";
+        const input = document.createElement("select");input.dataset.field = f.name;input.dataset.ftype = f.type;
+        const value = initialLiveValue(attrs[f.name], mode);
+        addOpt(input, 0, "Inactive — hidden from public map", value === 0);
+        addOpt(input, 1, "Active — shown on public map", value === 1);
+        const hint = document.createElement("div");hint.className = "fhint";
+        hint.textContent = "Active = 1. Inactive = 0. Deactivating keeps the zone for future use. Save to apply.";
+        wrap.append(input, hint);fieldsEl.appendChild(wrap);return;
+      }
 
       // ---- STATUS: colored swatch chooser ----
       if (rule === "status"){
@@ -808,7 +826,7 @@ require([
         hidden.type = "hidden";
         hidden.dataset.field = f.name;
         hidden.dataset.ftype = f.type;
-        hidden.value = attrs[f.name] != null ? attrs[f.name] : "";
+        hidden.value = canonicalStatus(attrs[f.name]);
 
         const box = document.createElement("div");
         box.className = "status-opts";
@@ -816,12 +834,12 @@ require([
           const b = document.createElement("button");
           b.type = "button";
           b.className = "status-opt";
-          b.setAttribute("aria-pressed", String(attrs[f.name] === s));
+          b.setAttribute("aria-pressed", String(hidden.value === s));
           const sw = document.createElement("span");
           sw.className = "sw";
-          sw.style.background = STATUS_COLORS[s] || "#9aa3ad";
+          sw.style.background = s === "Access" ? "repeating-linear-gradient(135deg,#f4eafa,#f4eafa 3px,#824ab6 3px,#824ab6 5px)" : STATUS_COLORS[s] || "#9aa3ad";
           const lbl = document.createElement("span");
-          lbl.textContent = s;
+          lbl.textContent = STATUS_LABELS[s] || s;
           b.appendChild(sw); b.appendChild(lbl);
           b.onclick = () => {
             hidden.value = s;
@@ -934,10 +952,34 @@ require([
   }
 
   // Field-specific overrides, matched against name OR alias.
-  const STATUS_COLORS = { Planning: "#9aa3ad", Set: "#f2c43d", Go: "#3aae66", Shelter: "#8dc8f8", Access: "#b79ae8" };
+  const STATUS_COLORS = { Go: "#41f56e", Set: "#fff36a", Shelter: "#8dc8f8", Access: "#d9c5f4", Planning: "#b8bec7" };
+  const STATUS_LABELS = { Go: "Go", Set: "Set", Shelter: "Shelter-In-Place", Access: "Access Impact Area", Planning: "Planning" };
+  const STATUS_ALIASES = { Go: ["go"], Set: ["set"], Shelter: ["shelter","shelter-in-place","shelter in place"], Access: ["access","access impact area","road closure area","road access impact","isolated"], Planning: ["planning"] };
+
+  function canonicalStatus(value){
+    const normalized = String(value || "").trim().toLowerCase();
+    return Object.keys(STATUS_ALIASES).find(key => STATUS_ALIASES[key].includes(normalized)) || String(value || "");
+  }
+
+  function initialLiveValue(value, operation){
+    return operation === "add" || operation === "carve" ? 0 : value === 1 ? 1 : 0;
+  }
+
+  function editorStatusRenderer(field){
+    const outlines = { Go: "#15803d", Set: "#967800", Shelter: "#1e6eb6", Access: "#824ab6", Planning: "#667180" };
+    const expression = ['var status = Lower(Trim(Text($feature[' + JSON.stringify(field) + '])));'];
+    for (const key of CONFIG.statusOptions) expression.push('if (IndexOf(' + JSON.stringify(STATUS_ALIASES[key]) + ', status) >= 0) { return ' + JSON.stringify(key) + '; }');
+    expression.push('return "Planning";');
+    return { type: "unique-value", valueExpression: expression.join("\n"),
+      uniqueValueInfos: CONFIG.statusOptions.map(value => ({ value, label: STATUS_LABELS[value],
+        symbol: { type: "simple-fill", color: value === "Access" ? "#824ab6b4" : STATUS_COLORS[value] + "80",
+          style: value === "Access" ? "backward-diagonal" : "solid", outline: { color: outlines[value], width: 1.8 } } })),
+      defaultSymbol: { type: "simple-fill", color: "#b8bec780", outline: { color: "#667180", width: 1.8 } } };
+  }
 
   function ruleFor(f){
     const hay = (f.name + " " + (f.alias || ""));
+    if (/^live$/i.test(f.name)) return "live";
     if (/status/i.test(hay))   return "status";
     if (/incident/i.test(hay)) return "incident";
     if (/zone[_ ]?name/i.test(hay) || /^name$/i.test(f.name) || /^name$/i.test(f.alias || "")) return "text";
@@ -1201,10 +1243,14 @@ require([
     if (!selected) return;
     const attrs = readForm();
 
-    if (["add", "split", "carve", "merge"].includes(mode)){
+    const liveField = editableFields().find(f => ruleFor(f) === "live");
+    if (liveField && ![0,1].includes(attrs[liveField.name])){
+      toast("Choose Active or Inactive for LIVE.", "err");return;
+    }
+    if (["add", "split", "carve", "merge"].includes(mode) || (liveField && attrs[liveField.name] === 1)){
       const missing = requiredFieldNames().filter(n => attrs[n] == null || attrs[n] === "");
       if (missing.length){
-        toast("Set status, incident, and zone name before creating the zone.", "err");
+        toast("Set status, incident, and zone name before saving a new or active zone.", "err");
         return;
       }
     }
