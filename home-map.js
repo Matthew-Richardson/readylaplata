@@ -84,22 +84,58 @@
       reactiveUtils.watch(()=>layer.visible,visible=>{control.checked=visible;showLayerErrors();});
       loadLayer(layer);
     }
-    // Give live zone polygons the same incident resources action as list Details.
+    // Resolve both rendered hits and polygon interiors against the live zone service.
     let zoneClick=0;
+    const fieldName=(layer,key)=>layer.fields?.find(f=>f.name.toLowerCase()===key)?.name;
+    function liveIncident(layer,attributes){
+      if(attributes?.[fieldName(layer,'live')]!==1)return '';
+      return String(attributes[fieldName(layer,'incident')]||'').trim();
+    }
     view.on('click',async event=>{
       if(typeof onIncident!=='function'||!zoneLayers.length)return;
-      const request=++zoneClick;
+      const request=++zoneClick,point=event.mapPoint||view.toMap?.({x:event.x,y:event.y});
+      const open=name=>{
+        if(request!==zoneClick)return;
+        view.closePopup();
+        if($('mapMessage').dataset.zoneSelection)$('mapMessage').textContent='';
+        delete $('mapMessage').dataset.zoneSelection;
+        onIncident(name,point?[point.latitude,point.longitude]:undefined);
+      };
       try{
         const hit=await view.hitTest(event,{include:zoneLayers});if(request!==zoneClick)return;
         for(const result of hit.results||[]){
           const graphic=result.graphic;if(!graphic||!zoneLayers.includes(graphic.layer))continue;
-          const attributes=graphic.attributes||{},field=key=>graphic.layer.fields?.find(f=>f.name.toLowerCase()===key)?.name;
-          if(attributes[field('live')]!==1)continue;
-          const name=String(attributes[field('incident')]||'').trim();if(!name)continue;
-          view.closePopup();const point=event.mapPoint;
-          onIncident(name,point?[point.latitude,point.longitude]:undefined);return;
+          const name=liveIncident(graphic.layer,graphic.attributes);if(name){open(name);return;}
         }
-      }catch(error){if(error.name!=='AbortError')console.warn('Zone incident selection:',error);}
+      }catch(error){if(error.name!=='AbortError')console.warn('Zone hit test; trying spatial query:',error);}
+      if(!point||request!==zoneClick)return;
+      // Hit graphics can omit attributes or miss unfilled/hatched interiors.
+      // A point-in-polygon service query also honors the layer's definition filters.
+      const candidates=zoneLayers.filter(layer=>{
+        let parent=layer;while(parent){if(parent.visible===false)return false;parent=parent.parent;}
+        return fieldName(layer,'live')&&fieldName(layer,'incident');
+      });
+      const results=await Promise.allSettled(candidates.map(async layer=>{
+        const query=layer.createQuery();
+        query.where='('+String(query.where||'1=1')+') AND ('+C.zonesWhere+')';
+        query.geometry=point;query.spatialRelationship='intersects';query.returnGeometry=false;
+        query.outFields=[fieldName(layer,'live'),fieldName(layer,'incident')];
+        const data=await layer.queryFeatures(query);return {layer,features:data.features||[]};
+      }));
+      if(request!==zoneClick)return;
+      let unassigned=false,failed=false;
+      for(const result of results){
+        if(result.status==='rejected'){failed=true;console.warn('Zone spatial query:',result.reason);continue;}
+        const {layer,features}=result.value;
+        for(const feature of features){
+          const name=liveIncident(layer,feature.attributes);if(name){open(name);return;}
+          if(feature.attributes?.[fieldName(layer,'live')]===1)unassigned=true;
+        }
+      }
+      if(unassigned||failed){
+        $('mapMessage').textContent=unassigned?'This active zone has no incident assigned in the public zone layer.':'Zone information could not be loaded. Use Refresh to try again.';
+        $('mapMessage').dataset.zoneSelection='true';
+      }
     });
     view.on('layerview-create-error',event=>reportLayerError(event.layer,event.error,'view'));
     view.on('layerview-create',event=>clearLayerError(event.layer,'view'));
