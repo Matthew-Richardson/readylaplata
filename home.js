@@ -9,7 +9,7 @@
   const DOM = {};
   ['siteBanner','coderedButton','coderedOverlay','coderedClose','callerIdButton','callerIdOverlay','callerIdClose','announcementOverlay','announcementClose','announcementDismiss','announcementAlertBtn'].forEach(id=>DOM[id]=$(id));
   let view, zoneFields, incidents = new Map(), mapReady = false;
-  let incidentsBusy = false, lastIncidentSuccess = null;
+  let incidentsBusy = false, lastIncidentSuccess = null, incidentsError = false;
   let countyBounds = C.countyBounds;
   const linkedIncident = new URLSearchParams(location.search).get('incident') || '';
   let chosenIncident = '';
@@ -128,15 +128,16 @@
     if(!mapReady || incidentsBusy) return;
     incidentsBusy=true;
     try {
-      // Query all IDs first to avoid silently omitting zones at the service limit.
-      const idData=await json(C.zonesUrl+'/query?'+new URLSearchParams({where:'1=1',returnIdsOnly:'true',f:'json'}));
-      if(idData.error || !Array.isArray(idData.objectIds))throw new Error('County zone query failed');
-      const ids=idData.objectIds,features=[];
+      if(!zoneFields.live)throw new Error('LIVE is not exposed in the public evacuation-zone view.');
+      // Query only live IDs, then reapply the filter to each batch in case a zone is deactivated during loading.
+      const idData=await json(C.zonesUrl+'/query?'+new URLSearchParams({where:C.zonesWhere,returnIdsOnly:'true',f:'json'}));
+      if(idData.error || (idData.objectIds!==null&&!Array.isArray(idData.objectIds)))throw new Error('County zone query failed');
+      const ids=idData.objectIds||[],features=[];
       for(let offset=0;offset<ids.length;offset+=200){
         const batch=ids.slice(offset,offset+200);
-        const fs=await json(C.zonesUrl+'/query?'+new URLSearchParams({objectIds:batch.join(','),outFields:'*',returnGeometry:'true',outSR:'4326',f:'geojson'}));
-        if(fs.error || !Array.isArray(fs.features) || fs.exceededTransferLimit || fs.features.length!==batch.length)throw new Error('Incomplete incident response');
-        features.push(...fs.features);
+        const fs=await json(C.zonesUrl+'/query?'+new URLSearchParams({where:C.zonesWhere,objectIds:batch.join(','),outFields:'*',returnGeometry:'true',outSR:'4326',f:'geojson'}));
+        if(fs.error || !Array.isArray(fs.features) || fs.exceededTransferLimit || fs.features.length>batch.length)throw new Error('Incomplete incident response');
+        features.push(...fs.features.filter(feature=>feature.properties?.[zoneFields.live]===1));
       }
       const next=new Map();
       features.forEach(feature=>{
@@ -150,13 +151,14 @@
       currentZoneFeatures=features;
       incidents=new Map(Array.from(next.entries()).sort(compareIncidents));
       for(const entry of incidents.values())if(entry.extent.isValid())entry.point=entry.extent.getCenter();
-      renderIncidentList();lastIncidentSuccess=Date.now();
+      renderIncidentList();lastIncidentSuccess=Date.now();incidentsError=false;
       $('incidentState').dataset.error='false';$('incidentState').hidden=incidents.size>0;$('incidentState').textContent=incidents.size?'':'No incidents are currently shown in the county zone layer.';
       $('lastLoaded').textContent='Updated '+localTime(lastIncidentSuccess);
       if(currentAddressMatch)renderAddressResult();
       if(firstLoad && view)requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20]});if(linkedIncident&&incidents.has(linkedIncident))openIncidentDetails(linkedIncident);});
       firstLoad=false;
     } catch(err){
+      incidentsError=true;if(currentAddressMatch)renderAddressResult();
       console.error('Incidents:',err);$('incidentState').hidden=false;$('incidentState').dataset.error='true';
       $('incidentState').textContent=lastIncidentSuccess?'Unable to refresh. Showing incident data from '+localTime(lastIncidentSuccess)+'.':'County incidents could not be loaded. Try Refresh information or the lightweight map.';
     } finally {incidentsBusy=false;}
@@ -174,7 +176,7 @@
       ]);
       if(metadata.error||!Array.isArray(metadata.fields))throw new Error('County zone metadata unavailable');
       const field=name=>metadata.fields.find(f=>f.name.toLowerCase()===name)?.name;
-      zoneFields={status:field('status'),incident:field('incident'),zone:field('zonename')||field('zone_name')};
+      zoneFields={status:field('status'),incident:field('incident'),zone:field('zonename')||field('zone_name'),live:field('live')};
       if(!zoneFields.status||!zoneFields.incident)throw new Error('Zone status/incident fields unavailable');
       const extent=extentData?.extent;
       if(extent&&[extent.xmin,extent.ymin,extent.xmax,extent.ymax].every(Number.isFinite))countyBounds=[[extent.ymin,extent.xmin],[extent.ymax,extent.xmax]];
@@ -253,7 +255,7 @@
     if(highest){const style=Z.styles[highest];content.style.setProperty('--report-color',style.fill);content.style.setProperty('--report-edge',style.stroke);banner.classList.add('has-zone');}
     const label=document.createElement('span');label.className='address-report-label';label.textContent='Address status';
     const headline=document.createElement('h2');headline.className='address-report-headline';
-    const action=!lastIncidentSuccess?'Checking zones…':highest?{Go:'Evacuate Now',Shelter:'Shelter-In-Place',Set:'Prepare to Leave',Access:'Road Access Impacted'}[highest]:'No Listed Zone';
+    const action=!lastIncidentSuccess?(incidentsError?'Zone status unavailable':'Checking zones…'):highest?{Go:'Evacuate Now',Shelter:'Shelter-In-Place',Set:'Prepare to Leave',Access:'Road Access Impacted'}[highest]:'No Listed Zone';
     headline.textContent=shortAddressLabel(match)+' — '+action;
     banner.append(label,headline);content.appendChild(banner);
     if(lastIncidentSuccess && !matches.length){const message=document.createElement('p');message.className='address-report-empty';message.textContent='No Go, Set, Access or Shelter-In-Place zone found.';content.appendChild(message);}

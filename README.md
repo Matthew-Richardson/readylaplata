@@ -14,7 +14,7 @@ The desktop incident list scrolls vertically beside the left edge of the map. On
 
 The overview loads AGOL web map `58a8bb313db64271a55e7960cb839f64`, including its published basemap and operational layers. Roads, road information and evacuation POIs use native web map layers, with the existing toggles wired to layer visibility. Points, zones, roads, symbology, labels and feature popups come exclusively from the AGOL map. The app does not inject operational layers or incident graphics and does not override map renderers or labeling. Only a temporary searched-address marker is added. Incident queries supply the list, zoom bounds and address status checks without drawing extra features. County view fits the full boundary, including its north edge. Panning and zooming are enabled; expanded map remains available. Mobile legend and controls open in a bottom panel. ArcGIS requires WebGL2; unsupported browsers can use the separately retained Leaflet lightweight map.
 
-Access is also recognized as Access Impact Area, Road Closure Area, Road Access Impact and Isolated. It describes road access conditions rather than a protective-action order. Planning is for testing. These frontend changes do not alter AGOL data, layer domains or schema; active/inactive filtering remains future work.
+Access is also recognized as Access Impact Area, Road Closure Area, Road Access Impact and Isolated. It describes road access conditions rather than a protective-action order. Planning is for testing. These frontend changes do not alter AGOL data, layer domains or schema; evacuation-zone visibility is now restricted to LIVE = 1. Road and POI visibility flags remain future work.
 
 Publish the source files together to the existing county web directory to update that site. GitHub commits alone do not update the county server. External ArcGIS services and SDK remain linked; Leaflet is used only by the lightweight fallback.
 
@@ -27,3 +27,5 @@ Each page load fits the full county. Selecting an incident does not persist a zo
 Mobile slider arrows stay available for touch and brighten on hover; the count has its own separated label column. Mobile address results use smaller typography, chips and actions. The Latest update action moves below the title on mobile to keep the close button clear.
 
 Desktop incident names zoom to zones; Details opens resources separately. The address report retains its existing More info and Zoom to actions.
+
+Evacuation zones require the Short Integer LIVE field in the public view. Home map definitions, incident queries, address checks and the lightweight map use LIVE = 1, excluding 0 and null. Existing web map definition filters are preserved with AND. In-flight deactivations are rechecked in batch queries; no filter falls back to all features. Include LIVE in the hosted view before deploying this version. This site change does not alter the AGOL hosted view definition itself.

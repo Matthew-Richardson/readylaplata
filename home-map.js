@@ -35,7 +35,14 @@
     const all=()=>webmap.allLayers.toArray();
     const matches=(layer,url)=>String(layer.url||'').replace(/\/$/,'').toLowerCase()===url.replace(/\/$/,'').toLowerCase();
     // Bind existing web map layers only. Rendering, labels and popups remain authored in AGOL.
-    const zones=all().find(l=>matches(l,C.zonesUrl));
+    const zoneLayers=all().filter(l=>matches(l,C.zonesUrl));
+    const zones=zoneLayers[0];
+    for(const layer of zoneLayers){
+      const existing=String(layer.definitionExpression||'').trim();
+      layer.definitionExpression=existing?'('+existing+') AND ('+C.zonesWhere+')':C.zonesWhere;
+      try{await layer.load();if(!layer.fields?.some(field=>field.name.toUpperCase()==='LIVE')){layer.visible=false;$('mapMessage').textContent='Live evacuation-zone information is temporarily unavailable.';}}
+      catch(error){layer.visible=false;console.warn('Live evacuation-zone layer:',error);}
+    }
     const roads=all().find(l=>l.type==='vector-tile'&&/^(county )?roads$/i.test(l.title||''));
     const roadInfo=all().find(l=>matches(l,C.roadClosuresUrl)),pois=all().find(l=>matches(l,C.evacPoisUrl));
     // The only app graphic is a temporary marker for a searched address.
@@ -43,7 +50,7 @@
     webmap.add(address);
     const view=new MapView({container,map:webmap,extent:new Extent({xmin:C.countyBounds[0][1],ymin:C.countyBounds[0][0],xmax:C.countyBounds[1][1],ymax:C.countyBounds[1][0],spatialReference:{wkid:4326}}),constraints:{rotationEnabled:false},popup:{dockEnabled:false}});
     let ready=false,navigation=0;
-    const operationalLayers=[zones,roadInfo,pois].filter(layer=>layer&&typeof layer.refresh==='function');
+    const operationalLayers=[...zoneLayers,roadInfo,pois].filter(layer=>layer&&typeof layer.refresh==='function');
     function closeSupport(){activeSupport?.remove();}
     function navigate(target){
       if(!ready)return Promise.resolve();const id=++navigation;

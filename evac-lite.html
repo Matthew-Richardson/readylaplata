@@ -130,7 +130,8 @@
   </div>
 </div>
 
-<script src="zone-status.js?v=20261108-topbar8"></script>
+<script src="zone-status.js?v=20261110-live38"></script>
+<script src="home-config.js?v=20261110-live38"></script>
 <script>
 (function() {
   'use strict';
@@ -182,12 +183,14 @@
   var locationMarker = null;
 
   fetch(EVAC_URL + '/query?' + new URLSearchParams({
-    where: "1=1", outFields: 'incident,STATUS,zonename',
+    where: ReadyLaPlataHomeConfig.zonesWhere, outFields: 'incident,STATUS,zonename,LIVE',
     returnGeometry: 'true', outSR: '4326', f: 'geojson'
   }))
     .then(function(r) { return r.json(); })
     .then(function(geojson) {
-      var features = geojson.features || [];
+      if(geojson.error)throw new Error('Live evacuation zones are unavailable.');
+      var features = (geojson.features || []).filter(function(feature){var props=feature.properties||{},live=Object.keys(props).find(function(key){return key.toUpperCase()==='LIVE';});return props[live] === 1;});
+      geojson.features = features;
       loadingEl.classList.add('is-hidden');
 
       if (!features.length) {
