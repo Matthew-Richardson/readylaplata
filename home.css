@@ -174,9 +174,9 @@ html:has(.home-map-page),body.home-map-page{height:100%;overflow:hidden}.home-ma
  .incident-sidebar .incident-list{height:52px;gap:10px;align-items:center;padding:0 0 4px;scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:#8da4bc #e5ebf2}
  .incident-sidebar .incident-list::-webkit-scrollbar{height:4px}
  .incident-sidebar .incident-list::-webkit-scrollbar-thumb{background:#8da4bc;border-radius:3px}
- .incident-sidebar .incident-item{flex:0 0 auto;min-width:0;min-height:0;max-width:250px;padding:0;border-radius:7px;scroll-snap-align:start;overflow:hidden}
+ .incident-sidebar .incident-item{display:block;grid-template-columns:none;grid-template-rows:none;gap:0;align-items:normal;flex:0 0 216px;width:216px;min-width:0;height:46px;min-height:0;max-width:216px;padding:0;border-radius:7px;scroll-snap-align:start;overflow:hidden}
  .incident-sidebar .incident-item>.incident-focus,.incident-sidebar .incident-item>.incident-badges,.incident-sidebar .incident-item>.incident-details-button{display:none}
- .incident-sidebar .incident-mobile-tab{display:flex;align-items:center;justify-content:center;gap:12px;min-height:44px;max-width:248px;padding:10px 14px;border:0;background:transparent;color:#254763;font:700 12px Arial;text-align:left;cursor:pointer}
+ .incident-sidebar .incident-mobile-tab{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;height:44px;min-height:44px;max-width:none;padding:10px 14px;border:0;background:transparent;color:#254763;font:700 12px Arial;text-align:left;cursor:pointer}
  .incident-tab-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  .incident-tab-dots{display:flex;align-items:center;gap:3px;flex:none}
  .incident-tab-dots .status-badge{display:block;width:9px;height:9px;min-width:0;padding:0;margin:0;border-width:1px;border-style:solid;border-radius:50%}

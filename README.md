@@ -21,3 +21,5 @@ Publish the source files together to the existing county web directory to update
 Incident support resources use a floating window within the map: up to 620 px wide on desktop, nearly full map width on mobile, subtle surface transparency, compact cards and internal scrolling. Closing it leaves the address status report unchanged.
 
 The resource window places the incident title and Latest update action in one header row.
+
+Each page load fits the full county. Selecting an incident does not persist a zoom target in the URL. Legacy shared incident links open resources over the county view once. Mobile cells explicitly reset the older card grid layout to prevent empty rows and uneven spacing.

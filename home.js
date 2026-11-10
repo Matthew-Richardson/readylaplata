@@ -11,7 +11,10 @@
   let view, zoneFields, incidents = new Map(), mapReady = false;
   let incidentsBusy = false, lastIncidentSuccess = null;
   let countyBounds = C.countyBounds;
-  let chosenIncident = new URLSearchParams(location.search).get('incident') || '';
+  const linkedIncident = new URLSearchParams(location.search).get('incident') || '';
+  let chosenIncident = '';
+  // A shared incident link opens its resources once; reloads start with the county.
+  if(linkedIncident){const url=new URL(location.href);url.searchParams.delete('incident');history.replaceState(null,'',url);}
   let firstLoad = true, announcementInitialized = false;
   let operationalLayers = [], currentZoneFeatures = [], currentAddressMatch=null, addressRequestId=0, addressMarker=null;
   const welcome = $('welcomeDialog');
@@ -79,7 +82,6 @@
     if(!view || !entry) return;
     chosenIncident=name;
     document.querySelectorAll('.incident-item').forEach(el=>{const selected=el.dataset.incident===name;el.classList.toggle('is-selected',selected);el.querySelector('.incident-mobile-tab')?.setAttribute('aria-pressed',String(selected));});
-    const url=new URL(location.href);url.searchParams.set('incident',name);history.replaceState(null,'',url);
     try {
       if(entry.extent?.isValid()) view.fitBounds(entry.extent,{padding:[30,30],maxZoom:14});
       openIncidentDetails(name);
@@ -159,8 +161,7 @@
       $('incidentState').dataset.error='false';$('incidentState').hidden=incidents.size>0;$('incidentState').textContent=incidents.size?'':'No incidents are currently shown in the county zone layer.';
       $('lastLoaded').textContent='Updated '+localTime(lastIncidentSuccess);
       if(currentAddressMatch)renderAddressResult();
-      if(firstLoad && chosenIncident && view){await focusIncident(chosenIncident);}
-      else if(firstLoad && view)requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20]});});
+      if(firstLoad && view)requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20]});if(linkedIncident&&incidents.has(linkedIncident))openIncidentDetails(linkedIncident);});
       firstLoad=false;
     } catch(err){
       console.error('Incidents:',err);$('incidentState').hidden=false;$('incidentState').dataset.error='true';
