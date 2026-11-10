@@ -86,7 +86,7 @@
       for(const status of Object.keys(STATUS_PRIORITY)){
         const count=entry.counts[status];if(!count)continue;
         const style=Z.styles[status],badge=document.createElement('span');badge.className='status-badge';
-        badge.textContent=style.label+' '+count;badge.setAttribute('aria-label',count+' '+style.label+' zone'+(count===1?'':'s'));
+        badge.textContent=style.label;badge.setAttribute('aria-label',style.label+' zones present');
         if(status==='Access')badge.classList.add('access-hatch');badge.style.background=style.fill;badge.style.borderColor=style.stroke;badge.style.color=style.text;badges.appendChild(badge);
       }
       const link=document.createElement('a');link.href='evac.html?incident='+encodeURIComponent(name);link.textContent='Details →';
@@ -206,7 +206,7 @@
       view.createPane('zoneLabels');view.getPane('zoneLabels').style.zIndex=480;view.getPane('zoneLabels').style.pointerEvents='none';
       view.createPane('incidentPins');view.getPane('incidentPins').style.zIndex=675;
       zoneLabelLayer=L.layerGroup().addTo(view);
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri',maxZoom:19}).addTo(view);
+      L.tileLayer(C.basemapTilesUrl,{attribution:'Terrain: Esri, USGS, NOAA',maxNativeZoom:13,maxZoom:19}).addTo(view);
       L.esri.featureLayer({url:C.boundaryUrl,style:()=>({color:'#0b4da2',weight:2,opacity:0.65,fillOpacity:0}),interactive:false}).addTo(view);
       pinLayer=L.layerGroup().addTo(view);
       const [metadata,extentData]=await Promise.all([
@@ -367,30 +367,29 @@
   function addressIncidentContent(match){
     const content=document.createElement('div');
     const heading=document.createElement('div');heading.className='address-result-heading';
-    const title=document.createElement('div'),label=document.createElement('span');label.className='address-result-label';label.textContent='Your address';
-    const address=document.createElement('strong');address.textContent=match.address;title.append(label,address);
+    const title=document.createElement('div');
+    const address=document.createElement('strong');address.textContent=match.address;title.appendChild(address);
     const reset=document.createElement('button');reset.type='button';reset.className='home-btn';reset.textContent='Reset';reset.addEventListener('click',resetOverview);heading.append(title,reset);content.appendChild(heading);
-    const matches=currentZoneFeatures.filter(feature=>zoneContainsAddress(feature.geometry,match.location.x,match.location.y));
+    const matches=currentZoneFeatures.filter(feature=>['Go','Set','Access','Shelter'].includes(Z.key(statusName(feature))) && zoneContainsAddress(feature.geometry,match.location.x,match.location.y));
     const message=document.createElement('p');
-    message.textContent=!lastIncidentSuccess?'Incident zones are still loading. Results will update when loading finishes.':matches.length?'Your address is within '+matches.length+' mapped zone'+(matches.length===1?'':'s')+'. Review every status below.':'No current incident zone is shown at this address. Check official updates for changing conditions.';
-    content.appendChild(message);
+    message.textContent=!lastIncidentSuccess?'Checking zones…':matches.length?'':'No Go, Set, Access or Shelter-In-Place zone found at this address.';
+    if(message.textContent)content.appendChild(message);
     const groups=document.createElement('div');groups.className='address-incident-groups';
     for(const name of [...incidents.keys(),'']){
       const zones=matches.filter(feature=>String(feature.properties[zoneFields.incident]||'').trim()===name);if(!zones.length)continue;
       zones.sort((a,b)=>statusPriority(statusName(a))-statusPriority(statusName(b)));
       const group=document.createElement('section');group.className='address-incident-group';
-      const title=document.createElement('h3');title.textContent=name||'Zones without an assigned incident';group.appendChild(title);
+      if(name){const link=document.createElement('a');link.className='address-incident-link';link.href='evac.html?incident='+encodeURIComponent(name);link.textContent=name+' →';group.appendChild(link);}
       const list=document.createElement('ul');list.className='address-zone-list';
       for(const feature of zones){
         const status=Z.key(statusName(feature)),style=Z.styles[status];
-        const item=document.createElement('li'),badge=document.createElement('span');badge.className='status-badge';badge.textContent=style.label;badge.style.background=style.fill;badge.style.borderColor=style.stroke;badge.style.color=style.text;if(status==='Access')badge.classList.add('access-hatch');
+        const item=document.createElement('li'),badge=document.createElement('strong');item.className='address-zone-chip';badge.textContent=style.label;item.style.background=style.fill;item.style.borderColor=style.stroke;item.style.color=style.text;if(status==='Access')item.classList.add('access-hatch');
         const zone=document.createElement('span');zone.textContent=String((zoneFields.zone && feature.properties[zoneFields.zone])||'Unnamed zone');item.append(badge,zone);list.appendChild(item);
       }
-      const link=document.createElement('a');link.className='home-btn primary';link.href='evac.html?incident='+encodeURIComponent(name);link.textContent='Open incident →';
-      group.appendChild(list);if(name)group.appendChild(link);groups.appendChild(group);
+      group.appendChild(list);groups.appendChild(group);
     }
     content.appendChild(groups);
-    const note=document.createElement('p');note.className='address-result-note';note.textContent='Address location is approximate. Confirm your zone and follow incident instructions.';content.appendChild(note);
+    const note=document.createElement('p');note.className='address-result-note';note.textContent='Approximate location. Confirm incident instructions.';content.appendChild(note);
     return content;
   }
   function renderAddressResult(){

@@ -1,5 +1,6 @@
 /* Public, read-only sources from the existing county evacuation web map. */
 window.ReadyLaPlataHomeConfig = Object.freeze({
+  basemapTilesUrl: 'https://services.arcgisonline.com/arcgis/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}',
   zonesUrl: 'https://services2.arcgis.com/ilLrLpXfElYxSy9y/ArcGIS/rest/services/LPC_Evac_Zones_View/FeatureServer/0',
   boundaryUrl: 'https://gis.lpcgov.org/arcgis/rest/services/JS_website/Map_Pro/MapServer/83',
   roadsTilesUrl: 'https://gis.lpcgov.org/arcgis/rest/services/Hosted/Roads/VectorTileServer/tile/{z}/{y}/{x}.pbf',

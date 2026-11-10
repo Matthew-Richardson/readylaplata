@@ -19,3 +19,7 @@ The full-width header contains branding, Address Search and primary actions. Sea
 The responsive viewport layout keeps the map and page controls within one screen. Panning, pinch and wheel zoom are enabled. On phones, legend and controls open in a bottom panel. Expanded map remains available.
 
 Address search lists all containing zones and their statuses in the upper results panel, with incident links and Reset. It does not pan/zoom or open a map popup. The incident list minimizes while viewing results. Home restores default layers/county extent, clears search and incident selection, and opens the zone guide.
+
+Address results include only Go, Set, Access and Shelter zones, as compact colored labels. Planning/testing zones are excluded from address results. Incident status badges indicate statuses present, without numeric totals.
+
+The overview uses Esri World Terrain Base without a labels overlay, with La Plata County Hosted/Roads vector tiles above it. Terrain native tiles extend through zoom 13 and are enlarged at closer zooms; operational and road vector features stay sharp.
