@@ -78,7 +78,7 @@
     const entry=incidents.get(name);
     if(!view || !entry) return;
     chosenIncident=name;
-    document.querySelectorAll('.incident-item').forEach(el=>el.classList.toggle('is-selected',el.dataset.incident===name));
+    document.querySelectorAll('.incident-item').forEach(el=>{const selected=el.dataset.incident===name;el.classList.toggle('is-selected',selected);el.querySelector('.incident-mobile-tab')?.setAttribute('aria-pressed',String(selected));});
     const url=new URL(location.href);url.searchParams.set('incident',name);history.replaceState(null,'',url);
     try {
       if(entry.extent?.isValid()) view.fitBounds(entry.extent,{padding:[30,30],maxZoom:14});
@@ -107,7 +107,12 @@
         if(status==='Access')badge.classList.add('access-hatch');badge.style.background=style.fill;badge.style.borderColor=style.stroke;badge.style.color=style.text;badges.appendChild(badge);
       }
       const link=incidentDetailsButton(name,'Details →');
-      card.append(focus,badges,link);container.appendChild(card);
+      const tab=document.createElement('button');tab.type='button';tab.className='incident-mobile-tab';tab.setAttribute('aria-pressed',String(name===chosenIncident));
+      const tabName=document.createElement('span');tabName.className='incident-tab-name';tabName.textContent=name;
+      const dots=document.createElement('span');dots.className='incident-tab-dots';dots.setAttribute('aria-hidden','true');
+      const labels=[];for(const badge of badges.children){const dot=badge.cloneNode(true);dot.title=badge.textContent;labels.push(badge.textContent);dot.textContent='';dots.append(dot);}
+      tab.setAttribute('aria-label',name+'. '+labels.join(', ')+'. Open incident information');tab.title=name+' · '+labels.join(', ');tab.append(tabName,dots);tab.addEventListener('click',()=>focusIncident(name));
+      card.append(focus,badges,link,tab);container.appendChild(card);
     }
     $('incidentCount').textContent=incidents.size;
     requestAnimationFrame(updateIncidentArrows);
@@ -233,7 +238,7 @@
     $('addressSearch').value='';$('addressSearch').blur();$('addressForm').querySelector('button').disabled=false;
     $('addressIncidentResult').replaceChildren();$('addressIncidentResult').hidden=true;$('mapMessage').textContent='';
 
-    $('incidentList').scrollLeft=0;document.querySelectorAll('.incident-item').forEach(el=>el.classList.remove('is-selected'));
+    $('incidentList').scrollLeft=0;document.querySelectorAll('.incident-item').forEach(el=>{el.classList.remove('is-selected');el.querySelector('.incident-mobile-tab')?.setAttribute('aria-pressed','false');});
     $('mapOptionsToggle').setAttribute('aria-expanded','false');$('mapOptionsToggle').closest('.overview-card').classList.remove('is-options-open');
     for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle']){if(!$(id).checked){$(id).checked=true;$(id).dispatchEvent(new Event('change'));}}
     const url=new URL(location.href);url.searchParams.delete('incident');history.replaceState(null,'',url);

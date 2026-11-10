@@ -22,7 +22,8 @@
     close();const request=generation;
     const content=node('section','incident-support-content');
     content.setAttribute('aria-label',name+' support resources');
-    content.append(node('h3','incident-support-title',name),node('div','detail-label','Incident support resources'));
+    const header=node('div','incident-support-heading');header.append(node('h3','incident-support-title',name));
+    content.append(header,node('div','detail-label','Incident support resources'));
     const resourceArea=node('div','incident-support-resources');resourceArea.setAttribute('aria-live','polite');content.append(resourceArea);
     const loading=node('p','detail-pending','Loading incident information…');resourceArea.append(loading);
     const popup=view.openSupportPopup(latlng,content);activePopup=popup;
@@ -33,7 +34,7 @@
       if(!current())return;
       loading.remove();const data=records.find(record=>String(record.name||'').toLowerCase()===name.toLowerCase());
       if(!data){resourceArea.append(node('p','detail-pending','Support information has not been posted for this incident. Follow current zone instructions.'));popup.update();return;}
-      const url=safeUrl(data.statusLink);if(url){const link=node('a','home-btn primary','Latest county update');link.href=url;link.target='_blank';link.rel='noopener noreferrer';resourceArea.append(link);}
+      const url=safeUrl(data.statusLink);if(url){const link=node('a','home-btn primary incident-latest-update','Latest update');link.href=url;link.target='_blank';link.rel='noopener noreferrer';header.append(link);}
       const grid=node('div','incident-detail-resource-grid');
       grid.append(resourceCard('Check-in location',data.checkIn,data.checkInAddr),resourceCard('Evacuation shelters',data.shelters,data.sheltersAddr),resourceCard('Road closures',data.road),resourceCard('Small animals',data.smallAnimals,data.smallAnimalsAddr),resourceCard('Large animals',data.largeAnimals,data.largeAnimalsAddr));resourceArea.append(grid);
       resourceArea.append(node('p','incident-detail-source','La Plata County OEM · Information can change. Follow current incident instructions.'));
