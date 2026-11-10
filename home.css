@@ -254,3 +254,17 @@ html:has(.home-map-page),body.home-map-page{height:100%;overflow:hidden}.home-ma
 .incident-sidebar .incident-details-button,.incident-sidebar .incident-mobile-info{position:relative;z-index:2}
 .incident-sidebar .incident-item:hover{border-color:#80a6d1}
 .incident-sidebar .incident-focus:focus-visible::after,.incident-sidebar .incident-mobile-tab:focus-visible::after{outline:3px solid #e9a829;outline-offset:-3px}
+
+/* Readable desktop incident menu; retain the compact phone slider. */
+@media(min-width:761px){
+ .incident-sidebar .incident-strip-heading h2{font-size:16px;line-height:1.3;color:#000}
+ .incident-sidebar #incidentCount{font-size:20px;min-width:34px;padding:3px 8px}
+ .incident-sidebar .incident-popover-actions .lite-link{font-size:12px}
+ .incident-sidebar .incident-list{gap:10px}
+ .incident-sidebar .incident-item{grid-template-columns:minmax(0,1fr);gap:10px;padding:13px 12px}
+ .incident-sidebar .incident-focus{font-size:16px;line-height:1.35;color:#000;min-height:24px}
+ .incident-sidebar .incident-badges{grid-column:1/-1;gap:6px}
+ .incident-sidebar .status-badge{font-size:13px;line-height:1.3;padding:4px 7px}
+ .incident-sidebar .incident-details-button{grid-column:1/-1;justify-self:start;font-size:14px;min-height:38px;padding:6px 11px;margin:0}
+ .incident-sidebar .feed-state{font-size:14px;line-height:1.5}
+}
