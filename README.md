@@ -27,3 +27,6 @@ The overview uses Esri World Terrain Base without a labels overlay, with La Plat
 Address results are centered status reports with a prominent status-colored header. More info opens the corresponding incident; Zoom to explicitly centers the main map and marks the geocoded address. Searching alone does not move the map. Reset/Home remove the address marker.
 
 Above-map layout separates the address-search group from the incident-browsing strip. Incident cards use a compact title/status/action layout; search results minimize browsing into a secondary row.
+
+The overview now uses ArcGIS Maps SDK 4.31 and the same WebMap as the incident page (`58a8bb313db64271a55e7960cb839f64`). Native layers preserve road styles/labels. The unlabeled terrain basemap remains. The lightweight page retains Leaflet. WebGL2 is required for the ArcGIS map; unsupported browsers receive the lightweight-map link while incident/address data remain usable.
+Incidents are collapsed into an expandable header badge. Centered Address Search sits directly above the overview map. The larger LPC logo and desktop title/subtitle share a horizontal brand group.

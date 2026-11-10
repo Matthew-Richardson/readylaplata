@@ -8,7 +8,7 @@
   };
   const DOM = {};
   ['siteBanner','coderedButton','coderedOverlay','coderedClose','callerIdButton','callerIdOverlay','callerIdClose','announcementOverlay','announcementClose','announcementDismiss','announcementAlertBtn'].forEach(id=>DOM[id]=$(id));
-  let view, zoneLayer, pinLayer, zoneLabelLayer, zoneFields, incidents = new Map(), mapReady = false;
+  let view, zoneFields, incidents = new Map(), mapReady = false;
   let incidentsBusy = false, lastIncidentSuccess = null;
   let countyBounds = C.countyBounds;
   let chosenIncident = new URLSearchParams(location.search).get('incident') || '';
@@ -107,41 +107,6 @@
   }
   $('incidentList').addEventListener('scroll',updateIncidentArrows,{passive:true});
   new ResizeObserver(updateIncidentArrows).observe($('incidentList'));
-  // Find an interior label position, including concave zones and holes.
-  function zoneLabelPoint(feature) {
-    const geometry=feature.geometry;
-    const polygons=geometry?.type==='MultiPolygon'?geometry.coordinates:geometry?.type==='Polygon'?[geometry.coordinates]:[];
-    if(!polygons.length)return null;
-    const area=ring=>Math.abs(ring.reduce((sum,a,i)=>{const b=ring[(i+1)%ring.length];return sum+a[0]*b[1]-b[0]*a[1];},0));
-    const rings=polygons.slice().sort((a,b)=>area(b[0])-area(a[0]))[0];
-    const outer=rings[0];if(!outer?.length)return null;
-    const xs=outer.map(p=>p[0]),ys=outer.map(p=>p[1]);
-    const insideRing=(x,y,ring)=>{
-      let hit=false;
-      for(let i=0,j=ring.length-1;i<ring.length;j=i++){
-        const a=ring[i],b=ring[j];
-        if((a[1]>y)!==(b[1]>y) && x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])hit=!hit;
-      }
-      return hit;
-    };
-    const inside=(x,y)=>insideRing(x,y,outer)&&!rings.slice(1).some(ring=>insideRing(x,y,ring));
-    const x=(Math.min(...xs)+Math.max(...xs))/2,y=(Math.min(...ys)+Math.max(...ys))/2;
-    if(inside(x,y))return [y,x];
-    const orderedYs=Array.from(new Set(ys)).sort((a,b)=>a-b);
-    const mids=orderedYs.slice(1).map((value,i)=>(value+orderedYs[i])/2);
-    const candidateYs=[y,...(mids.length<=12?mids:Array.from({length:12},(_,i)=>mids[Math.floor(i*(mids.length-1)/11)]))];
-    let best=null;
-    for(const cy of candidateYs){
-      const cuts=[];
-      rings.forEach(ring=>ring.forEach((a,i)=>{const b=ring[(i+1)%ring.length];if((a[1]>cy)!==(b[1]>cy))cuts.push(a[0]+(cy-a[1])*(b[0]-a[0])/(b[1]-a[1]));}));
-      cuts.sort((a,b)=>a-b);
-      for(let i=0;i+1<cuts.length;i++){
-        const cx=(cuts[i]+cuts[i+1])/2,width=cuts[i+1]-cuts[i];
-        if(inside(cx,cy)&&(!best||width>best.width))best={point:[cy,cx],width};
-      }
-    }
-    return best?.point || [outer[0][1],outer[0][0]];
-  }
   async function refreshIncidents() {
     if(!mapReady || incidentsBusy) return;
     incidentsBusy=true;
@@ -160,146 +125,49 @@
       features.forEach(feature=>{
         const name=String(feature.properties[zoneFields.incident]||'').trim();if(!name)return;
         let entry=next.get(name);
-        if(!entry){entry={statuses:new Set(),counts:{Go:0,Shelter:0,Set:0,Access:0,Planning:0},extent:L.latLngBounds(),point:null,marker:null};next.set(name,entry);}
+        if(!entry){entry={statuses:new Set(),counts:{Go:0,Shelter:0,Set:0,Access:0,Planning:0},extent:window.ReadyLaPlataMap.bounds(),point:null,marker:null};next.set(name,entry);}
         entry.statuses.add(statusName(feature));entry.counts[Z.key(statusName(feature))]++;
-        const bounds=L.geoJSON(feature).getBounds();
+        const bounds=window.ReadyLaPlataMap.boundsForFeature(feature);
         if(bounds.isValid())entry.extent.extend(bounds);
       });
       currentZoneFeatures=features;
       incidents=new Map(Array.from(next.entries()).sort(compareIncidents));
-      const drawingOrder={Planning:0,Access:1,Set:2,Shelter:3,Go:4};
-      features.sort((a,b)=>drawingOrder[Z.key(statusName(a))]-drawingOrder[Z.key(statusName(b))]);
-      zoneLayer.clearLayers();zoneLayer.addData({type:'FeatureCollection',features});
-      zoneLabelLayer.clearLayers();
-      features.forEach(feature=>{
-        const name=zoneFields.zone && feature.properties[zoneFields.zone];
-        const point=zoneLabelPoint(feature);
-        if(!name || !point)return;
-        L.marker(point,{pane:'zoneLabels',interactive:false,keyboard:false,icon:L.divIcon({className:'zone-map-label',html:'<span>'+esc(name)+'</span>',iconSize:[0,0]})}).addTo(zoneLabelLayer);
-      });
-      pinLayer.clearLayers();
-      incidents.forEach((entry,name)=>{
-        if(!entry.extent.isValid())return;
-        entry.point=entry.extent.getCenter();
-        entry.marker=L.marker(entry.point,{pane:'incidentPins',zIndexOffset:1000,icon:L.divIcon({className:'incident-map-pin',html:'<span class="pin-diamond"></span><span class="pin-label">'+esc(name)+'</span>',iconSize:[20,20],iconAnchor:[10,10]}),title:name,keyboard:true});
-        entry.marker.bindPopup(()=>{const content=document.createElement('div'),title=document.createElement('strong');title.textContent=name;content.append(title,popupFor(name));return content;});
-        entry.marker.on('click',()=>focusIncident(name));entry.marker.addTo(pinLayer);
-      });
+      view?.refreshZones();view?.renderIncidents(incidents);
       renderIncidentList();lastIncidentSuccess=Date.now();
       $('incidentState').dataset.error='false';$('incidentState').hidden=incidents.size>0;$('incidentState').textContent=incidents.size?'':'No incidents are currently shown in the county zone layer.';
       $('lastLoaded').textContent='Updated '+localTime(lastIncidentSuccess);
       if(currentAddressMatch)renderAddressResult();
-      if(firstLoad && chosenIncident)await focusIncident(chosenIncident);
-      else if(firstLoad)requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20]});});
+      if(firstLoad && chosenIncident && view)await focusIncident(chosenIncident);
+      else if(firstLoad && view)requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20]});});
       firstLoad=false;
     } catch(err){
       console.error('Incidents:',err);$('incidentState').hidden=false;$('incidentState').dataset.error='true';
       $('incidentState').textContent=lastIncidentSuccess?'Unable to refresh. Showing incident data from '+localTime(lastIncidentSuccess)+'.':'County incidents could not be loaded. Try Refresh information or the lightweight map.';
     } finally {incidentsBusy=false;}
   }
-  async function initMap() {
-    if(!window.L || !L.esri){mapFailure('The interactive map could not load.');return;}
-    try {
-      view=L.map('viewDiv',{dragging:true,touchZoom:true,doubleClickZoom:true,boxZoom:true,keyboard:true,scrollWheelZoom:true,zoomSnap:0.25}).fitBounds(countyBounds,{padding:[20,20]});
-      syncMapInteraction();
-      new ResizeObserver(()=>view.invalidateSize({pan:false})).observe($('viewDiv'));
-      view.createPane('zoneLabels');view.getPane('zoneLabels').style.zIndex=480;view.getPane('zoneLabels').style.pointerEvents='none';
-      view.createPane('incidentPins');view.getPane('incidentPins').style.zIndex=675;
-      zoneLabelLayer=L.layerGroup().addTo(view);
-      L.tileLayer(C.basemapTilesUrl,{attribution:'Terrain: Esri, USGS, NOAA',maxNativeZoom:13,maxZoom:19}).addTo(view);
-      L.esri.featureLayer({url:C.boundaryUrl,style:()=>({color:'#0b4da2',weight:2,opacity:0.65,fillOpacity:0}),interactive:false}).addTo(view);
-      pinLayer=L.layerGroup().addTo(view);
+  function mapFailure(message){
+    const node=$('mapLoading');node.replaceChildren();
+    const text=document.createElement('p');text.textContent=message;
+    const link=document.createElement('a');link.href='evac-lite.html';link.textContent='Open lightweight map →';node.append(text,link);node.hidden=false;
+  }
+  async function initMap(){
+    try{
       const [metadata,extentData]=await Promise.all([
         json(C.zonesUrl+'?f=json'),
         json(C.boundaryUrl+'/query?'+new URLSearchParams({where:'1=1',returnExtentOnly:'true',outSR:'4326',f:'json'})).catch(()=>null)
       ]);
-      const extent=extentData?.extent;
-      if(extent && [extent.xmin,extent.ymin,extent.xmax,extent.ymax].every(Number.isFinite))
-        countyBounds=[[extent.ymin,extent.xmin],[extent.ymax,extent.xmax]];
-      view.fitBounds(countyBounds,{padding:[20,20]});
-      if(metadata.error || !Array.isArray(metadata.fields))throw new Error('County zone metadata unavailable');
+      if(metadata.error||!Array.isArray(metadata.fields))throw new Error('County zone metadata unavailable');
       const field=name=>metadata.fields.find(f=>f.name.toLowerCase()===name)?.name;
       zoneFields={status:field('status'),incident:field('incident'),zone:field('zonename')||field('zone_name')};
-      if(!zoneFields.status || !zoneFields.incident)throw new Error('The zone layer is missing its status or incident field.');
-      zoneLayer=L.geoJSON(null,{
-        style:feature=>{const style=Z.styles[Z.key(statusName(feature))];return {fillColor:style.fill,color:style.stroke,weight:2,fillOpacity:0.45};},
-        onEachFeature:(feature,layer)=>{ layer.on('add',()=>Z.applyHatch(layer,statusName(feature))); layer.bindPopup(()=>{const name=String(feature.properties[zoneFields.incident]||'Incident');const content=document.createElement('div'),title=document.createElement('strong');title.textContent=name;content.append(title,popupFor(name,feature));return content;}); }
-      }).addTo(view);
-      initOperationalLayers();
+      if(!zoneFields.status||!zoneFields.incident)throw new Error('Zone status/incident fields unavailable');
+      const extent=extentData?.extent;
+      if(extent&&[extent.xmin,extent.ymin,extent.xmax,extent.ymax].every(Number.isFinite))countyBounds=[[extent.ymin,extent.xmin],[extent.ymax,extent.xmax]];
+      view=await window.ReadyLaPlataMap.create({container:'viewDiv',config:C,fields:zoneFields,popupFor,onIncident:focusIncident});
+      operationalLayers=view.operationalLayers;
+      await view.fitBounds(countyBounds);
       mapReady=true;$('mapLoading').hidden=true;
       await refreshIncidents();
-    }catch(err){console.error('Map initialization:',err);mapFailure('The interactive map could not load county information.');}
-  }
-  function operationalPopup(properties,kind){
-    const node=document.createElement('div');node.className='operational-popup';
-    const heading=document.createElement('strong');heading.textContent=properties.label || kind;node.appendChild(heading);
-    const value=kind==='Road information'?properties.roadstatus:properties.pointtype;
-    if(value){const line=document.createElement('p');line.textContent=String(value);node.appendChild(line);}
-    return node;
-  }
-  function roadStyle(properties){
-    const status=String(properties.roadstatus||'').toLowerCase();
-    if(/clos|impass|wash/.test(status))return {color:'#c02e3a',weight:5,opacity:0.95,dashArray:'9 5'};
-    if(/limit|restrict|caution|one lane/.test(status))return {color:'#bd7d0d',weight:5,opacity:0.95,dashArray:'6 4'};
-    if(/open/.test(status))return {color:'#267553',weight:4,opacity:0.9};
-    return {color:'#8051a7',weight:4,opacity:0.9};
-  }
-  function poiIcon(properties){
-    const value=String(properties.pointtype||'Information').toLowerCase();
-    const type=/clos|block/.test(value)?'closure':/warn|hazard|danger/.test(value)?'warning':/shelter|reception/.test(value)?'shelter':'info';
-    const mark={closure:'×',warning:'!',shelter:'S',info:'i'}[type];
-    return L.divIcon({className:'evac-poi-icon '+type,html:'<span>'+mark+'</span>',iconSize:[28,28],iconAnchor:[14,14]});
-  }
-  function initOperationalLayers(){
-    const failures=new Set();
-    const updateFailures=()=>$('mapMessage').textContent=failures.size?'Some map information is unavailable: '+Array.from(failures).join(', ')+'.':'';
-    const attach=(layer,name,toggle)=>{
-      $(toggle).addEventListener('change',()=>$(toggle).checked?layer.addTo(view):view.removeLayer(layer));
-      layer.on('requesterror tileerror',()=>{failures.add(name);updateFailures();});
-      layer.on('load',()=>{failures.delete(name);updateFailures();});
-      return layer;
-    };
-    if(C.roadsTilesUrl && L.vectorGrid){
-      view.createPane('countyRoads');view.getPane('countyRoads').style.zIndex=420;view.getPane('countyRoads').style.pointerEvents='none';
-      // Esri tiles also contain label records with unknown geometry type (0).
-      // VectorGrid renders only MVT Point/LineString/Polygon records (1–3).
-      const RoadVectorGrid=L.VectorGrid.Protobuf.extend({
-        _getVectorTilePromise:function(coords){
-          return L.VectorGrid.Protobuf.prototype._getVectorTilePromise.call(this,coords).then(tile=>{
-            Object.values(tile.layers || {}).forEach(layer=>{
-              if(Array.isArray(layer.features))layer.features=layer.features.filter(feature=>[1,2,3].includes(feature.type));
-            });
-            return tile;
-          }).catch(error=>{this.fire('tileerror',{error});return {layers:{}};});
-        }
-      });
-      const roads=new RoadVectorGrid(C.roadsTilesUrl,{
-        pane:'countyRoads',rendererFactory:L.canvas.tile,interactive:false,minZoom:9,maxNativeZoom:21,
-        vectorTileLayerStyles:{
-          Roads:(props,zoom)=>({color:Number(props._symbol)<2?'#52677e':'#81909e',weight:Number(props._symbol)<2?2.2:(zoom>=13?1.5:0.8),opacity:0.9,fill:false}),
-          'County Boundary':[],'Roads/label':[]
-        },attribution:'Roads: La Plata County'
-      }).addTo(view);
-      attach(roads,'County roads','roadsToggle');
-    }else { $('roadsToggle').disabled=true;failures.add('County roads');updateFailures(); }
-    view.createPane('roadImpacts');view.getPane('roadImpacts').style.zIndex=430;
-    const roadInfo=L.esri.featureLayer({url:C.roadClosuresUrl,where:"roadstatus IS NULL OR LOWER(roadstatus) <> 'inactive'",pane:'roadImpacts',style:feature=>roadStyle(feature.properties),onEachFeature:(feature,layer)=>{
-      if(feature.properties.label){const name=document.createElement('span');name.textContent=feature.properties.label;layer.bindTooltip(name,{direction:'top'});}
-    }}).addTo(view);
-    roadInfo.bindPopup(layer=>operationalPopup(layer.feature.properties,'Road information'));
-    attach(roadInfo,'Road information','roadLayerToggle');
-    const pois=L.esri.featureLayer({url:C.evacPoisUrl,where:"pointtype IS NULL OR LOWER(pointtype) <> 'inactive'",pointToLayer:(feature,latlng)=>L.marker(latlng,{icon:poiIcon(feature.properties),title:String(feature.properties.label || feature.properties.pointtype || 'Evacuation information')}),onEachFeature:(feature,layer)=>{
-      if(feature.properties.label){const name=document.createElement('span');name.textContent=feature.properties.label;layer.bindTooltip(name,{direction:'top'});}
-    }}).addTo(view);
-    pois.bindPopup(layer=>operationalPopup(layer.feature.properties,'Evacuation information'));
-    attach(pois,'EvacPOIs','poiLayerToggle');
-    operationalLayers=[roadInfo,pois];
-  }
-  function mapFailure(message){
-    const loading=$('mapLoading');loading.hidden=false;loading.replaceChildren();
-    const p=document.createElement('p');p.textContent=message;
-    const link=document.createElement('a');link.href='evac-lite.html';link.textContent='Open the lightweight map →';loading.append(p,link);
-    $('incidentState').dataset.error='true';$('incidentState').textContent='Map data unavailable. Use the lightweight map or refresh this page.';
+    }catch(error){console.error('Map initialization:',error);mapFailure('The ArcGIS map requires a browser with WebGL2 support. If it does not load, use the lightweight map.');if(zoneFields){mapReady=true;await refreshIncidents();}}
   }
   $('mapResetBtn').addEventListener('click',()=>{if(view){view.closePopup();view.fitBounds(countyBounds,{padding:[20,20]});}});
   $('myLocationBtn').addEventListener('click',()=>{
@@ -310,10 +178,7 @@
       try{view.setView([position.coords.latitude,position.coords.longitude],13);$('mapMessage').textContent='Your reported location is approximate. Confirm your address and zone.';}catch(_){}finally{button.disabled=false;}
     },()=>{button.disabled=false;$('mapMessage').textContent='Location could not be obtained. You can search for your address on the map.';},{timeout:10000});
   });
-  function syncMapInteraction(){
-    if(!view)return;
-    for(const handler of ['dragging','touchZoom','doubleClickZoom','boxZoom','keyboard','scrollWheelZoom'])view[handler].enable();
-  }
+  function syncMapInteraction(){ /* ArcGIS MapView manages pan and zoom. */ }
   $('mapOptionsToggle').addEventListener('click',()=>{
     const open=$('mapOptionsToggle').getAttribute('aria-expanded')!=='true';
     $('mapOptionsToggle').setAttribute('aria-expanded',String(open));
@@ -345,9 +210,18 @@
       return true;
     });
   }
+  function toggleIncidentPopover(open){
+    $('incidentPopover').hidden=!open;
+    $('incidentBadge').setAttribute('aria-expanded',String(open));
+    if(open){$('incidentList').closest('.incident-summary-panel').classList.remove('is-minimized');}
+  }
+  $('incidentBadge').addEventListener('click',()=>toggleIncidentPopover($('incidentBadge').getAttribute('aria-expanded')!=='true'));
+  $('incidentPopoverClose').addEventListener('click',()=>{toggleIncidentPopover(false);$('incidentBadge').focus();});
+  document.addEventListener('click',event=>{if(!$('incidentPopover').contains(event.target)&&!$('incidentBadge').contains(event.target))toggleIncidentPopover(false);});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape')toggleIncidentPopover(false);});
   function setIncidentsMinimized(minimized){
     const panel=$('incidentList').closest('.incident-summary-panel');
-    panel.classList.toggle('is-minimized',minimized);
+    panel.classList.toggle('is-minimized',minimized);if(minimized)toggleIncidentPopover(false);
     $('incidentListToggle').setAttribute('aria-expanded',String(!minimized));
     $('incidentListToggle').textContent=minimized?'Show incidents':'Hide incidents';
   }
@@ -356,7 +230,7 @@
     addressRequestId++;currentAddressMatch=null;chosenIncident='';if(addressMarker){addressMarker.remove();addressMarker=null;}
     $('addressSearch').value='';$('addressSearch').blur();$('addressForm').querySelector('button').disabled=false;
     $('addressIncidentResult').replaceChildren();$('addressIncidentResult').hidden=true;$('mapMessage').textContent='';
-    setIncidentsMinimized(false);$('incidentListToggle').hidden=true;
+    setIncidentsMinimized(false);toggleIncidentPopover(false);$('incidentListToggle').hidden=true;
     $('incidentList').scrollLeft=0;document.querySelectorAll('.incident-item').forEach(el=>el.classList.remove('is-selected'));
     $('mapOptionsToggle').setAttribute('aria-expanded','false');$('mapOptionsToggle').closest('.overview-card').classList.remove('is-options-open');
     for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle']){if(!$(id).checked){$(id).checked=true;$(id).dispatchEvent(new Event('change'));}}
@@ -393,11 +267,10 @@
     }
     content.appendChild(groups);
     const actions=document.createElement('div');actions.className='address-report-actions';
-    const zoom=document.createElement('button');zoom.type='button';zoom.className='home-btn primary';zoom.textContent='Zoom to';zoom.addEventListener('click',()=>{
+    const zoom=document.createElement('button');zoom.type='button';zoom.className='home-btn primary';zoom.textContent='Zoom to';zoom.disabled=!view;zoom.addEventListener('click',()=>{
       if(!view)return;view.closePopup();view.setView([match.location.y,match.location.x],15);
       if(addressMarker)addressMarker.remove();
-      addressMarker=L.circleMarker([match.location.y,match.location.x],{pane:'incidentPins',radius:7,color:'#fff',weight:3,fillColor:'#174f8a',fillOpacity:1}).addTo(view);
-      addressMarker.bindTooltip(match.address,{direction:'top'});
+      addressMarker=view.markAddress(match);
     });
     const reset=document.createElement('button');reset.type='button';reset.className='home-btn';reset.textContent='Reset';reset.addEventListener('click',resetOverview);actions.append(zoom,reset);content.appendChild(actions);
     const note=document.createElement('p');note.className='address-result-note';note.textContent='Approximate location. Confirm incident instructions.';content.appendChild(note);
@@ -408,7 +281,7 @@
     $('addressIncidentResult').replaceChildren(addressIncidentContent(currentAddressMatch));$('addressIncidentResult').hidden=false;
   }
   $('addressForm').addEventListener('submit',async event=>{
-    event.preventDefault();if(!view)return;
+    event.preventDefault();if(!zoneFields)return;
     const text=$('addressSearch').value.trim();if(!text)return;
     $('addressSearch').blur();
     const requestId=++addressRequestId;
@@ -418,7 +291,7 @@
       if(requestId!==addressRequestId)return;
       const match=data.candidates?.[0];
       if(!match){$('mapMessage').textContent='No address match was found in La Plata County. Try the full street address and city.';return;}
-      view.closePopup();if(addressMarker){addressMarker.remove();addressMarker=null;}currentAddressMatch=match;renderAddressResult();$('incidentListToggle').hidden=false;setIncidentsMinimized(true);$('mapMessage').textContent='';
+      view?.closePopup();if(addressMarker){addressMarker.remove();addressMarker=null;}currentAddressMatch=match;renderAddressResult();$('incidentListToggle').hidden=false;setIncidentsMinimized(true);$('mapMessage').textContent='';
     }catch(_){if(requestId===addressRequestId)$('mapMessage').textContent='Address search is unavailable. You can browse the map or try again.';}
     finally {if(requestId===addressRequestId)button.disabled=false;}
   });

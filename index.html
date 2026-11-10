@@ -32,9 +32,9 @@
   <link rel="preconnect" href="https://js.arcgis.com" crossorigin>
   <link rel="preconnect" href="https://services2.arcgis.com" crossorigin>
 
-  <link rel="stylesheet" href="shared-styles.css?v=20261110-layout20">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="home.css?v=20261110-layout20">
+  <link rel="stylesheet" href="shared-styles.css?v=20261110-badge22">
+  <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/light/main.css">
+  <link rel="stylesheet" href="home.css?v=20261110-badge22">
 
 <style id="zone-information-layout">
 #welcomeDialog{width:min(980px,calc(100% - 24px));max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);padding:0;border:1px solid #ccd8e4;border-radius:14px;color:#162b40;overflow:hidden;font-family:Arial,sans-serif}
@@ -61,10 +61,10 @@
 <header class="home-brand-banner" role="banner">
   <div class="home-brand-group">
     <img src="logo.png" alt="La Plata County Logo" class="home-brand-logo" width="136" height="48">
-    <div><h1 class="home-site-name">ReadyLaPlata</h1><p class="home-site-subtitle">Incidents &amp; Public Safety Map</p></div>
+    <div class="home-brand-text"><h1 class="home-site-name">ReadyLaPlata</h1><p class="home-site-subtitle">Incidents &amp; Public Safety Map</p></div>
   </div>
-  <form id="addressForm" class="home-address-search"><label for="addressSearch">Address Search</label><div><input id="addressSearch" type="search" enterkeyhint="search" placeholder="Street address, city" autocomplete="street-address"><button class="home-btn" type="submit"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span>Search</span></button></div></form>
-  <div class="home-header-actions"><nav class="home-brand-nav" aria-label="Site navigation"><button id="infoButton" class="home-nav-btn" type="button">
+
+  <div class="home-header-actions"><button id="incidentBadge" class="home-nav-btn incident-alert-badge" type="button" aria-expanded="false" aria-controls="incidentPopover"><span aria-hidden="true">⚠</span><span>Incidents</span><span id="incidentCount" class="count-pill">—</span></button><nav class="home-brand-nav" aria-label="Site navigation"><button id="infoButton" class="home-nav-btn" type="button">
                   <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                   <span>Home</span>
                 </button><button id="coderedButton" class="home-nav-btn" type="button">
@@ -74,18 +74,20 @@
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                 <span><span class="call-label">Call Center</span><span class="call-number">(970) 385-8700</span></span>
               </a></div>
+        <section id="incidentPopover" class="incident-summary-panel incident-popover" hidden aria-labelledby="incidentsTitle">
+          <div class="incident-strip-heading"><div><h2 id="incidentsTitle">Incidents</h2><button id="incidentListToggle" class="incident-list-toggle" type="button" aria-expanded="false" aria-controls="incidentList" hidden>Show incidents</button></div><div class="incident-popover-actions"><a class="lite-link" href="evac-lite.html">Lightweight map →</a><button id="incidentPopoverClose" type="button" aria-label="Close incident list">×</button></div></div>
+          <p id="incidentState" class="feed-state" role="status">Loading county incidents…</p>
+          <div class="incident-carousel"><button id="incidentPrev" class="incident-scroll" type="button" aria-label="Previous incidents" aria-controls="incidentList">‹</button><div id="incidentList" class="incident-list" tabindex="0" aria-label="Incident cards"></div><button id="incidentNext" class="incident-scroll" type="button" aria-label="Next incidents" aria-controls="incidentList">›</button></div>
+        </section>
 </header>
   <main id="main-content">
     <section class="overview-card" aria-label="County incident map">
       <div class="overview-top">
+  <form id="addressForm" class="home-address-search"><label for="addressSearch">Address Search</label><div><input id="addressSearch" type="search" enterkeyhint="search" placeholder="Street address, city" autocomplete="street-address"><button class="home-btn" type="submit"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span>Search</span></button></div></form>
         
         <div id="addressIncidentResult" class="address-incident-result" role="status" hidden></div>
         <p id="mapMessage" class="map-message" role="status"></p>
-        <section class="incident-summary-panel" aria-labelledby="incidentsTitle">
-          <div class="incident-strip-heading"><div><h2 id="incidentsTitle">Incidents</h2><span id="incidentCount" class="count-pill">—</span><button id="incidentListToggle" class="incident-list-toggle" type="button" aria-expanded="false" aria-controls="incidentList" hidden>Show incidents</button></div><a class="lite-link" href="evac-lite.html">Lightweight map →</a></div>
-          <p id="incidentState" class="feed-state" role="status">Loading county incidents…</p>
-          <div class="incident-carousel"><button id="incidentPrev" class="incident-scroll" type="button" aria-label="Previous incidents" aria-controls="incidentList">‹</button><div id="incidentList" class="incident-list" tabindex="0" aria-label="Incident cards"></div><button id="incidentNext" class="incident-scroll" type="button" aria-label="Next incidents" aria-controls="incidentList">›</button></div>
-        </section>
+
       </div>
       <div id="mapFrame" class="home-map-frame">
             <button id="mapActivateBtn" class="home-btn map-activate" type="button" aria-label="Expand map">⛶</button>
@@ -217,12 +219,11 @@
   </div>
 
 
-<script src="shared.js?v=20261110-layout20"></script>
-<script src="zone-status.js?v=20261110-layout20"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.vectorgrid@1.3.0/dist/Leaflet.VectorGrid.bundled.js"></script>
-<script src="home-config.js?v=20261110-layout20"></script>
-<script src="home.js?v=20261110-layout20" defer></script>
+<script src="shared.js?v=20261110-badge22"></script>
+<script src="zone-status.js?v=20261110-badge22"></script>
+<script src="https://js.arcgis.com/4.31/"></script>
+<script src="home-config.js?v=20261110-badge22"></script>
+<script src="home-map.js?v=20261110-badge22" defer></script>
+<script src="home.js?v=20261110-badge22" defer></script>
 </body>
 </html>
