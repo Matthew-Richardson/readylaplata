@@ -153,6 +153,7 @@ html:has(.home-map-page),body.home-map-page{height:100%;overflow:hidden}.home-ma
 .home-map-page .incident-support-window .incident-support-title{margin-right:36px}
 @media(max-width:760px){.incident-support-window{top:8px;width:calc(100% - 16px);max-height:calc(100% - 16px)}.incident-support-window>.incident-support-content{padding:12px}.incident-support-close{width:40px;height:40px}.home-map-page .incident-support-window .incident-support-title{margin-right:38px}}
 
+.incident-sidebar #incidentCount{font-size:18px;font-weight:800;min-width:28px;min-height:28px;display:inline-flex;align-items:center;justify-content:center;line-height:1;padding:4px 7px}
 /* Keep the update action next to the incident name. */
 .incident-support-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-right:38px;margin-bottom:7px;min-width:0}
 .home-map-page .incident-support-window .incident-support-heading .incident-support-title{margin:0;flex:1;min-width:0;font-size:18px}
@@ -167,15 +168,15 @@ html:has(.home-map-page),body.home-map-page{height:100%;overflow:hidden}.home-ma
  .incident-sidebar .incident-strip-heading{margin:0;display:block}
  .incident-sidebar .incident-strip-heading>div:first-child{display:flex;flex-wrap:wrap;gap:3px;align-items:center}
  .incident-sidebar .incident-strip-heading h2{font-size:11px;margin:0}
- .incident-sidebar .incident-strip-heading .count-pill{min-width:16px;font-size:10px;padding:2px 4px}
+ .incident-sidebar .incident-strip-heading .count-pill{display:inline-flex;align-items:center;justify-content:center;min-width:28px;min-height:28px;font-size:18px;font-weight:800;line-height:1;padding:4px 7px}
  .incident-sidebar .incident-popover-actions{display:none}
  .incident-sidebar .incident-carousel{display:block;min-width:0;height:52px}
- .incident-sidebar .incident-list{height:52px;gap:6px;align-items:center;padding:0 0 4px;scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:#8da4bc #e5ebf2}
+ .incident-sidebar .incident-list{height:52px;gap:10px;align-items:center;padding:0 0 4px;scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:#8da4bc #e5ebf2}
  .incident-sidebar .incident-list::-webkit-scrollbar{height:4px}
  .incident-sidebar .incident-list::-webkit-scrollbar-thumb{background:#8da4bc;border-radius:3px}
- .incident-sidebar .incident-item{flex:0 0 auto;min-width:0;min-height:0;max-width:230px;padding:0;border-radius:7px;scroll-snap-align:start;overflow:hidden}
+ .incident-sidebar .incident-item{flex:0 0 auto;min-width:0;min-height:0;max-width:250px;padding:0;border-radius:7px;scroll-snap-align:start;overflow:hidden}
  .incident-sidebar .incident-item>.incident-focus,.incident-sidebar .incident-item>.incident-badges,.incident-sidebar .incident-item>.incident-details-button{display:none}
- .incident-sidebar .incident-mobile-tab{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;max-width:228px;padding:8px 10px;border:0;background:transparent;color:#254763;font:700 12px Arial;text-align:left;cursor:pointer}
+ .incident-sidebar .incident-mobile-tab{display:flex;align-items:center;justify-content:center;gap:12px;min-height:44px;max-width:248px;padding:10px 14px;border:0;background:transparent;color:#254763;font:700 12px Arial;text-align:left;cursor:pointer}
  .incident-tab-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  .incident-tab-dots{display:flex;align-items:center;gap:3px;flex:none}
  .incident-tab-dots .status-badge{display:block;width:9px;height:9px;min-width:0;padding:0;margin:0;border-width:1px;border-style:solid;border-radius:50%}
@@ -184,3 +185,6 @@ html:has(.home-map-page),body.home-map-page{height:100%;overflow:hidden}.home-ma
  .incident-sidebar .feed-state:not([hidden]){grid-column:2;margin:0;font-size:11px;line-height:1.3}
  .incident-sidebar:has(.feed-state:not([hidden])) .incident-carousel{display:none}
 }
+
+.home-header-actions .home-call-link .call-center-text{font-size:13px;font-weight:700;white-space:nowrap}
+@media(max-width:760px){.home-header-actions .home-call-link .call-center-text{font-size:11px}}
