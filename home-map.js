@@ -1,4 +1,4 @@
-/* Leaflet overview map; incident pages retain their ArcGIS WebMap. */
+/* Leaflet overview map with incident information displayed on Home. */
 (function(){
   'use strict';
   class Bounds{
