@@ -1,0 +1,66 @@
+/* Incident details: scoped to preserve the overview and other applications. */
+body.incident-page{margin:0;background:#f1f4f8;color:#162b40;font:16px Arial,sans-serif}
+.incident-page .page-shell{min-height:100dvh}
+.incident-page .map-wrapper,.incident-page #main-content{box-sizing:border-box;width:100%;max-width:1440px;margin:0 auto;padding:12px 20px}
+.incident-page .brand-banner{background:#fff;border:1px solid #d2deeb;border-radius:12px;box-shadow:0 3px 12px #18334d0c;padding:14px 20px;margin-bottom:20px}
+.incident-page .brand-row{gap:24px}
+.incident-page .brand-group{border:0;padding:0;gap:16px;flex:1;min-width:0}
+.incident-page .header-logo{width:145px;height:auto;flex:none}
+.incident-page .brand-text{flex-direction:row;align-items:center;gap:16px;flex-wrap:wrap}
+.incident-page .site-name{font-size:30px;letter-spacing:-1px;color:#0b4da2}
+.incident-page .site-subtitle{font-size:14px;color:#52667c;white-space:normal;max-width:180px;border-left:1px solid #d2deeb;padding-left:16px;margin:0;line-height:1.5}
+.incident-page .banner-nav{display:grid;grid-template-columns:repeat(3,minmax(110px,1fr));gap:8px;flex:none;width:390px;align-items:stretch}
+.incident-page .nav-buttons{display:contents}
+.incident-page .banner-nav .nav-btn,.incident-page .call-center-link{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:48px;margin:0;padding:8px;border:1px solid #cbd8e7;border-radius:8px;background:#fff;color:#234a70;font:700 14px Arial,sans-serif;text-decoration:none;box-shadow:0 2px 4px #18334d08}
+.incident-page .call-center-link>span{display:flex;flex-direction:column;align-items:center;gap:2px}
+.incident-page .call-label{font-size:13px}.incident-page .call-number{font-size:11px;color:#52667c}
+.incident-page .call-center-link svg,.incident-page .nav-icon{width:18px;height:18px;flex:none}
+.incident-page button{cursor:pointer}
+.incident-page button:focus-visible,.incident-page a:focus-visible{outline:3px solid #0b4da2;outline-offset:3px}
+.incident-page .banner-nav .nav-btn:hover,.incident-page .call-center-link:hover{background:#edf4fc;border-color:#809fbe}
+.incident-page-title{font-size:24px;font-weight:800;margin:0 0 14px;letter-spacing:-.4px;overflow-wrap:anywhere}
+.incident-page .map-card{border:1px solid #c8d5e4;border-radius:12px;box-shadow:0 3px 14px #18334d12;position:relative}
+.incident-page .content-overlap{margin:0;padding:0}.incident-page .content-overlap:before{display:none}
+.incident-page .incident-strip{padding:12px;background:#fff}
+.incident-page .incident-box{border:1px solid #d2deeb;border-radius:8px;background:#f5f8fc;box-shadow:none}
+.incident-page .incident-box-header{background:transparent;color:#254763;padding:8px 12px;border-bottom:1px solid #d2deeb}
+.incident-page .incident-box-body{padding:10px 12px}.incident-page .incident-tip{display:none}
+.incident-page .incident-chips{display:flex;flex-wrap:nowrap;overflow:auto;gap:8px;max-height:100px}
+.incident-page .incident-chips>*{flex-shrink:0}
+.incident-page #viewDiv{height:clamp(380px,55vh,650px)}
+.incident-page .map-controls{background:#fff;gap:8px;padding:10px;flex-wrap:wrap;border-top:1px solid #d2deeb}
+.incident-page .map-control-btn{min-height:44px;border:1px solid #cbd8e7;border-radius:8px;color:#234a70;background:#fff;font-size:14px;box-shadow:none}
+.incident-page .map-key-merged{background:#f5f8fc;border-top:1px solid #d2deeb;padding:10px 14px;gap:12px}
+.incident-page .legend-tip{display:none}
+.incident-page #main-content{padding-top:4px}
+.incident-page .evac-row{box-sizing:border-box;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));max-width:none;padding:0;margin:0 0 20px;gap:14px}
+.incident-page .evac-box{box-sizing:border-box;min-width:0;padding:18px;background:var(--status-color,#fff);border:2px solid #8092a7;border-radius:12px;box-shadow:0 4px 10px #18334d16;animation:none;color:#162b40}
+.incident-page .evac-box[data-status=GO]{border-color:#15803d}.incident-page .evac-box[data-status=SET]{border-color:#967800}.incident-page .evac-box[data-status=SHELTER]{border-color:#1e6eb6}.incident-page .evac-box[data-status=ACCESS]{border-color:#824ab6}.incident-page .evac-box[data-status=PLANNING]{border-color:#667180}
+.incident-page .evac-box .evac-title{font-size:20px;font-weight:800;color:#162b40;padding:0 0 12px;border-bottom:1px solid #162b4033;margin:0 0 12px}
+.incident-page .evac-box .evac-body{font-size:15px;line-height:1.55;padding:0}
+.incident-page .evac-zones{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.incident-page .zone-chip{border:1px solid #162b4059;border-radius:6px;background:#ffffff80;color:#162b40;font-size:15px;font-weight:700;padding:5px 9px;box-shadow:none}
+.incident-page .evac-note{font-size:15px;margin:0;padding:0;background:none;border:0;font-weight:400}
+.incident-page .incident-panel{box-sizing:border-box;max-width:none;padding:0;margin:0 0 16px}
+.incident-resources{background:#fff;border:1px solid #c8d5e4;border-radius:12px;box-shadow:0 3px 14px #18334d12;overflow:hidden}
+.incident-resource-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:18px;border-bottom:1px solid #d2deeb;background:#fff}
+.incident-resource-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:18px;align-items:start}
+.incident-resource-card{min-width:0;background:#edf2f8;border:2px solid #a2b4c9;border-radius:12px;padding:16px;box-shadow:0 4px 10px #18334d12}
+.incident-resource-heading{display:flex;align-items:center;gap:8px;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid #a2b4c9}
+.incident-page .incident-resource-heading h3{font-size:16px!important;letter-spacing:0!important;text-transform:none!important;font-weight:800!important;color:#254763}
+.incident-resource-body{font-size:15px;line-height:1.6;overflow-wrap:anywhere}
+.incident-animal-grid{display:grid;gap:10px}
+.incident-page .status-btn,.incident-page .dir-btn{box-sizing:border-box;min-height:44px;align-items:center;text-decoration:none!important;border-radius:8px!important;line-height:1.4}
+.incident-page .status-timestamp{font-size:12px;color:#52667c;padding-top:10px}
+.incident-footer{text-align:center;font-size:12px;line-height:1.5;color:#52667c;padding:4px 16px 16px;margin-top:auto}
+@media(max-width:1050px){.incident-page .brand-row{flex-wrap:wrap}.incident-page .brand-group{flex-basis:100%}.incident-page .banner-nav{width:100%;grid-template-columns:repeat(3,1fr)}.incident-page .site-subtitle{max-width:none}}
+@media(max-width:600px){.incident-page .map-wrapper,.incident-page #main-content{padding:10px}.incident-page .brand-banner{padding:12px;margin-bottom:16px}.incident-page .brand-row{gap:12px}.incident-page .header-logo{width:110px}.incident-page .brand-group{gap:12px}.incident-page .brand-text{flex-direction:column;align-items:flex-start;gap:4px}.incident-page .site-name{font-size:25px}.incident-page .site-subtitle{border:0;padding:0;font-size:12px;line-height:1.4}.incident-page .banner-nav{gap:6px}.incident-page .banner-nav .nav-btn,.incident-page .call-center-link{font-size:12px;padding:7px 4px;min-height:48px}.incident-page .call-number{font-size:10px}.incident-page .call-center-link svg{display:none}.incident-page-title{font-size:21px}.incident-page #viewDiv{height:54vh;min-height:340px}.incident-page .evac-row{grid-template-columns:1fr;gap:12px}.incident-page .evac-box{padding:14px}.incident-resource-grid{grid-template-columns:1fr;padding:12px;gap:12px}.incident-resource-header{padding:14px}.incident-resource-card{padding:14px}.incident-page .map-controls{gap:6px}.incident-page .map-control-btn{flex:1;font-size:12px;padding:8px}.incident-footer{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.incident-page *{scroll-behavior:auto}}
+/* Override shared compact call-center treatment so all three controls stay equal. */
+.incident-page .banner-nav>*{min-width:0}
+.incident-page .call-center-link>span{min-width:0}
+.incident-page .call-center-link .call-label{display:block}
+.incident-page .call-center-link .call-number{display:block;white-space:nowrap}
+.incident-page .call-center-link .call-number:before{content:none}
+.incident-page .scroll-indicator{display:none}
+.incident-page .evac-note{font-style:normal}
