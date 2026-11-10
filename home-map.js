@@ -24,7 +24,7 @@
         for(const type of ['pointerdown','pointerup','click','dblclick','wheel','touchstart'])panel.addEventListener(type,event=>event.stopPropagation());
         panel.append(close,content);document.getElementById(container).append(panel);activeSupport=handle;close.focus({preventScroll:true});return handle;
   }
-  async function create({container,config:C}){
+  async function create({container,config:C,onIncident}){
     if(typeof window.require!=='function')throw new Error('ArcGIS Maps SDK could not load');
     const [WebMap,MapView,GraphicsLayer,Graphic,Point,Extent,reactiveUtils]=await new Promise((resolve,reject)=>window.require([
       'esri/WebMap','esri/views/MapView','esri/layers/GraphicsLayer','esri/Graphic','esri/geometry/Point','esri/geometry/Extent','esri/core/reactiveUtils'
@@ -56,8 +56,9 @@
     const matches=(layer,url)=>String(layer.url||'').replace(/\/$/,'').toLowerCase()===url.replace(/\/$/,'').toLowerCase();
     // Bind existing web map layers only. Rendering, labels and popups remain authored in AGOL.
     const zoneLayers=all().filter(l=>matches(l,C.zonesUrl));
-    const zones=zoneLayers[0];
+
     for(const layer of zoneLayers){
+      layer.outFields=['*'];
       const existing=String(layer.definitionExpression||'').trim();
       layer.definitionExpression=existing?'('+existing+') AND ('+C.zonesWhere+')':C.zonesWhere;
       try{await layer.load();if(!layer.fields?.some(field=>field.name.toUpperCase()==='LIVE')){layer.visible=false;$('mapMessage').textContent='Live evacuation-zone information is temporarily unavailable.';}}
@@ -83,6 +84,23 @@
       reactiveUtils.watch(()=>layer.visible,visible=>{control.checked=visible;showLayerErrors();});
       loadLayer(layer);
     }
+    // Give live zone polygons the same incident resources action as list Details.
+    let zoneClick=0;
+    view.on('click',async event=>{
+      if(typeof onIncident!=='function'||!zoneLayers.length)return;
+      const request=++zoneClick;
+      try{
+        const hit=await view.hitTest(event,{include:zoneLayers});if(request!==zoneClick)return;
+        for(const result of hit.results||[]){
+          const graphic=result.graphic;if(!graphic||!zoneLayers.includes(graphic.layer))continue;
+          const attributes=graphic.attributes||{},field=key=>graphic.layer.fields?.find(f=>f.name.toLowerCase()===key)?.name;
+          if(attributes[field('live')]!==1)continue;
+          const name=String(attributes[field('incident')]||'').trim();if(!name)continue;
+          view.closePopup();const point=event.mapPoint;
+          onIncident(name,point?[point.latitude,point.longitude]:undefined);return;
+        }
+      }catch(error){if(error.name!=='AbortError')console.warn('Zone incident selection:',error);}
+    });
     view.on('layerview-create-error',event=>reportLayerError(event.layer,event.error,'view'));
     view.on('layerview-create',event=>clearLayerError(event.layer,'view'));
     try{await view.when();ready=true;}catch(error){view.destroy();for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle'])$(id).disabled=true;throw error;}

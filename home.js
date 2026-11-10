@@ -58,7 +58,11 @@
     const addressMatches=currentAddressMatch&&addressZones(currentAddressMatch).some(f=>String(f.properties[zoneFields.incident]||'').trim()===name);
     const anchor=latlng||(addressMatches?[currentAddressMatch.location.y,currentAddressMatch.location.x]:entry?.point||entry?.extent.getCenter());
     const host=view||{openSupportPopup:(_,content)=>window.ReadyLaPlataMap.openSupportWindow('viewDiv',content)};
-    window.ReadyLaPlataDetails.open({name,view:host,latlng:anchor});
+    window.ReadyLaPlataDetails.open({name,view:host,latlng:anchor,getActiveZones:()=>({
+      available:lastIncidentSuccess!==null,stale:incidentsError,
+      zones:currentZoneFeatures.filter(feature=>feature.properties?.[zoneFields.live]===1&&String(feature.properties[zoneFields.incident]||'').trim()===name)
+        .map(feature=>({name:String(feature.properties[zoneFields.zone]||'').trim()||'Unnamed zone',status:Z.key(statusName(feature))}))
+    })});
   }
   function addressZones(match){return currentZoneFeatures.filter(feature=>['Go','Set','Access','Shelter'].includes(Z.key(statusName(feature)))&&zoneContainsAddress(feature.geometry,match.location.x,match.location.y));}
   function zoomToAddress(match){
@@ -154,14 +158,14 @@
       currentZoneFeatures=features;
       incidents=new Map(Array.from(next.entries()).sort(compareIncidents));
       for(const entry of incidents.values())if(entry.extent.isValid())entry.point=entry.extent.getCenter();
-      renderIncidentList();lastIncidentSuccess=Date.now();incidentsError=false;
+      renderIncidentList();lastIncidentSuccess=Date.now();incidentsError=false;window.ReadyLaPlataDetails.refreshZones();
       $('incidentState').dataset.error='false';$('incidentState').hidden=incidents.size>0;$('incidentState').textContent=incidents.size?'':'No incidents are currently shown in the county zone layer.';
       $('lastLoaded').textContent='Updated '+localTime(lastIncidentSuccess);
       if(currentAddressMatch)renderAddressResult();
       if(firstLoad && view)requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20]});if(linkedIncident&&incidents.has(linkedIncident))openIncidentDetails(linkedIncident);});
       firstLoad=false;
     } catch(err){
-      incidentsError=true;if(currentAddressMatch)renderAddressResult();
+      incidentsError=true;window.ReadyLaPlataDetails.refreshZones();if(currentAddressMatch)renderAddressResult();
       console.error('Incidents:',err);$('incidentState').hidden=false;$('incidentState').dataset.error='true';
       $('incidentState').textContent=lastIncidentSuccess?'Unable to refresh. Showing incident data from '+localTime(lastIncidentSuccess)+'.':'County incidents could not be loaded. Try Refresh information or the lightweight map.';
     } finally {incidentsBusy=false;}
@@ -183,7 +187,7 @@
       if(!zoneFields.status||!zoneFields.incident)throw new Error('Zone status/incident fields unavailable');
       const extent=extentData?.extent;
       if(extent&&[extent.xmin,extent.ymin,extent.xmax,extent.ymax].every(Number.isFinite))countyBounds=[[extent.ymin,extent.xmin],[extent.ymax,extent.xmax]];
-      view=await window.ReadyLaPlataMap.create({container:'viewDiv',config:C});
+      view=await window.ReadyLaPlataMap.create({container:'viewDiv',config:C,onIncident:openIncidentDetails});
       operationalLayers=view.operationalLayers;
       await view.fitBounds(countyBounds);
       mapReady=true;$('mapLoading').hidden=true;

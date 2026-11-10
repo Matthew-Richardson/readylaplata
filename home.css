@@ -281,3 +281,13 @@ html:has(.home-map-page),body.home-map-page{height:100%;overflow:hidden}.home-ma
 .incident-sidebar .incident-badges>.status-badge{display:inline-flex;align-items:center;gap:6px;padding:0;border:0;background:transparent;color:#000;text-shadow:none}
 .incident-status-symbol{display:inline-block;flex:0 0 17px;width:17px;height:13px;border:1.5px solid;border-radius:3px}
 .incident-status-label{color:#000;font-weight:700}
+
+
+/* Readable active-zone names and text statuses within incident resources. */
+.incident-active-zones{margin:4px 0 14px;padding:12px;background:#f2f6fb;border:1px solid #c7d5e5;border-radius:9px}
+.incident-active-zones h4{margin:0 0 8px;font-size:15px;color:#000}
+.incident-zone-list{list-style:none;padding:0;margin:0}
+.incident-zone-row{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;padding:8px 0;border-top:1px solid #d6e0eb;color:#000;font-size:14px;line-height:1.4}
+.incident-zone-name{overflow-wrap:anywhere}
+.incident-zone-status{display:inline-flex;align-items:center;gap:7px;color:#000}
+@media(max-width:760px){.incident-active-zones{padding:10px}.incident-zone-row{font-size:13px;gap:5px 10px}}
