@@ -23,3 +23,5 @@ Incident support resources use a floating window within the map: up to 620 px wi
 The resource window places the incident title and Latest update action in one header row.
 
 Each page load fits the full county. Selecting an incident does not persist a zoom target in the URL. Legacy shared incident links open resources over the county view once. Mobile cells explicitly reset the older card grid layout to prevent empty rows and uneven spacing.
+
+Mobile slider arrows stay available for touch and brighten on hover; the count has its own separated label column. Mobile address results use smaller typography, chips and actions. The Latest update action moves below the title on mobile to keep the close button clear.

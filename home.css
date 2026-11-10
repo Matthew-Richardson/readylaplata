@@ -188,3 +188,32 @@ html:has(.home-map-page),body.home-map-page{height:100%;overflow:hidden}.home-ma
 
 .home-header-actions .home-call-link .call-center-text{font-size:13px;font-weight:700;white-space:nowrap}
 @media(max-width:760px){.home-header-actions .home-call-link .call-center-text{font-size:11px}}
+/* Give the fixed close control a separate lane from incident actions. */
+.incident-support-heading{padding-right:60px;gap:16px}
+@media(max-width:760px){
+ .overview-map-layout>.incident-sidebar{grid-template-columns:64px minmax(0,1fr);gap:10px}
+ .incident-sidebar .incident-strip-heading{padding-right:8px;border-right:1px solid #d4dfeb;align-self:stretch;display:flex;align-items:center;justify-content:center}
+ .incident-sidebar .incident-strip-heading>div:first-child{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;flex-wrap:nowrap}
+ .incident-sidebar .incident-strip-heading h2{line-height:1.1}
+ .incident-sidebar #incidentCount{min-width:30px;min-height:28px;margin:0}
+ .incident-sidebar .incident-carousel{position:relative;padding:0 26px}
+ .incident-sidebar .incident-scroll{display:flex;position:absolute;top:2px;align-items:center;justify-content:center;width:24px;min-height:44px;height:44px;padding:0;z-index:2;border:1px solid #c5d3e2;border-radius:7px;background:#ffffffed;box-shadow:0 2px 5px #18334d12;font-size:27px;line-height:1;color:#174f8a}
+ .incident-sidebar #incidentPrev{left:0}.incident-sidebar #incidentNext{right:0}
+ .incident-sidebar .incident-scroll:disabled{opacity:.35;cursor:default;box-shadow:none}
+ .incident-sidebar:has(.feed-state:not([hidden])){grid-template-columns:64px minmax(0,1fr)}
+ .incident-support-heading{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;padding-right:48px;margin-bottom:8px}
+ .incident-support-heading .incident-latest-update{grid-row:2;justify-self:start;min-height:36px;font-size:11px;padding:6px 9px}
+ /* Compact status statement, chips and actions without changing address matching. */
+ .address-status-report{display:flex;padding:7px 9px;gap:6px 8px;min-height:0}
+ .home-map-page .address-report-headline{font-size:16px;line-height:1.25}
+ .address-report-banner{flex-basis:100%}
+ .address-incident-groups{flex:1 1 100%;gap:4px}
+ .address-zone-list{gap:4px}
+ .address-zone-list .address-zone-chip{padding:3px 6px;font-size:11px;line-height:1.2}
+ .address-zone-chip strong{font-size:11px}
+ .address-report-actions{gap:6px;flex-basis:100%}
+ .address-report-actions .home-btn{min-height:36px;padding:6px 10px;font-size:12px}
+ .address-incident-result p.address-report-empty{font-size:11px;line-height:1.25}
+}
+@media(max-width:760px) and (hover:hover){.incident-sidebar .incident-scroll:not(:disabled){opacity:.7}.incident-sidebar .incident-carousel:hover .incident-scroll:not(:disabled),.incident-sidebar .incident-scroll:focus-visible{opacity:1}}
+@media(max-width:760px){.incident-sidebar .incident-item{flex-basis:min(216px,100%);width:min(216px,100%)}}
