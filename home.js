@@ -67,17 +67,6 @@
     if(addressMarker)addressMarker.remove();addressMarker=view.markAddress(match);
   }
   function statusName(feature) { return String((feature.properties || feature.attributes)[zoneFields.status] || 'Planning'); }
-  function popupFor(name, feature) {
-    const node=document.createElement('div');
-    if (feature) {
-      const status=document.createElement('p');
-      status.textContent='Status: '+statusName(feature); node.appendChild(status);
-      if(zoneFields.zone){const zone=document.createElement('p');zone.textContent='Zone: '+((feature.properties || feature.attributes)[zoneFields.zone]||'Unnamed zone');node.appendChild(zone);}
-    }
-    const link=incidentDetailsButton(name,'View incident details →');
-    link.className='home-btn zone-popup-link';node.appendChild(link);
-    return node;
-  }
   async function focusIncident(name) {
     const entry=incidents.get(name);
     if(!view || !entry) return;
@@ -160,7 +149,7 @@
       });
       currentZoneFeatures=features;
       incidents=new Map(Array.from(next.entries()).sort(compareIncidents));
-      view?.renderZones(features);view?.renderIncidents(incidents);
+      for(const entry of incidents.values())if(entry.extent.isValid())entry.point=entry.extent.getCenter();
       renderIncidentList();lastIncidentSuccess=Date.now();
       $('incidentState').dataset.error='false';$('incidentState').hidden=incidents.size>0;$('incidentState').textContent=incidents.size?'':'No incidents are currently shown in the county zone layer.';
       $('lastLoaded').textContent='Updated '+localTime(lastIncidentSuccess);
@@ -189,7 +178,7 @@
       if(!zoneFields.status||!zoneFields.incident)throw new Error('Zone status/incident fields unavailable');
       const extent=extentData?.extent;
       if(extent&&[extent.xmin,extent.ymin,extent.xmax,extent.ymax].every(Number.isFinite))countyBounds=[[extent.ymin,extent.xmin],[extent.ymax,extent.xmax]];
-      view=await window.ReadyLaPlataMap.create({container:'viewDiv',config:C,fields:zoneFields,popupFor,onIncident:openIncidentDetails});
+      view=await window.ReadyLaPlataMap.create({container:'viewDiv',config:C});
       operationalLayers=view.operationalLayers;
       await view.fitBounds(countyBounds);
       mapReady=true;$('mapLoading').hidden=true;
