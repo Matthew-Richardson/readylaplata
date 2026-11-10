@@ -122,22 +122,33 @@ html:has(.home-map-page),body.home-map-page{height:100%;overflow:hidden}.home-ma
 .address-incident-groups,.address-incident-group{min-width:0;max-width:100%}.address-incident-group{flex:0 1 auto}.address-zone-list{flex-wrap:wrap}.address-zone-list .address-zone-chip{max-width:100%;white-space:normal;overflow-wrap:anywhere}
 @media(max-width:760px){.address-incident-groups{width:100%}.address-incident-group{flex:1 1 100%;width:100%}.address-zone-list{width:100%;flex-wrap:wrap}}
 /* Incident support resources live inside a Leaflet popup; address status stays above the map. */
-.incident-support-popup .leaflet-popup-content-wrapper{border:1px solid #a8bbcf;border-radius:12px;box-shadow:0 6px 24px #18334d38}
-.incident-support-popup .leaflet-popup-content{margin:16px;max-width:calc(100vw - 100px);color:#162b40}
+.incident-support-popup .leaflet-popup-content-wrapper{border:1px solid #a8bbcf;border-radius:12px;box-shadow:0 6px 24px #18334d38;background:rgba(255,255,255,.94);backdrop-filter:blur(3px)}
+.incident-support-popup .leaflet-popup-content{margin:12px;max-width:calc(100vw - 48px);color:#162b40}
 .incident-support-popup .leaflet-popup-scrolled{border:0;overscroll-behavior:contain;padding-right:7px}
 .incident-support-popup .leaflet-popup-close-button{width:32px;height:32px;font-size:24px;color:#254763}
-.home-map-page .incident-support-title{margin:0 20px 8px 0;font-size:19px;line-height:1.25;overflow-wrap:anywhere}
-.incident-support-content .detail-label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:#52667c;margin:0 0 12px}
-.incident-support-content .incident-detail-resource-grid{display:grid;grid-template-columns:1fr;gap:10px;margin:12px 0}
-.incident-support-content .incident-detail-resource{border:1px solid #9cafc5;border-radius:8px;padding:12px;background:#edf2f8;box-shadow:0 2px 5px #18334d0c;min-width:0}
-.incident-support-content h4{font-size:14px;font-weight:800;margin:0 0 8px;padding-bottom:7px;border-bottom:1px solid #b9c8d9}
-.home-map-page .incident-support-content p{font-size:13px;line-height:1.5;margin:6px 0;white-space:pre-wrap;overflow-wrap:anywhere}
-.detail-resource-text{display:block;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.home-map-page .incident-support-title{margin:0 26px 5px 0;font-size:18px;line-height:1.25;overflow-wrap:anywhere}
+.incident-support-content .detail-label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:#52667c;margin:0 0 8px}
+.incident-support-content .incident-detail-resource-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:9px 0}
+.incident-support-content .incident-detail-resource{border:1px solid #9cafc5;border-radius:8px;padding:9px 10px;background:rgba(237,242,248,.90);box-shadow:0 2px 5px #18334d0c;min-width:0}
+.incident-support-content h4{font-size:14px;font-weight:800;margin:0 0 6px;padding-bottom:5px;border-bottom:1px solid #b9c8d9}
+.home-map-page .incident-support-content p{font-size:13px;line-height:1.4;margin:4px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.detail-resource-text{display:block;font-size:13px;line-height:1.4;overflow-wrap:anywhere}
 .detail-pending{color:#52667c;font-size:13px;line-height:1.5}
-.incident-support-content .detail-directions{display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid #c4d1df;margin-top:10px;padding-top:10px}
-.incident-support-content .detail-directions .detail-label{width:100%;margin:0}
-.incident-support-content .home-btn{min-height:40px;padding:8px 10px;font-size:12px;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.incident-support-content .detail-directions{display:flex;flex-wrap:wrap;gap:5px;border-top:1px solid #c4d1df;margin-top:7px;padding-top:7px}
+.incident-support-content .detail-directions .detail-label{display:none}
+.incident-support-content .home-btn{min-height:40px;padding:7px 9px;font-size:12px;max-width:100%;white-space:normal;overflow-wrap:anywhere}
 .home-map-page .incident-support-content .incident-detail-source{font-size:11px;color:#52667c}
 .incident-item .incident-details-button{min-height:36px;padding:5px 10px;font-size:12px;margin-top:6px}
 .home-map-page .incident-support-popup a.leaflet-popup-close-button{width:32px;height:32px;line-height:32px;font-size:24px;color:#254763;background:#fff;border-radius:0 12px 0 8px}
 @media(max-width:760px){.home-map-frame:has(.incident-support-popup) .map-activate{top:auto;bottom:28px}}
+.incident-support-popup .leaflet-popup-tip{background:rgba(255,255,255,.94)}
+.incident-support-content .incident-detail-resource:nth-child(3){grid-column:1/-1}
+@media(max-width:760px){.incident-support-content .incident-detail-resource-grid{grid-template-columns:1fr;gap:7px}.incident-support-content .incident-detail-resource{padding:8px 10px}.incident-support-content .home-btn{min-height:44px}.home-map-page .incident-support-title{font-size:17px}}
+@media(max-width:760px){.home-map-frame:has(.incident-support-popup) .leaflet-top.leaflet-left{top:auto;bottom:28px}}
+
+/* Floating resource window remains inside the map, without blocking the address checker. */
+.incident-support-window{position:absolute;z-index:1200;top:12px;left:50%;transform:translateX(-50%);width:min(620px,calc(100% - 24px));max-height:calc(100% - 24px);display:flex;flex-direction:column;background:rgba(255,255,255,.94);backdrop-filter:blur(3px);border:1px solid #a8bbcf;border-radius:12px;box-shadow:0 6px 24px #18334d38;color:#162b40}
+.incident-support-window>.incident-support-content{padding:14px 16px;overflow:auto;overscroll-behavior:contain;min-height:0}
+.incident-support-close{position:absolute;right:6px;top:6px;z-index:1;width:36px;height:36px;border:1px solid #cbd8e7;border-radius:8px;background:rgba(255,255,255,.95);color:#254763;font-size:25px;line-height:1;cursor:pointer}
+.home-map-page .incident-support-window .incident-support-title{margin-right:36px}
+@media(max-width:760px){.incident-support-window{top:8px;width:calc(100% - 16px);max-height:calc(100% - 16px)}.incident-support-window>.incident-support-content{padding:12px}.incident-support-close{width:40px;height:40px}.home-map-page .incident-support-window .incident-support-title{margin-right:38px}}

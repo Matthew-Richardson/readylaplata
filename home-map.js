@@ -50,7 +50,7 @@
   async function create({container,config,fields,popupFor,onIncident}){
     if(!window.L||!L.esri)throw new Error('Leaflet could not load');
     const C=config,Z=window.ReadyLaPlataZones,$=id=>document.getElementById(id),esc=window.ReadyLaPlata.escHTML;
-    let operationalLayers=[];
+    let operationalLayers=[],supportWindow=null;
     const view=L.map(container,{scrollWheelZoom:true,zoomSnap:0.25});
     L.tileLayer(C.basemapTilesUrl,{attribution:'Terrain: Esri, USGS, NOAA',maxNativeZoom:13,maxZoom:19}).addTo(view);
     L.esri.featureLayer({url:C.boundaryUrl,style:()=>({color:'#0b4da2',weight:2,opacity:0.65,fillOpacity:0}),interactive:false}).addTo(view);
@@ -134,13 +134,18 @@
       fitBounds(bounds,options={}){const b=Array.isArray(bounds)?bounds:[[bounds.ymin,bounds.xmin],[bounds.ymax,bounds.xmax]];return view.fitBounds(b,{padding:[20,20],maxZoom:options.maxZoom,animate:false});},
       setView(latlng,zoom){return view.setView(latlng,zoom,{animate:false});},
       openSupportPopup(latlng,content){
-        L.DomEvent.disableClickPropagation(content);L.DomEvent.disableScrollPropagation(content);
-        const popup=L.popup({className:'incident-support-popup',maxWidth:Math.min(460,view.getSize().x-60),minWidth:Math.min(260,view.getSize().x-60),maxHeight:Math.max(70,view.getSize().y-115),autoPanPadding:[18,18],closeButton:true}).setLatLng(latlng).setContent(content).openOn(view);
-        const resize=()=>{popup.options.maxWidth=Math.min(460,view.getSize().x-60);popup.options.minWidth=Math.min(260,view.getSize().x-60);popup.options.maxHeight=Math.max(70,view.getSize().y-115);popup.update();};
-        view.on('resize',resize);popup.once('remove',()=>view.off('resize',resize));
-        return popup;
+        view.closePopup();supportWindow?.remove();
+        const frame=document.getElementById(container),panel=document.createElement('section'),close=document.createElement('button');
+        const previousFocus=document.activeElement;
+        panel.className='incident-support-window';panel.setAttribute('role','region');panel.setAttribute('aria-label',content.getAttribute('aria-label')||'Incident support resources');
+        close.type='button';close.className='incident-support-close';close.textContent='×';close.setAttribute('aria-label','Close incident support resources');
+        const remove=()=>{const hadFocus=panel.contains(document.activeElement);panel.remove();if(supportWindow===handle)supportWindow=null;if(hadFocus&&previousFocus?.isConnected)previousFocus.focus({preventScroll:true});};
+        const handle={isOpen:()=>panel.isConnected,remove,update(){}};
+        close.addEventListener('click',remove);panel.addEventListener('keydown',event=>{if(event.key==='Escape'){event.stopPropagation();remove();}});
+        L.DomEvent.disableClickPropagation(panel);L.DomEvent.disableScrollPropagation(panel);
+        panel.append(close,content);frame.append(panel);supportWindow=handle;close.focus({preventScroll:true});return handle;
       },
-      closePopup(){view.closePopup();},invalidateSize(){view.invalidateSize({pan:false});},
+      closePopup(){view.closePopup();supportWindow?.remove();},invalidateSize(){view.invalidateSize({pan:false});},
       renderZones(features){zones.clearLayers();zones.addData({type:'FeatureCollection',features});labels.clearLayers();for(const feature of features){const name=feature.properties[fields.zone],p=zoneLabelPoint(feature);if(name&&p)L.marker(p,{pane:'zoneLabels',interactive:false,keyboard:false,icon:L.divIcon({className:'zone-map-label',html:'<span>'+esc(name)+'</span>',iconSize:[0,0]})}).addTo(labels);}},
       renderIncidents(incidents){pins.clearLayers();for(const [name,entry] of incidents){if(!entry.extent.isValid())continue;entry.point=entry.extent.getCenter();entry.marker=L.marker(entry.point,{pane:'incidentPins',zIndexOffset:1000,icon:L.divIcon({className:'incident-map-pin',html:'<span class="pin-diamond"></span><span class="pin-label">'+esc(name)+'</span>',iconSize:[20,20],iconAnchor:[10,10]}),title:name,keyboard:true}).on('click',()=>onIncident(name,entry.point)).addTo(pins);}},
       markAddress(match){return L.circleMarker([match.location.y,match.location.x],{pane:'incidentPins',radius:7,color:'#fff',weight:3,fillColor:'#174f8a',fillOpacity:1}).bindTooltip(match.address,{direction:'top'}).addTo(view);}

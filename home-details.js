@@ -14,7 +14,7 @@
     if(!lines.length)card.append(node('p','detail-pending',label==='Road closures'?'No road closures reported.':'Information pending — check back for updates.'));
     else lines.forEach((line,index)=>card.append(node(index===0&&label!=='Road closures'?'strong':'p','detail-resource-text',line)));
     const addresses=String(address||'').split(/[\n;]+/).map(a=>a.trim()).filter(Boolean);
-    if(addresses.length){const directions=node('div','detail-directions');directions.append(node('span','detail-label','Directions'));for(const address of addresses){const link=node('a','home-btn',address);link.href='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(address);link.target='_blank';link.rel='noopener noreferrer';directions.append(link);}card.append(directions);}
+    if(addresses.length){const directions=node('div','detail-directions');directions.append(node('span','detail-label','Directions'));for(const address of addresses){const link=node('a','home-btn',address);link.href='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(address);link.target='_blank';link.rel='noopener noreferrer';link.setAttribute('aria-label','Directions to '+address);directions.append(link);}card.append(directions);}
     return card;
   }
   async function open({name,view,latlng}={}){
