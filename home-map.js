@@ -30,6 +30,26 @@
       'esri/WebMap','esri/views/MapView','esri/layers/GraphicsLayer','esri/Graphic','esri/geometry/Point','esri/geometry/Extent','esri/core/reactiveUtils'
     ],(...modules)=>resolve(modules),reject));
     const $=id=>document.getElementById(id);
+    // Keep layer failures separate from address-search messages and clear them on recovery.
+    const layerErrors=new Map(),layerWarning=$('mapLayerMessage')||$('mapMessage');
+    function showLayerErrors(){
+      const names=[...layerErrors.keys()].filter(layer=>layer.visible!==false).map(layer=>layer.title||layer.id||'Unnamed layer');
+      layerWarning.textContent=names.length?'Map layer unavailable: '+[...new Set(names)].join(', ')+'. Use Refresh to retry.':'';
+    }
+    function reportLayerError(layer,error,phase='load'){
+      if(error?.name==='AbortError')return;
+      if(!layer)return;
+      const errors=layerErrors.get(layer)||new Set();errors.add(phase);layerErrors.set(layer,errors);
+      console.warn('AGOL layer failed:',{title:layer.title,id:layer.id,url:layer.url,phase,error});showLayerErrors();
+    }
+    function clearLayerError(layer,phase){
+      const errors=layerErrors.get(layer);if(!errors)return;
+      errors.delete(phase);if(!errors.size)layerErrors.delete(layer);showLayerErrors();
+    }
+    async function loadLayer(layer){
+      try{await layer.load();clearLayerError(layer,'load');}
+      catch(error){reportLayerError(layer,error);}
+    }
     const webmap=new WebMap({portalItem:{id:C.webmapId}});
     await webmap.load();
     const all=()=>webmap.allLayers.toArray();
@@ -57,17 +77,22 @@
       return view.goTo(target,{animate:false}).catch(error=>{if(id===navigation&&error.name!=='AbortError')console.warn('Map navigation:',error);});
     }
     function extentFor(bounds){return new Extent({xmin:Array.isArray(bounds)?bounds[0][1]:bounds.xmin,ymin:Array.isArray(bounds)?bounds[0][0]:bounds.ymin,xmax:Array.isArray(bounds)?bounds[1][1]:bounds.xmax,ymax:Array.isArray(bounds)?bounds[1][0]:bounds.ymax,spatialReference:{wkid:4326}});}
-    const reportLayerError=()=>{$('mapMessage').textContent='Some AGOL map layers could not load. Use Refresh to try again.';};
     for(const [id,layer] of [['roadsToggle',roads],['roadLayerToggle',roadInfo],['poiLayerToggle',pois]]){
       const control=$(id);if(!layer){control.checked=false;control.disabled=true;continue;}control.checked=layer.visible!==false;
       control.addEventListener('change',()=>{layer.visible=control.checked;if(control.checked){let parent=layer.parent;while(parent&&parent.type==='group'){parent.visible=true;parent=parent.parent;}}});
-      reactiveUtils.watch(()=>layer.visible,visible=>control.checked=visible);
-      layer.load().catch(reportLayerError);
+      reactiveUtils.watch(()=>layer.visible,visible=>{control.checked=visible;showLayerErrors();});
+      loadLayer(layer);
     }
-    view.on('layerview-create-error',reportLayerError);
+    view.on('layerview-create-error',event=>reportLayerError(event.layer,event.error,'view'));
+    view.on('layerview-create',event=>clearLayerError(event.layer,'view'));
     try{await view.when();ready=true;}catch(error){view.destroy();for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle'])$(id).disabled=true;throw error;}
     return {
       raw:view,operationalLayers,
+      async refreshLayers(){
+        // Retry failed layers as well as the normal zone/road/POI refresh.
+        const retry=[...new Set([...operationalLayers,...layerErrors.keys()])];
+        await Promise.allSettled(retry.map(async layer=>{await loadLayer(layer);if(layer.visible!==false&&typeof layer.refresh==='function')layer.refresh();}));
+      },
       async fitBounds(bounds,options={}){const extent=extentFor(bounds),request=navigation+1;await navigate(extent.expand(1.12));if(request===navigation&&options.maxZoom&&view.zoom>options.maxZoom)await navigate({zoom:options.maxZoom});},
       setView(latlng,zoom){return navigate({center:new Point({longitude:latlng[1],latitude:latlng[0]}),zoom});},
       openSupportPopup(latlng,content){view.closePopup();return openSupportWindow(container,content);},

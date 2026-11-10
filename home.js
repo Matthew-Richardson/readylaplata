@@ -305,7 +305,7 @@
 
   async function refreshAll(){
     $('refreshAll').disabled=true;
-    try{operationalLayers.forEach(layer=>layer.refresh());await refreshIncidents();}finally{$('refreshAll').disabled=false;}
+    try{await Promise.all([view?.refreshLayers?view.refreshLayers():Promise.resolve(operationalLayers.forEach(layer=>layer.refresh())),refreshIncidents()]);}finally{$('refreshAll').disabled=false;}
   }
   $('refreshAll').addEventListener('click',refreshAll);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshAll();});
