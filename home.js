@@ -53,11 +53,12 @@
     button.addEventListener('click',()=>openIncidentDetails(name));return button;
   }
   function openIncidentDetails(name,latlng){
-    if(!view)return;
+    const entry=incidents.get(name);if(!view&&!entry)return;
     if(welcome.open)closeWelcome();
     const addressMatches=currentAddressMatch&&addressZones(currentAddressMatch).some(f=>String(f.properties[zoneFields.incident]||'').trim()===name);
-    const anchor=latlng||(addressMatches?[currentAddressMatch.location.y,currentAddressMatch.location.x]:incidents.get(name)?.point);
-    window.ReadyLaPlataDetails.open({name,view,latlng:anchor});
+    const anchor=latlng||(addressMatches?[currentAddressMatch.location.y,currentAddressMatch.location.x]:entry?.point||entry?.extent.getCenter());
+    const host=view||{openSupportPopup:(_,content)=>window.ReadyLaPlataMap.openSupportWindow('viewDiv',content)};
+    window.ReadyLaPlataDetails.open({name,view:host,latlng:anchor});
   }
   function addressZones(match){return currentZoneFeatures.filter(feature=>['Go','Set','Access','Shelter'].includes(Z.key(statusName(feature)))&&zoneContainsAddress(feature.geometry,match.location.x,match.location.y));}
   function zoomToAddress(match){
@@ -193,7 +194,7 @@
       await view.fitBounds(countyBounds);
       mapReady=true;$('mapLoading').hidden=true;
       await refreshIncidents();
-    }catch(error){console.error('Map initialization:',error);mapFailure('The map could not load. Try Refresh or use the lightweight map.');if(zoneFields){mapReady=true;await refreshIncidents();}}
+    }catch(error){console.error('Map initialization:',error);mapFailure(/webgl/i.test(String(error.name)+' '+String(error.message))?'This browser cannot display the ArcGIS map. Use the lightweight map.':'The map could not load. Try Refresh or use the lightweight map.');if(zoneFields){mapReady=true;await refreshIncidents();}}
   }
   $('mapResetBtn').addEventListener('click',()=>{if(view){view.closePopup();view.fitBounds(countyBounds,{padding:[20,20]});}});
   $('myLocationBtn').addEventListener('click',()=>{

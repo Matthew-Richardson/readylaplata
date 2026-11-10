@@ -226,3 +226,10 @@ html:has(.home-map-page),body.home-map-page{height:100%;overflow:hidden}.home-ma
  .incident-sidebar .incident-mobile-info{flex:0 0 44px;width:44px;min-height:44px;padding:0;display:flex;align-items:center;justify-content:center;border:0;border-left:1px solid #d4dfeb;background:#f0f5fb;color:#174f8a;font:700 21px Arial;cursor:pointer}
  .incident-sidebar .incident-mobile-info:hover{background:#e1ebf7}
 }
+
+/* ArcGIS fills the same responsive map frame used by the overview. */
+.home-map-page #viewDiv .esri-view-root,.home-map-page #viewDiv .esri-view-surface{width:100%;height:100%}
+.home-map-page .esri-ui-corner{z-index:500}
+.home-map-page .incident-support-window{z-index:1200}
+.home-map-page .esri-popup__main-container{max-width:min(380px,calc(100vw - 48px))}
+@media(max-width:760px){.home-map-page .esri-attribution{font-size:9px}.home-map-page .esri-ui-top-left{top:4px;left:4px}}
