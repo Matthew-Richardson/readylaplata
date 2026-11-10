@@ -32,9 +32,9 @@
   <link rel="preconnect" href="https://js.arcgis.com" crossorigin>
   <link rel="preconnect" href="https://services2.arcgis.com" crossorigin>
 
-  <link rel="stylesheet" href="shared-styles.css?v=20261110-nativeagol35">
+  <link rel="stylesheet" href="shared-styles.css?v=20261110-guidelegend37">
   <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/light/main.css">
-  <link rel="stylesheet" href="home.css?v=20261110-nativeagol35">
+  <link rel="stylesheet" href="home.css?v=20261110-guidelegend37">
 
 <style id="zone-information-layout">
 #welcomeDialog{width:min(980px,calc(100% - 24px));max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);padding:0;border:1px solid #ccd8e4;border-radius:14px;color:#162b40;overflow:hidden;font-family:Arial,sans-serif}
@@ -98,13 +98,13 @@
           </div>
       </div>
       <div id="mapOptions" class="map-options">
-        <div class="home-legend" aria-label="Zone colors">
+        <div class="home-legend" aria-label="Map legend">
             <span><i style="background:#fff36a;border-color:#967800"></i>Set</span>
             <span><i style="background:#41f56e;border-color:#15803d"></i>Go</span>
             <span><i style="background:#8dc8f8;border-color:#1e6eb6"></i>Shelter-In-Place</span>
             <span><i class="access-hatch"></i>Access Impact Area</span>
             <span><i style="background:#b8bec7;border-color:#667180"></i>Planning</span>
-            <span><i class="road-line"></i>Road impact</span><span><i class="poi-key">i</i>Info</span>
+            <span><i class="road-line" aria-hidden="true"></i>Road impact</span><span><span class="legend-icon-road" aria-hidden="true"></span>Road closure</span><span><span class="legend-icon-warning" aria-hidden="true"></span>Warning</span><span><span class="legend-icon-info" aria-hidden="true">i</span>Info</span>
           </div>
 <div class="home-map-tools" aria-label="Map controls and layers"><div class="map-action-group">
             <button id="refreshAll" class="home-btn" type="button">Refresh</button>
@@ -124,7 +124,7 @@
   <footer class="home-footer"><p>La Plata County OEM <span aria-hidden="true">·</span> Emergencies: <a href="tel:911">911</a> <span aria-hidden="true">·</span> <span id="lastLoaded">Waiting for incident data</span></p></footer>
 </div>
 <dialog id="welcomeDialog" class="welcome-dialog" aria-labelledby="welcomeTitle">
-  <div class="welcome-header"><h2 id="welcomeTitle">Understand your zone &amp; what to do</h2><button id="welcomeClose" class="home-btn" type="button" aria-label="Close zone guide">×</button></div>
+  <div class="welcome-header"><div class="welcome-brand"><div class="welcome-brand-row"><img src="logo.png" class="welcome-county-logo" alt="La Plata County" width="88"><h1 class="welcome-brand-name">ReadyLaPlata</h1></div><h2 id="welcomeTitle">Know your zone &amp; what to do</h2></div><button id="welcomeClose" class="home-btn" type="button" aria-label="Close zone guide">×</button></div>
   <div class="welcome-scroll">
     <div class="welcome-grid">
       <section class="welcome-status ready"><h3>Ready</h3><p class="status-action">Prepare now</p><p>Stay informed. Have a plan and go kit.</p><details class="ready-checklist"><summary>Preparedness checklist</summary><ul>
@@ -223,12 +223,12 @@
 
 
 
-<script src="shared.js?v=20261110-nativeagol35"></script>
-<script src="zone-status.js?v=20261110-nativeagol35"></script>
+<script src="shared.js?v=20261110-guidelegend37"></script>
+<script src="zone-status.js?v=20261110-guidelegend37"></script>
 <script src="https://js.arcgis.com/4.31/" defer></script>
-<script src="home-config.js?v=20261110-nativeagol35"></script>
-<script src="home-map.js?v=20261110-nativeagol35" defer></script>
-<script src="home-details.js?v=20261110-nativeagol35" defer></script>
-<script src="home.js?v=20261110-nativeagol35" defer></script>
+<script src="home-config.js?v=20261110-guidelegend37"></script>
+<script src="home-map.js?v=20261110-guidelegend37" defer></script>
+<script src="home-details.js?v=20261110-guidelegend37" defer></script>
+<script src="home.js?v=20261110-guidelegend37" defer></script>
 </body>
 </html>

@@ -233,3 +233,17 @@ html:has(.home-map-page),body.home-map-page{height:100%;overflow:hidden}.home-ma
 .home-map-page .incident-support-window{z-index:1200}
 .home-map-page .esri-popup__main-container{max-width:min(380px,calc(100vw - 48px))}
 @media(max-width:760px){.home-map-page .esri-attribution{font-size:9px}.home-map-page .esri-ui-top-left{top:4px;left:4px}}
+
+/* Compact county branding above the zone guide. */
+#welcomeDialog .welcome-header{align-items:center;gap:14px}
+.welcome-brand{flex:1;min-width:0}
+.welcome-brand-row{display:flex;align-items:center;gap:12px;min-width:0}
+.welcome-county-logo{display:block;width:88px;height:auto;flex:none}
+.welcome-brand-name{margin:0;font-size:27px;line-height:1.15;font-weight:800;letter-spacing:-.035em;color:#0b4da2}
+#welcomeDialog .welcome-header #welcomeTitle{font-size:18px;line-height:1.3;font-weight:600;letter-spacing:0;color:#405b76;margin:7px 0 0}
+#welcomeClose{flex:none}
+@media(max-width:680px){#welcomeDialog .welcome-header{padding:12px 14px;gap:10px}.welcome-brand-row{gap:9px}.welcome-county-logo{width:68px}.welcome-brand-name{font-size:23px}#welcomeDialog .welcome-header #welcomeTitle{font-size:15px;margin-top:6px}}
+@media(max-width:360px){.welcome-county-logo{width:54px}.welcome-brand-name{font-size:21px}#welcomeDialog .welcome-header #welcomeTitle{font-size:14px}}
+
+.home-legend .legend-icon-road,.home-legend .legend-icon-warning,.home-legend .legend-icon-info{display:inline-flex;width:18px;height:18px;flex:0 0 18px}
+.home-legend .legend-icon-info{font-style:normal;justify-content:center;align-items:center}
