@@ -49,18 +49,14 @@
     const button=document.createElement('button');button.type='button';button.className='home-btn incident-details-button';button.textContent=label;
     button.addEventListener('click',()=>openIncidentDetails(name));return button;
   }
-  function detailsOptions(){return {zones:currentZoneFeatures,statusField:zoneFields?.status,zoneField:zoneFields?.zone,incidentField:zoneFields?.incident};}
-  function openIncidentDetails(name){
+  function openIncidentDetails(name,latlng){
+    if(!view)return;
     if(welcome.open)closeWelcome();
-    view?.closePopup();
-    window.ReadyLaPlataDetails.open({...detailsOptions(),names:[name]});
+    const addressMatches=currentAddressMatch&&addressZones(currentAddressMatch).some(f=>String(f.properties[zoneFields.incident]||'').trim()===name);
+    const anchor=latlng||(addressMatches?[currentAddressMatch.location.y,currentAddressMatch.location.x]:incidents.get(name)?.point);
+    window.ReadyLaPlataDetails.open({name,view,latlng:anchor});
   }
   function addressZones(match){return currentZoneFeatures.filter(feature=>['Go','Set','Access','Shelter'].includes(Z.key(statusName(feature)))&&zoneContainsAddress(feature.geometry,match.location.x,match.location.y));}
-  function openAddressDetails(match){
-    if(welcome.open)closeWelcome();
-    const names=[...new Set(addressZones(match).map(f=>String(f.properties[zoneFields.incident]||'').trim()).filter(Boolean))];
-    window.ReadyLaPlataDetails.open({...detailsOptions(),names,addressContent:addressIncidentContent(match,true),addressLabel:shortAddressLabel(match)});
-  }
   function zoomToAddress(match){
     if(!view)return;
     view.closePopup();view.invalidateSize({pan:false});view.setView([match.location.y,match.location.x],15);
@@ -86,7 +82,7 @@
     const url=new URL(location.href);url.searchParams.set('incident',name);history.replaceState(null,'',url);
     try {
       if(entry.extent?.isValid()) view.fitBounds(entry.extent,{padding:[30,30],maxZoom:14});
-      if(entry.marker) entry.marker.openPopup();
+      openIncidentDetails(name);
     } catch(err){if(err.name!=='AbortError')console.warn('Incident navigation:',err);}
   }
   const STATUS_PRIORITY = Object.freeze({Go:0,Shelter:1,Set:2,Access:3,Planning:4});
@@ -158,7 +154,7 @@
       $('incidentState').dataset.error='false';$('incidentState').hidden=incidents.size>0;$('incidentState').textContent=incidents.size?'':'No incidents are currently shown in the county zone layer.';
       $('lastLoaded').textContent='Updated '+localTime(lastIncidentSuccess);
       if(currentAddressMatch)renderAddressResult();
-      if(firstLoad && chosenIncident && view){await focusIncident(chosenIncident);openIncidentDetails(chosenIncident);}
+      if(firstLoad && chosenIncident && view){await focusIncident(chosenIncident);}
       else if(firstLoad && view)requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20]});});
       firstLoad=false;
     } catch(err){
@@ -183,7 +179,7 @@
       if(!zoneFields.status||!zoneFields.incident)throw new Error('Zone status/incident fields unavailable');
       const extent=extentData?.extent;
       if(extent&&[extent.xmin,extent.ymin,extent.xmax,extent.ymax].every(Number.isFinite))countyBounds=[[extent.ymin,extent.xmin],[extent.ymax,extent.xmax]];
-      view=await window.ReadyLaPlataMap.create({container:'viewDiv',config:C,fields:zoneFields,popupFor,onIncident:focusIncident});
+      view=await window.ReadyLaPlataMap.create({container:'viewDiv',config:C,fields:zoneFields,popupFor,onIncident:openIncidentDetails});
       operationalLayers=view.operationalLayers;
       await view.fitBounds(countyBounds);
       mapReady=true;$('mapLoading').hidden=true;
@@ -248,7 +244,7 @@
     const value=String(match.attributes?.ShortLabel||match.address||'Address').split(',')[0].trim();
     return value.replace(/\bCounty\s+(?:Road|Rd\.?)\s*/gi,'CR ').replace(/\s+/g,' ').trim();
   }
-  function addressIncidentContent(match,inDialog=false){
+  function addressIncidentContent(match){
     const content=document.createElement('div');
     const matches=addressZones(match);
     matches.sort((a,b)=>statusPriority(statusName(a))-statusPriority(statusName(b)));
@@ -275,7 +271,7 @@
         const item=document.createElement('li'),badge=document.createElement('strong');item.className='address-zone-chip';badge.textContent=style.label;item.style.background=style.fill;item.style.borderColor=style.stroke;item.style.color=style.text;if(status==='Access')item.classList.add('access-hatch');
         const zone=document.createElement('span');zone.textContent=String((zoneFields.zone && feature.properties[zoneFields.zone])||'Unnamed zone');item.append(badge,zone);list.appendChild(item);
       }
-      group.appendChild(list);if(name&&!inDialog){const link=incidentDetailsButton(name,'More info');link.setAttribute('aria-label','More info about '+name);moreLinks.push(link);}groups.appendChild(group);
+      group.appendChild(list);if(name){const link=incidentDetailsButton(name,'More info');link.setAttribute('aria-label','More info about '+name);moreLinks.push(link);}groups.appendChild(group);
     }
     content.appendChild(groups);
     const actions=document.createElement('div');actions.className='address-report-actions';
@@ -301,7 +297,7 @@
       if(requestId!==addressRequestId)return;
       const match=data.candidates?.[0];
       if(!match){$('mapMessage').textContent='No address match was found in La Plata County. Try the full street address and city.';return;}
-      view?.closePopup();if(addressMarker){addressMarker.remove();addressMarker=null;}currentAddressMatch=match;renderAddressResult();zoomToAddress(match);openAddressDetails(match);$('mapMessage').textContent='';
+      view?.closePopup();if(addressMarker){addressMarker.remove();addressMarker=null;}currentAddressMatch=match;renderAddressResult();zoomToAddress(match);$('mapMessage').textContent='';
     }catch(_){if(requestId===addressRequestId)$('mapMessage').textContent='Address search is unavailable. You can browse the map or try again.';}
     finally {if(requestId===addressRequestId)button.disabled=false;}
   });
