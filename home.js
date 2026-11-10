@@ -13,7 +13,7 @@
   let countyBounds = C.countyBounds;
   let chosenIncident = new URLSearchParams(location.search).get('incident') || '';
   let firstLoad = true, announcementInitialized = false;
-  let operationalLayers = [], currentZoneFeatures = [], currentAddressMatch=null, addressRequestId=0;
+  let operationalLayers = [], currentZoneFeatures = [], currentAddressMatch=null, addressRequestId=0, addressMarker=null;
   const welcome = $('welcomeDialog');
   function safeStorage(storage, method, key, value) { try { return storage[method](key,value); } catch (_) { return null; } }
   function initAnnouncement() {
@@ -353,7 +353,7 @@
   }
   $('incidentListToggle').addEventListener('click',()=>setIncidentsMinimized($('incidentList').closest('.incident-summary-panel').classList.contains('is-minimized')?false:true));
   function resetOverview(){
-    addressRequestId++;currentAddressMatch=null;chosenIncident='';
+    addressRequestId++;currentAddressMatch=null;chosenIncident='';if(addressMarker){addressMarker.remove();addressMarker=null;}
     $('addressSearch').value='';$('addressSearch').blur();$('addressForm').querySelector('button').disabled=false;
     $('addressIncidentResult').replaceChildren();$('addressIncidentResult').hidden=true;$('mapMessage').textContent='';
     setIncidentsMinimized(false);$('incidentListToggle').hidden=true;
@@ -366,29 +366,40 @@
   }
   function addressIncidentContent(match){
     const content=document.createElement('div');
-    const heading=document.createElement('div');heading.className='address-result-heading';
-    const title=document.createElement('div');
-    const address=document.createElement('strong');address.textContent=match.address;title.appendChild(address);
-    const reset=document.createElement('button');reset.type='button';reset.className='home-btn';reset.textContent='Reset';reset.addEventListener('click',resetOverview);heading.append(title,reset);content.appendChild(heading);
     const matches=currentZoneFeatures.filter(feature=>['Go','Set','Access','Shelter'].includes(Z.key(statusName(feature))) && zoneContainsAddress(feature.geometry,match.location.x,match.location.y));
-    const message=document.createElement('p');
-    message.textContent=!lastIncidentSuccess?'Checking zones…':matches.length?'':'No Go, Set, Access or Shelter-In-Place zone found at this address.';
-    if(message.textContent)content.appendChild(message);
+    matches.sort((a,b)=>statusPriority(statusName(a))-statusPriority(statusName(b)));
+    const highest=matches.length?Z.key(statusName(matches[0])):null;
+    content.className='address-status-report';
+    const banner=document.createElement('div');banner.className='address-report-banner';
+    if(highest){const style=Z.styles[highest];content.style.setProperty('--report-color',style.fill);content.style.setProperty('--report-edge',style.stroke);banner.classList.add('has-zone');}
+    const label=document.createElement('span');label.className='address-report-label';label.textContent='Address status';
+    const headline=document.createElement('h2');headline.className='address-report-headline';
+    headline.textContent=!lastIncidentSuccess?'Checking zones…':highest?{Go:'Evacuate now',Shelter:'Shelter-In-Place',Set:'Prepare to leave',Access:'Road access impacted'}[highest]:'No listed zone';
+    const address=document.createElement('p');address.className='address-report-location';address.textContent=match.address;banner.append(label,headline,address);content.appendChild(banner);
+    if(lastIncidentSuccess && !matches.length){const message=document.createElement('p');message.className='address-report-empty';message.textContent='No Go, Set, Access or Shelter-In-Place zone found.';content.appendChild(message);}
     const groups=document.createElement('div');groups.className='address-incident-groups';
     for(const name of [...incidents.keys(),'']){
       const zones=matches.filter(feature=>String(feature.properties[zoneFields.incident]||'').trim()===name);if(!zones.length)continue;
       zones.sort((a,b)=>statusPriority(statusName(a))-statusPriority(statusName(b)));
       const group=document.createElement('section');group.className='address-incident-group';
-      if(name){const link=document.createElement('a');link.className='address-incident-link';link.href='evac.html?incident='+encodeURIComponent(name);link.textContent=name+' →';group.appendChild(link);}
+      if(name){const title=document.createElement('h3');title.textContent=name;group.appendChild(title);}
       const list=document.createElement('ul');list.className='address-zone-list';
       for(const feature of zones){
         const status=Z.key(statusName(feature)),style=Z.styles[status];
         const item=document.createElement('li'),badge=document.createElement('strong');item.className='address-zone-chip';badge.textContent=style.label;item.style.background=style.fill;item.style.borderColor=style.stroke;item.style.color=style.text;if(status==='Access')item.classList.add('access-hatch');
         const zone=document.createElement('span');zone.textContent=String((zoneFields.zone && feature.properties[zoneFields.zone])||'Unnamed zone');item.append(badge,zone);list.appendChild(item);
       }
-      group.appendChild(list);groups.appendChild(group);
+      group.appendChild(list);if(name){const link=document.createElement('a');link.className='address-incident-link';link.href='evac.html?incident='+encodeURIComponent(name);link.textContent='More info →';link.setAttribute('aria-label','More info about '+name);group.appendChild(link);}groups.appendChild(group);
     }
     content.appendChild(groups);
+    const actions=document.createElement('div');actions.className='address-report-actions';
+    const zoom=document.createElement('button');zoom.type='button';zoom.className='home-btn primary';zoom.textContent='Zoom to';zoom.addEventListener('click',()=>{
+      if(!view)return;view.closePopup();view.setView([match.location.y,match.location.x],15);
+      if(addressMarker)addressMarker.remove();
+      addressMarker=L.circleMarker([match.location.y,match.location.x],{pane:'incidentPins',radius:7,color:'#fff',weight:3,fillColor:'#174f8a',fillOpacity:1}).addTo(view);
+      addressMarker.bindTooltip(match.address,{direction:'top'});
+    });
+    const reset=document.createElement('button');reset.type='button';reset.className='home-btn';reset.textContent='Reset';reset.addEventListener('click',resetOverview);actions.append(zoom,reset);content.appendChild(actions);
     const note=document.createElement('p');note.className='address-result-note';note.textContent='Approximate location. Confirm incident instructions.';content.appendChild(note);
     return content;
   }
@@ -407,7 +418,7 @@
       if(requestId!==addressRequestId)return;
       const match=data.candidates?.[0];
       if(!match){$('mapMessage').textContent='No address match was found in La Plata County. Try the full street address and city.';return;}
-      view.closePopup();currentAddressMatch=match;renderAddressResult();$('incidentListToggle').hidden=false;setIncidentsMinimized(true);$('mapMessage').textContent='';
+      view.closePopup();if(addressMarker){addressMarker.remove();addressMarker=null;}currentAddressMatch=match;renderAddressResult();$('incidentListToggle').hidden=false;setIncidentsMinimized(true);$('mapMessage').textContent='';
     }catch(_){if(requestId===addressRequestId)$('mapMessage').textContent='Address search is unavailable. You can browse the map or try again.';}
     finally {if(requestId===addressRequestId)button.disabled=false;}
   });

@@ -23,3 +23,7 @@ Address search lists all containing zones and their statuses in the upper result
 Address results include only Go, Set, Access and Shelter zones, as compact colored labels. Planning/testing zones are excluded from address results. Incident status badges indicate statuses present, without numeric totals.
 
 The overview uses Esri World Terrain Base without a labels overlay, with La Plata County Hosted/Roads vector tiles above it. Terrain native tiles extend through zoom 13 and are enlarged at closer zooms; operational and road vector features stay sharp.
+
+Address results are centered status reports with a prominent status-colored header. More info opens the corresponding incident; Zoom to explicitly centers the main map and marks the geocoded address. Searching alone does not move the map. Reset/Home remove the address marker.
+
+Above-map layout separates the address-search group from the incident-browsing strip. Incident cards use a compact title/status/action layout; search results minimize browsing into a secondary row.
