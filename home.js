@@ -326,11 +326,10 @@
       group.appendChild(list);if(name){const link=incidentDetailsButton(name,'More info');link.setAttribute('aria-label','More info about '+name);moreLinks.push(link);}groups.appendChild(group);
     }
     content.appendChild(groups);
-    const actions=document.createElement('div');actions.className='address-report-actions';
-    const zoom=document.createElement('button');zoom.type='button';zoom.className='home-btn primary';zoom.textContent='Zoom to';zoom.disabled=!view;zoom.addEventListener('click',()=>{
-      window.ReadyLaPlataDetails.close();zoomToAddress(match);
-    });
-    for(const link of moreLinks)actions.appendChild(link);actions.append(zoom);content.appendChild(actions);
+    if(moreLinks.length){
+      const actions=document.createElement('div');actions.className='address-report-actions';
+      for(const link of moreLinks)actions.appendChild(link);content.appendChild(actions);
+    }
     content.title=match.address+' · Address location is approximate. Confirm incident instructions.';
     return content;
   }
