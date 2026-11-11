@@ -305,7 +305,8 @@
 
     $('incidentList').scrollLeft=0;document.querySelectorAll('.incident-item').forEach(el=>{el.classList.remove('is-selected');el.querySelector('.incident-mobile-tab')?.setAttribute('aria-pressed','false');});
     setOptionsOpen(false);setIncidentMenuOpen(false);
-    for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle','incidentLabelsToggle']){if(!$(id).checked){$(id).checked=true;$(id).dispatchEvent(new Event('change'));}}
+    for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle']){if(!$(id).checked){$(id).checked=true;$(id).dispatchEvent(new Event('change'));}}
+    if($('incidentLabelsToggle').checked){$('incidentLabelsToggle').checked=false;$('incidentLabelsToggle').dispatchEvent(new Event('change'));}
     const url=new URL(location.href);url.searchParams.delete('incident');history.replaceState(null,'',url);
     if(view){view.closePopup();requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20],county:true});});}
   }

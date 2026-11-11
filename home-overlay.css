@@ -275,11 +275,4 @@
 /* Confine map gestures to ArcGIS rather than the browser viewport. */
 .immersive-map #mapFrame{touch-action:none;overscroll-behavior:none}
 
-.immersive-map .incident-area-group{max-width:260px;border:2px solid #426b94;background:#fffffff0;gap:4px}
-.immersive-map .incident-group-names{font:600 12px/1.35 Arial;color:#162b40;white-space:normal;overflow-wrap:anywhere}
-.immersive-map .incident-group-picker{padding:12px;color:#162b40}
-.immersive-map .incident-group-picker h3{margin:0 40px 12px 0;font-size:18px}
-.immersive-map .incident-group-choice{display:block;width:100%;text-align:left;white-space:normal;min-height:44px;margin-top:7px;padding:10px 12px;font-size:15px}
-@media(max-width:760px){.immersive-map .incident-area-group{max-width:220px}}
 
-.immersive-map .incident-group-choice-status{display:block;margin-top:4px;font-size:12px;font-weight:500;color:#3d5268}
