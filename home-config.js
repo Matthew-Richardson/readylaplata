@@ -9,5 +9,6 @@ window.ReadyLaPlataHomeConfig = Object.freeze({
   evacPoisUrl: 'https://services2.arcgis.com/ilLrLpXfElYxSy9y/arcgis/rest/services/EvacPOIs_view/FeatureServer/0',
   countyBounds: [[36.98110622387451,-108.40516285520786],[37.64873746849846,-107.46534438179984]],
   incidentLabelScale: 75000,
+  countyZoomOffset: 1,
   refreshMs: 120000
 });

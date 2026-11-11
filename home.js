@@ -192,12 +192,12 @@
       if(extent&&[extent.xmin,extent.ymin,extent.xmax,extent.ymax].every(Number.isFinite))countyBounds=[[extent.ymin,extent.xmin],[extent.ymax,extent.xmax]];
       view=await window.ReadyLaPlataMap.create({container:'viewDiv',config:C,onIncident:openIncidentDetails});
       operationalLayers=view.operationalLayers;$('mapZoomIn').disabled=false;$('mapZoomOut').disabled=false;measureMapOverlays();
-      await view.fitBounds(countyBounds,{county:true});
+      await view.fitBounds(countyBounds,{county:true,zoomOffset:C.countyZoomOffset||0});
       mapReady=true;$('mapLoading').hidden=true;
       await refreshIncidents();
     }catch(error){console.error('Map initialization:',error);mapFailure(/webgl/i.test(String(error.name)+' '+String(error.message))?'This browser cannot display the ArcGIS map. Use the lightweight map.':'The map could not load. Try Refresh or use the lightweight map.');if(zoneFields){mapReady=true;await refreshIncidents();}}
   }
-  $('mapResetBtn').addEventListener('click',()=>{if(view){view.closePopup();view.fitBounds(countyBounds,{padding:[20,20],county:true});}});
+  $('mapResetBtn').addEventListener('click',()=>{if(view){view.closePopup();view.fitBounds(countyBounds,{padding:[20,20],county:true,zoomOffset:C.countyZoomOffset||0});}});
   $('myLocationBtn').addEventListener('click',()=>{
     if(!view)return;
     if(!navigator.geolocation){$('mapMessage').textContent='Location is not supported by this browser.';return;}
@@ -308,7 +308,7 @@
     for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle']){if(!$(id).checked){$(id).checked=true;$(id).dispatchEvent(new Event('change'));}}
     if($('incidentLabelsToggle').checked){$('incidentLabelsToggle').checked=false;$('incidentLabelsToggle').dispatchEvent(new Event('change'));}
     const url=new URL(location.href);url.searchParams.delete('incident');history.replaceState(null,'',url);
-    if(view){view.closePopup();requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20],county:true});});}
+    if(view){view.closePopup();requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20],county:true,zoomOffset:C.countyZoomOffset||0});});}
   }
   function shortAddressLabel(match){
     const value=String(match.attributes?.ShortLabel||match.address||'Address').split(',')[0].trim();

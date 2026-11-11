@@ -29,7 +29,7 @@ Only zones with `LIVE = 1` appear in incident summaries, address checks and the 
 
 Status codes are Go, Set, Shelter, Access and Planning. Go is green, Set yellow, Shelter blue, Access purple hatch on the map, and Planning gray. Shelter displays as Shelter-In-Place; Access displays as Access Impact Area. Access aliases include Road Closure Area, Road Access Impact and Isolated. Planning is for testing.
 
-County view fits the complete county with symmetric mobile overlay padding and fractional zoom. At scales closer than 1:75,000, incident name plates give way to native zone labels. Connectors are straight and paint behind every name plate. The threshold is `incidentLabelScale` in `home-config.js`.
+County view starts from the county extent with symmetric mobile overlay padding, then zooms one step closer. The offset is configurable as countyZoomOffset in home-config.js. At scales closer than 1:75,000, incident name plates give way to native zone labels. Connectors are straight and paint behind every name plate. The threshold is `incidentLabelScale` in `home-config.js`.
 
 ## Address search and incident information
 
