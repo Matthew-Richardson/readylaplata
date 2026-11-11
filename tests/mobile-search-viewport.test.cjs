@@ -11,3 +11,23 @@ context.window.visualViewport.height=844;context.window.visualViewport.offsetTop
 mobile=false;context.document.activeElement=input;context.beginAddressEditing();assert.equal(context.syncAddressViewport(),false,'desktop focus does not freeze viewport');
 mobile=true;context.beginAddressEditing();context.window.innerWidth=844;context.window.innerHeight=390;context.window.visualViewport.height=390;assert.equal(context.syncAddressViewport(),false,'orientation clears old viewport lock');assert.equal(context.document.activeElement,null);
 console.log('PASS: mobile keyboard resize, visual pan, delayed keyboard dismissal, desktop focus, and orientation changes.');
+
+// Initial touch focus is synchronous, invisible during focus, and restored promptly.
+const frames=[],inputClasses=new Set();let prevented=0,focusCount=0;
+context.requestAnimationFrame=callback=>frames.push(callback);
+input.classList={add:c=>inputClasses.add(c),remove:c=>inputClasses.delete(c)};
+input.focus=options=>{assert.equal(options.preventScroll,true);assert(inputClasses.has('address-focus-guard'));focusCount++;context.document.activeElement=input;};
+context.window.innerWidth=390;context.window.innerHeight=844;context.window.visualViewport.height=844;
+context.document.activeElement=null;
+context.focusAddressWithoutPagePan({pointerType:'touch',preventDefault(){prevented++;}});
+assert.equal(prevented,1);assert.equal(focusCount,1);assert.equal(context.document.activeElement,input);
+frames.shift()();frames.shift()();assert(!inputClasses.has('address-focus-guard'));
+context.focusAddressWithoutPagePan({pointerType:'touch',preventDefault(){prevented++;}});
+assert.equal(prevented,1,'subsequent taps retain native caret placement');
+context.document.activeElement=null;
+context.focusAddressWithoutPagePan({pointerType:'mouse',preventDefault(){prevented++;}});
+assert.equal(prevented,1,'mouse focus remains native');
+mobile=false;
+context.focusAddressWithoutPagePan({pointerType:'touch',preventDefault(){prevented++;}});
+assert.equal(prevented,1,'desktop touch remains native');
+console.log('PASS: touch focus suppresses native pan, opens keyboard synchronously, restores input, and preserves caret/mouse/desktop behavior.');

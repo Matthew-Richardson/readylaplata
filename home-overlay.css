@@ -210,3 +210,6 @@
  .immersive-map.is-address-editing .home-header-actions{width:100%}
  .immersive-map.is-address-editing .home-header-actions .home-nav-btn,.immersive-map.is-address-editing .home-header-actions .home-call-link{width:auto;flex:1;min-height:35px;height:35px}
 }
+
+/* Suppress Safari's native input-focus pan for the initial touch focus only. */
+.immersive-map .home-address-search input.address-focus-guard{opacity:0!important}

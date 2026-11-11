@@ -248,6 +248,17 @@
     }
     measureMapOverlays();
   }
+  function focusAddressWithoutPagePan(event){
+    const input=$('addressSearch');
+    if(!window.matchMedia('(max-width:760px)').matches||event.pointerType!=='touch'||document.activeElement===input)return;
+    // Focus within the tap gesture so the keyboard still opens. An invisible input
+    // avoids WebKit's native scroll-into-view animation; restore it after focus.
+    event.preventDefault();
+    beginAddressEditing();
+    input.classList.add('address-focus-guard');
+    try{input.focus({preventScroll:true});}
+    finally{requestAnimationFrame(()=>requestAnimationFrame(()=>input.classList.remove('address-focus-guard')));}
+  }
   function measureMapOverlays(){
     if(syncAddressViewport())return;
     const header=document.querySelector('.home-brand-banner'),dock=document.querySelector('.overview-top');
@@ -257,6 +268,7 @@
   }
   const overlayObserver=new ResizeObserver(measureMapOverlays);overlayObserver.observe(document.querySelector('.home-brand-banner'));overlayObserver.observe(document.querySelector('.overview-top'));
   window.addEventListener('resize',measureMapOverlays);window.visualViewport?.addEventListener('resize',measureMapOverlays);window.visualViewport?.addEventListener('scroll',measureMapOverlays);
+  $('addressSearch').addEventListener('pointerdown',focusAddressWithoutPagePan);
   $('addressSearch').addEventListener('focus',beginAddressEditing);$('addressSearch').addEventListener('blur',()=>{measureMapOverlays();requestAnimationFrame(measureMapOverlays);});measureMapOverlays();
   $('mapZoomIn').addEventListener('click',()=>view?.zoomBy(1));
   $('mapZoomOut').addEventListener('click',()=>view?.zoomBy(-1));
