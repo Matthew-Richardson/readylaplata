@@ -193,5 +193,18 @@
     "smallAnimalsAddr": "",
     "largeAnimals": "Call Center 970-385-8700",
     "largeAnimalsAddr": ""
+  },
+  {
+    "name": "TEST ONLY",
+    "statusLink": "lpcgov.org",
+    "checkIn": "La Plata County Fairgrounds",
+    "checkInAddr": "2500 Main Ave",
+    "shelters": "La Plata County Fairgrounds",
+    "sheltersAddr": "2500 Main Ave",
+    "road": "TEST ONLY\nTEST ONLY\nTEST ONLY",
+    "smallAnimals": "La Plata County Fairgrounds",
+    "smallAnimalsAddr": "2500 Main Ave",
+    "largeAnimals": "La Plata County Fairgrounds",
+    "largeAnimalsAddr": "2500 Main Ave"
   }
 ]
