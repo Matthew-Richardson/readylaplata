@@ -15,11 +15,11 @@
 .immersive-map .home-header-actions .call-center-text{font-size:11px}
 .immersive-map .site-banner:not(:empty){position:absolute;left:12px;top:calc(var(--map-header-bottom) + 8px);max-width:300px;z-index:1300}
 .immersive-map .map-quick-actions{position:absolute;right:16px;top:max(16px,env(safe-area-inset-top));display:flex;align-items:stretch;gap:6px;z-index:1301}
-.immersive-map .map-quick-button,.immersive-map .map-quick-actions .map-activate{position:static;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:48px;width:auto;min-height:50px;height:50px;padding:5px 9px;transform:none;border:1px solid #a8bfd8;border-radius:10px;background:#fffffff2;color:#173f6b;box-shadow:0 3px 14px #18334d24;font:700 10px Arial;cursor:pointer}
+.immersive-map .map-quick-button{position:static;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:48px;width:auto;min-height:50px;height:50px;padding:5px 9px;transform:none;border:1px solid #a8bfd8;border-radius:10px;background:#fffffff2;color:#173f6b;box-shadow:0 3px 14px #18334d24;font:700 10px Arial;cursor:pointer}
 .immersive-map .map-quick-button svg{width:19px;height:19px}
 .immersive-map #incidentMenuToggle{position:relative;padding-right:19px}
 .immersive-map #incidentMenuCount{position:absolute;right:4px;top:3px;border-radius:12px;background:#174f8a;color:#fff;font-size:10px;padding:2px 4px}
-.immersive-map .map-quick-actions .map-activate{width:48px;font-size:23px}
+
 .immersive-map .map-quick-button[aria-expanded=true]{background:#e3eefb;border-color:#174f8a}
 .immersive-map .overview-top{position:absolute;left:50%;bottom:max(28px,calc(env(safe-area-inset-bottom) + 22px));transform:translateX(-50%);width:min(760px,calc(100% - 32px));max-height:min(46dvh,360px)!important;display:flex;flex-direction:column;gap:9px;padding:12px 14px;margin:0;border:1px solid #b1c5dd;border-radius:14px;background:rgba(255,255,255,.78);backdrop-filter:blur(8px);box-shadow:0 5px 28px #18334d30;z-index:1300;overflow-y:auto}
 .immersive-map .overview-top>.home-address-search{order:2;max-width:none;width:100%;margin:0;padding:0;min-width:0}
@@ -46,7 +46,7 @@
 .immersive-map .incident-sidebar .incident-list{display:flex;flex-direction:column;gap:8px;height:auto;max-height:none;overflow:auto;padding:0}
 .immersive-map .incident-sidebar .incident-scroll{display:none}
 .immersive-map .incident-sidebar .incident-item{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:8px;padding:10px;flex:none;width:100%;max-width:none;min-height:0;height:auto;overflow:visible}
-.immersive-map .incident-sidebar .incident-item>.incident-focus{display:block;grid-column:1/-1;font-size:15px;line-height:1.35;color:#000}
+
 .immersive-map .incident-sidebar .incident-item>.incident-badges{display:flex;grid-column:1;gap:6px 10px;margin:0}
 .immersive-map .incident-sidebar .incident-item>.incident-details-button{display:inline-flex;grid-column:2;align-self:end;min-height:36px;font-size:13px;padding:5px 9px;margin:0}
 .immersive-map .incident-sidebar .status-badge{font-size:12px}
@@ -62,14 +62,14 @@
 #welcomeDialog .welcome-map-legend{margin-top:14px;border:1px solid #becfe2;border-radius:10px;padding:12px;background:#f2f6fb}
 #welcomeDialog .welcome-map-legend .home-legend{display:flex;justify-content:flex-start;flex-wrap:wrap;padding:0;gap:10px 16px;border:0;background:none;font-size:12px}
 #welcomeDialog .welcome-map-legend .map-section-label{flex-basis:100%;font-size:14px}
-.is-map-focused .home-brand-banner,.is-map-focused .overview-top,.is-map-focused .home-footer{display:none!important}
+
 @media(max-width:1199px){.immersive-map .home-brand-banner{width:min(800px,calc(100% - 32px))}.immersive-map .map-quick-actions{top:calc(var(--map-header-bottom) + 10px)}}
 @media(max-width:760px){
  .immersive-map{--map-header-bottom:138px;--map-dock-height:115px}
  .immersive-map .home-brand-banner{top:max(8px,env(safe-area-inset-top));width:calc(100% - 16px);padding:10px 12px;flex-direction:column;gap:9px}
  .immersive-map .home-brand-group{gap:12px}.immersive-map .home-brand-logo{width:86px}.immersive-map .home-site-name{font-size:25px}.immersive-map .home-site-subtitle{font-size:10px}
  .immersive-map .home-header-actions{width:100%;gap:7px}.immersive-map .home-header-actions .home-nav-btn,.immersive-map .home-header-actions .home-call-link{flex:1;width:auto;height:35px;min-height:35px;font-size:11px}.immersive-map .home-header-actions svg{width:13px;height:13px}
- .immersive-map .map-quick-actions{right:10px;gap:5px}.immersive-map .map-quick-button,.immersive-map .map-quick-actions .map-activate{height:44px;min-height:44px}
+ .immersive-map .map-quick-actions{right:10px;gap:5px}.immersive-map .map-quick-button{height:44px;min-height:44px}
  .immersive-map .overview-top{width:calc(100% - 20px);bottom:max(26px,calc(env(safe-area-inset-bottom) + 22px));padding:9px 10px;gap:7px;max-height:42dvh!important}
  .immersive-map .home-address-search input{height:40px}.immersive-map .home-address-search .home-btn{height:40px;font-size:12px}
  .immersive-map .map-options,.immersive-map .incident-sidebar{top:calc(var(--map-header-bottom) + 64px);right:10px;width:calc(100% - 20px);max-height:calc(var(--map-height) - var(--map-header-bottom) - 96px)}
@@ -95,7 +95,7 @@
 /* A single right-hand rail and a compact, expandable search window. */
 .immersive-map{--rail-top:max(16px,env(safe-area-inset-top));--rail-height:218px}
 .immersive-map .map-quick-actions{top:var(--rail-top);right:16px;flex-direction:column;width:64px;gap:6px}
-.immersive-map .map-quick-actions .map-quick-button,.immersive-map .map-quick-actions .map-activate,.immersive-map .map-quick-actions #mapOptionsToggle{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;order:0;gap:3px;min-width:64px;width:64px;min-height:50px;height:50px;padding:5px;border:1px solid #a8bfd8;border-radius:10px;background:#ffffffe0;box-shadow:0 3px 14px #18334d24;color:#173f6b;font:700 10px/1.1 Arial;cursor:pointer}
+.immersive-map .map-quick-actions .map-quick-button,.immersive-map .map-quick-actions #mapOptionsToggle{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;order:0;gap:3px;min-width:64px;width:64px;min-height:50px;height:50px;padding:5px;border:1px solid #a8bfd8;border-radius:10px;background:#ffffffe0;box-shadow:0 3px 14px #18334d24;color:#173f6b;font:700 10px/1.1 Arial;cursor:pointer}
 .immersive-map .map-quick-actions #mapOptionsToggle svg{height:19px;width:19px}
 .immersive-map .map-quick-actions #mapOptionsToggle span{font-size:9px;max-width:58px;text-align:center;white-space:normal}
 .immersive-map .esri-zoom{left:auto!important;right:16px!important;top:calc(var(--rail-top) + var(--rail-height) + 10px)!important;width:64px}
@@ -116,12 +116,12 @@
  .immersive-map .home-brand-banner{left:50%;transform:translateX(-50%);width:calc(100% - 16px)}
  .immersive-map .home-brand-logo{width:86px}.immersive-map .home-site-name{font-size:25px}
  .immersive-map .map-quick-actions{right:10px;gap:5px}
- .immersive-map .map-quick-actions .map-quick-button,.immersive-map .map-quick-actions .map-activate,.immersive-map .map-quick-actions #mapOptionsToggle{height:44px;min-height:44px}
+ .immersive-map .map-quick-actions .map-quick-button,.immersive-map .map-quick-actions #mapOptionsToggle{height:44px;min-height:44px}
  .immersive-map .esri-zoom{right:10px!important}
  .immersive-map .overview-top{width:min(360px,calc(100% - 24px))}
  .immersive-map .map-options,.immersive-map .incident-sidebar{right:84px;width:calc(100% - 96px);top:calc(var(--map-header-bottom) + 10px)}
 }
-@media(max-height:600px){.immersive-map{--rail-height:156px}.immersive-map .map-quick-actions{gap:4px}.immersive-map .map-quick-actions .map-quick-button,.immersive-map .map-quick-actions .map-activate,.immersive-map .map-quick-actions #mapOptionsToggle{height:36px;min-height:36px}.immersive-map .map-quick-button svg{height:14px;width:14px}.immersive-map .map-quick-button span{font-size:9px}}
+@media(max-height:600px){.immersive-map{--rail-height:156px}.immersive-map .map-quick-actions{gap:4px}.immersive-map .map-quick-actions .map-quick-button,.immersive-map .map-quick-actions #mapOptionsToggle{height:36px;min-height:36px}.immersive-map .map-quick-button svg{height:14px;width:14px}.immersive-map .map-quick-button span{font-size:9px}}
 
 
 /* Every rail control shares one width, grid alignment and visual treatment. */

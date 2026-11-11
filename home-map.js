@@ -111,10 +111,15 @@
       for(const layer of zoneLayers)layer.labelsVisible=overview?false:publishedLabels.get(layer);
       if(!labelContainer)return;
       const occupied=[],placed=[],padding=view.padding||{},top=(padding.top||0)+8,bottom=(view.height||0)-(padding.bottom||0)-8;
-      for(const entry of labelEntries){
+      // Set visibility together, then measure together before positioning writes.
+      const screens=labelEntries.map(entry=>{
         const screen=view.toScreen(entry.point);entry.button.hidden=!overview||!screen||screen.x<0||screen.y<0||screen.x>view.width||screen.y>view.height;entry.leader.hidden=true;
-        if(entry.button.hidden)continue;
-        const width=entry.button.offsetWidth||180,height=entry.button.offsetHeight||50;
+        return screen;
+      });
+      const sizes=labelEntries.map(entry=>({width:entry.button.offsetWidth||180,height:entry.button.offsetHeight||50}));
+      for(const [index,entry] of labelEntries.entries()){
+        const screen=screens[index];if(entry.button.hidden)continue;
+        const {width,height}=sizes[index];
         const x=Math.max(width/2+8,Math.min(screen.x,view.width-width/2-86));let y=screen.y;
         for(const offset of [0,-1,1,-2,2,-3,3]){
           const next=screen.y+offset*(height+8),rect={left:x-width/2,right:x+width/2,top:next-height/2,bottom:next+height/2};
@@ -128,14 +133,14 @@
       }
       // Draw a straight connector after placement; the shared leader layer stays below every plate.
       for(const {entry,screen,rect} of placed){
-        entry.leader.replaceChildren();
+
         if(screen.x>=rect.left&&screen.x<=rect.right&&screen.y>=rect.top&&screen.y<=rect.bottom)continue;
         const end={x:Math.max(rect.left,Math.min(screen.x,rect.right)),y:Math.max(rect.top,Math.min(screen.y,rect.bottom))};
         const points=[screen,end];
         for(let i=1;i<points.length;i++){
           const a=points[i-1],b=points[i],length=Math.hypot(b.x-a.x,b.y-a.y);if(length<1)continue;
-          const segment=document.createElement('span');segment.className='incident-area-leader';
-          Object.assign(segment.style,{left:a.x+'px',top:a.y+'px',width:length+'px',transform:'rotate('+Math.atan2(b.y-a.y,b.x-a.x)+'rad)'});entry.leader.appendChild(segment);
+          const segment=entry.leader.children[0]||document.createElement('span');segment.className='incident-area-leader';
+          Object.assign(segment.style,{left:a.x+'px',top:a.y+'px',width:length+'px',transform:'rotate('+Math.atan2(b.y-a.y,b.x-a.x)+'rad)'});if(!entry.leader.children.length)entry.leader.appendChild(segment);
         }
         entry.leader.hidden=!entry.leader.children.length;
       }
@@ -215,7 +220,7 @@
     try{await view.when();ready=true;view.ui?.remove?.('zoom');view.ui?.move?.('attribution','manual');}catch(error){view.destroy();for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle'])$(id).disabled=true;throw error;}
     return {
       raw:view,operationalLayers,
-      setOverlayPadding({top,bottom,compact=false}){const vertical=Math.max(top,bottom);view.padding=compact?{top:vertical,bottom:vertical,left:12,right:12}:{top,bottom,left:16,right:84};positionIncidentLabels();},
+      setOverlayPadding({top,bottom,compact=false}){const vertical=Math.max(top,bottom),next=compact?{top:vertical,bottom:vertical,left:12,right:12}:{top,bottom,left:16,right:84};if(Object.keys(next).every(key=>view.padding?.[key]===next[key]))return;view.padding=next;positionIncidentLabels();},
       setIncidents(incidents){
         incidentPins.removeAll();labelEntries.length=0;labelContainer?.replaceChildren();
         for(const incident of incidents){
@@ -223,7 +228,7 @@
           incidentPins.add(new Graphic({geometry:point,attributes:{incident:incident.name},symbol:{type:'simple-marker',style:'circle',size:14,color:'#174f8a',outline:{color:'#fff',width:2.5}}}));
           if(!labelContainer)continue;
           const button=document.createElement('button'),title=document.createElement('strong'),dots=document.createElement('span'),leader=document.createElement('span');
-          button.type='button';button.className='incident-area-label';const primary=window.ReadyLaPlataZones.styles[incident.statuses[0]];if(primary)button.style.setProperty('--incident-edge',primary.stroke);title.textContent=incident.name;dots.className='incident-area-dots';dots.setAttribute('aria-hidden','true');leader.className='incident-area-leaders';leader.setAttribute('aria-hidden','true');leader.hidden=true;
+          button.type='button';button.className='incident-area-label';title.textContent=incident.name;dots.className='incident-area-dots';dots.setAttribute('aria-hidden','true');leader.className='incident-area-leaders';leader.setAttribute('aria-hidden','true');leader.hidden=true;
           const labels=[];
           for(const status of incident.statuses){
             const style=window.ReadyLaPlataZones.styles[status];if(!style)continue;labels.push(style.label);
@@ -245,7 +250,7 @@
       zoomBy(delta){return navigate({zoom:view.zoom+delta});},
       setView(latlng,zoom){return navigate({center:new Point({longitude:latlng[1],latitude:latlng[0]}),zoom});},
       openSupportPopup(latlng,content){view.closePopup();return openSupportWindow(container,content);},
-      closePopup(){view.closePopup();closeSupport();},invalidateSize(){/* MapView observes its container, including expanded mode. */},
+      closePopup(){view.closePopup();closeSupport();},invalidateSize(){/* MapView observes its container, including viewport changes. */},
       markAddress(match){const graphic=new Graphic({geometry:new Point({longitude:match.location.x,latitude:match.location.y}),symbol:{type:'simple-marker',style:'circle',size:12,color:'#174f8a',outline:{color:'#fff',width:2.5}}});address.add(graphic);return {remove(){address.remove(graphic);}};}
     };
   }

@@ -43,6 +43,7 @@ vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'../home-
  assert.notEqual(controls.incidentMapLabels.children[1].style.top,controls.incidentMapLabels.children[3].style.top,'nearby labels do not overlap');assert.equal(controls.incidentMapLabels.children[2].hidden,false,'straight connector continues behind another plate');assert.equal(controls.incidentMapLabels.children[2].children.length,1,'connector has one straight segment');
  adapter.setIncidents([]);assert.equal(controls.incidentMapLabels.children.length,0);assert.equal(pins.graphics.length,0,'refresh removes old incident markers');adapter.setOverlayPadding({top:90,bottom:140,compact:true});assert.equal(view.padding.left,12);assert.equal(view.padding.right,12);assert.equal(view.padding.top,view.padding.bottom);adapter.setOverlayPadding({top:90,bottom:140});assert.equal(view.padding.top,90);assert.equal(view.padding.bottom,140);
  const marker=adapter.markAddress({location:{x:-107.8,y:37.4}}),address=map.layers.find(l=>l.title==='Searched address');assert.equal(address.graphics.length,1);marker.remove();assert.equal(address.graphics.length,0);
+ const previousPadding=view.padding;adapter.setOverlayPadding({top:90,bottom:140});assert.equal(view.padding,previousPadding,'unchanged overlay padding does not trigger SDK relayout');
  assert.equal(adapter.operationalLayers.length,3);
 
  view.hits={results:[{graphic:{layer:native[0],attributes:{LIVE:1,incident:'TEST ONLY'}}}]};

@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const R = window.ReadyLaPlata, Z = window.ReadyLaPlataZones, C = window.ReadyLaPlataHomeConfig;
-  const $ = id => document.getElementById(id), esc = R.escHTML;
+  const $ = id => document.getElementById(id);
   const localTime = value => {
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? 'Not specified' : date.toLocaleString('en-US', {timeZone:'America/Denver',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
@@ -77,7 +77,7 @@
     const entry=incidents.get(name);
     if(!view || !entry) return;
     chosenIncident=name;
-    document.querySelectorAll('.incident-item').forEach(el=>{const selected=el.dataset.incident===name;el.classList.toggle('is-selected',selected);el.querySelector('.incident-mobile-tab')?.setAttribute('aria-pressed',String(selected));});
+    document.querySelectorAll('.incident-item').forEach(el=>{const selected=el.dataset.incident===name;el.classList.toggle('is-selected',selected);});
     try {
       window.ReadyLaPlataDetails.close();view.closePopup();
       if(entry.extent?.isValid()) view.fitBounds(entry.extent,{padding:[30,30],maxZoom:14});
@@ -139,7 +139,7 @@
       const ids=idData.objectIds||[],features=[];
       for(let offset=0;offset<ids.length;offset+=200){
         const batch=ids.slice(offset,offset+200);
-        const fs=await json(C.zonesUrl+'/query?'+new URLSearchParams({where:C.zonesWhere,objectIds:batch.join(','),outFields:'*',returnGeometry:'true',outSR:'4326',f:'geojson'}));
+        const fs=await json(C.zonesUrl+'/query?'+new URLSearchParams({where:C.zonesWhere,objectIds:batch.join(','),outFields:[...new Set(Object.values(zoneFields).filter(Boolean))].join(','),returnGeometry:'true',outSR:'4326',f:'geojson'}));
         if(fs.error || !Array.isArray(fs.features) || fs.exceededTransferLimit || fs.features.length>batch.length)throw new Error('Incomplete incident response');
         features.push(...fs.features.filter(feature=>feature.properties?.[zoneFields.live]===1));
       }
@@ -165,7 +165,7 @@
       $('incidentState').dataset.error='false';$('incidentState').hidden=incidents.size>0;$('incidentState').textContent=incidents.size?'':'No incidents are currently shown in the county zone layer.';
       $('lastLoaded').textContent='Updated '+localTime(lastIncidentSuccess);
       if(currentAddressMatch)renderAddressResult();
-      if(firstLoad && view)requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20],county:true});if(linkedIncident&&incidents.has(linkedIncident))openIncidentDetails(linkedIncident);});
+      if(firstLoad && view && linkedIncident && incidents.has(linkedIncident))openIncidentDetails(linkedIncident);
       firstLoad=false;
     } catch(err){
       incidentsError=true;window.ReadyLaPlataDetails.refreshZones();if(currentAddressMatch)renderAddressResult();
@@ -186,7 +186,7 @@
       ]);
       if(metadata.error||!Array.isArray(metadata.fields))throw new Error('County zone metadata unavailable');
       const field=name=>metadata.fields.find(f=>f.name.toLowerCase()===name)?.name;
-      zoneFields={status:field('status'),incident:field('incident'),zone:field('zonename')||field('zone_name'),live:field('live'),description:field('description')};
+      zoneFields={status:field('status'),incident:field('incident'),zone:field('zonename')||field('zone_name'),live:field('live'),description:field('description'),area:field('shape__area')};
       if(!zoneFields.status||!zoneFields.incident)throw new Error('Zone status/incident fields unavailable');
       const extent=extentData?.extent;
       if(extent&&[extent.xmin,extent.ymin,extent.xmax,extent.ymax].every(Number.isFinite))countyBounds=[[extent.ymin,extent.xmin],[extent.ymax,extent.xmax]];
@@ -251,12 +251,18 @@
   function measureMapOverlays(){
     if(syncAddressViewport())return;
     const header=document.querySelector('.home-brand-banner'),dock=document.querySelector('.overview-top');
-    document.body.style.setProperty('--map-header-bottom',Math.ceil(header.getBoundingClientRect().bottom)+'px');
-    document.body.style.setProperty('--map-dock-height',Math.ceil(dock.getBoundingClientRect().height)+'px');
-    view?.setOverlayPadding?.({top:Math.ceil(header.getBoundingClientRect().bottom)+12,bottom:Math.ceil(dock.getBoundingClientRect().height)+44,compact:window.matchMedia('(max-width:760px)').matches});
+    const headerBottom=Math.ceil(header.getBoundingClientRect().bottom),dockHeight=Math.ceil(dock.getBoundingClientRect().height);
+    document.body.style.setProperty('--map-header-bottom',headerBottom+'px');
+    document.body.style.setProperty('--map-dock-height',dockHeight+'px');
+    view?.setOverlayPadding?.({top:headerBottom+12,bottom:dockHeight+44,compact:window.matchMedia('(max-width:760px)').matches});
   }
-  const overlayObserver=new ResizeObserver(measureMapOverlays);overlayObserver.observe(document.querySelector('.home-brand-banner'));overlayObserver.observe(document.querySelector('.overview-top'));
-  window.addEventListener('resize',measureMapOverlays);window.visualViewport?.addEventListener('resize',measureMapOverlays);window.visualViewport?.addEventListener('scroll',measureMapOverlays);
+  let overlayMeasureFrame=0;
+  function scheduleOverlayMeasure(){
+    if(overlayMeasureFrame)return;
+    overlayMeasureFrame=requestAnimationFrame(()=>{overlayMeasureFrame=0;measureMapOverlays();});
+  }
+  const overlayObserver=new ResizeObserver(scheduleOverlayMeasure);overlayObserver.observe(document.querySelector('.home-brand-banner'));overlayObserver.observe(document.querySelector('.overview-top'));
+  window.addEventListener('resize',scheduleOverlayMeasure);window.visualViewport?.addEventListener('resize',scheduleOverlayMeasure);window.visualViewport?.addEventListener('scroll',scheduleOverlayMeasure);
   $('addressSearch').addEventListener('focus',beginAddressEditing);$('addressSearch').addEventListener('blur',()=>{measureMapOverlays();requestAnimationFrame(measureMapOverlays);});measureMapOverlays();
   $('mapZoomIn').addEventListener('click',()=>view?.zoomBy(1));
   $('mapZoomOut').addEventListener('click',()=>view?.zoomBy(-1));
@@ -367,12 +373,17 @@
     finally {if(requestId===addressRequestId)button.disabled=false;}
   });
 
-  async function refreshAll(){
+  let refreshInFlight=null;
+  function refreshAll(){
+    if(!mapReady)return Promise.resolve();
+    if(refreshInFlight)return refreshInFlight;
     $('refreshAll').disabled=true;
-    try{await Promise.all([view?.refreshLayers?view.refreshLayers():Promise.resolve(operationalLayers.forEach(layer=>layer.refresh())),refreshIncidents()]);}finally{$('refreshAll').disabled=false;}
+    refreshInFlight=Promise.all([view?.refreshLayers?view.refreshLayers():Promise.resolve(operationalLayers.forEach(layer=>layer.refresh())),refreshIncidents()])
+      .finally(()=>{refreshInFlight=null;$('refreshAll').disabled=false;});
+    return refreshInFlight;
   }
   $('refreshAll').addEventListener('click',refreshAll);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshAll();});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!lastIncidentSuccess||Date.now()-lastIncidentSuccess>=C.refreshMs))refreshAll();});
   setInterval(()=>{if(!document.hidden)refreshAll();},C.refreshMs);
   initMap();
 })();

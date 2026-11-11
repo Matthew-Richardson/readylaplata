@@ -148,7 +148,11 @@
 
     const toggle = createOverlayToggle(coderedOverlay);
 
-    coderedButton.addEventListener('click', () => toggle(true));
+    coderedButton.addEventListener('click', () => {
+      const frame = coderedOverlay.querySelector('iframe[data-src]');
+      if (frame) { frame.src = frame.dataset.src; frame.removeAttribute('data-src'); }
+      toggle(true);
+    });
     coderedClose?.addEventListener('click', () => toggle(false));
     coderedOverlay.addEventListener('click', e => { if (e.target === coderedOverlay) toggle(false); });
   };
