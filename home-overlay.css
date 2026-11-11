@@ -138,7 +138,7 @@
 .immersive-map .incident-area-label:hover,.immersive-map .incident-area-label:focus-visible{background:rgba(255,255,255,.96);border-color:#174f8a}
 .immersive-map .incident-area-dots{display:flex;justify-content:center;gap:6px}
 .immersive-map .incident-area-dot{display:block;width:11px;height:11px;border:1.5px solid;border-radius:50%;box-shadow:0 0 0 1px #fff}
-.immersive-map .incident-area-leader{position:absolute;height:2px;background:#4a6d92;box-shadow:0 0 0 1px #ffffffa6;transform-origin:left center;pointer-events:none}
+.immersive-map .incident-area-leader{position:absolute;height:3px;border-radius:2px;background:#173f65;box-shadow:0 0 0 1.5px #fff,0 1px 4px #102d4966;transform-origin:left center;pointer-events:none}
 @media(max-width:760px){.immersive-map .map-quick-actions{gap:5px}.immersive-map .map-quick-actions>button{height:44px;min-height:44px}.immersive-map .incident-area-label{max-width:190px;min-width:110px;padding:6px 8px}.immersive-map .incident-area-label strong{font-size:13px}}
 @media(max-height:600px){.immersive-map .map-quick-actions{gap:4px}.immersive-map .map-quick-actions>button{height:36px;min-height:36px}.immersive-map .map-quick-actions>button svg{width:14px!important;height:14px!important}.immersive-map .map-quick-actions>button span{font-size:9px}}
 
