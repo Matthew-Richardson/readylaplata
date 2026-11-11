@@ -145,3 +145,22 @@
 .immersive-map .incident-area-leader{position:absolute;height:2px;background:#4a6d92;box-shadow:0 0 0 1px #ffffffa6;transform-origin:left center;pointer-events:none}
 @media(max-width:760px){.immersive-map .map-quick-actions{gap:5px}.immersive-map .map-quick-actions>button{height:44px;min-height:44px}.immersive-map .incident-area-label{max-width:190px;min-width:110px;padding:6px 8px}.immersive-map .incident-area-label strong{font-size:13px}}
 @media(max-height:600px){.immersive-map .map-quick-actions{gap:4px}.immersive-map .map-quick-actions>button{height:36px;min-height:36px}.immersive-map .map-quick-actions>button svg{width:14px!important;height:14px!important}.immersive-map .map-quick-actions>button span{font-size:9px}}
+
+
+/* Header information, two left-hand zoom controls and a compact right-hand rail. */
+.immersive-map .map-zoom-actions{position:absolute;top:max(12px,env(safe-area-inset-top));left:12px;display:flex;flex-direction:column;gap:6px;width:64px;z-index:1301}
+.immersive-map .map-zoom-actions>button{position:relative;inset:auto;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:64px;min-width:64px;height:50px;padding:5px;margin:0;border:1px solid #a8bfd8;border-radius:10px;background:#ffffffe0;box-shadow:0 3px 14px #18334d24;color:#173f6b;font:700 10px/1.1 Arial;cursor:pointer}
+.immersive-map .map-zoom-actions>button svg{width:19px;height:19px}
+.immersive-map .map-zoom-actions>button:disabled{opacity:.5;cursor:default}
+.immersive-map .incident-support-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding-right:42px}
+.immersive-map .incident-support-actions{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:7px}
+.immersive-map .incident-support-actions .home-btn{min-height:36px;padding:6px 10px;margin:0;font-size:12px;white-space:nowrap}
+@media(max-width:760px){
+ .immersive-map .home-brand-banner{left:84px;transform:none;width:calc(100% - 94px)}
+ .immersive-map .home-brand-logo{width:64px}.immersive-map .home-site-name{font-size:22px}.immersive-map .home-brand-group{gap:8px}
+ .immersive-map .map-zoom-actions{left:10px;gap:5px}.immersive-map .map-zoom-actions>button{height:44px}
+ .immersive-map .incident-support-heading{grid-template-columns:minmax(0,1fr);gap:7px;padding-right:42px}
+ .immersive-map .incident-support-actions{justify-content:flex-start}
+}
+@media(max-width:360px){.immersive-map .home-brand-logo{width:46px}.immersive-map .home-site-name{font-size:20px}.immersive-map .home-site-subtitle{font-size:9px}}
+@media(max-height:600px){.immersive-map .map-zoom-actions>button{height:36px}.immersive-map .map-zoom-actions>button svg{width:14px;height:14px}.immersive-map .home-brand-banner{left:50%;transform:translateX(-50%);width:min(800px,calc(100% - 180px))}}

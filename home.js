@@ -59,7 +59,7 @@
     const addressMatches=currentAddressMatch&&addressZones(currentAddressMatch).some(f=>String(f.properties[zoneFields.incident]||'').trim()===name);
     const anchor=latlng||(addressMatches?[currentAddressMatch.location.y,currentAddressMatch.location.x]:entry?.point||entry?.extent.getCenter());
     const host=view||{openSupportPopup:(_,content)=>window.ReadyLaPlataMap.openSupportWindow('viewDiv',content)};
-    window.ReadyLaPlataDetails.open({name,view:host,latlng:anchor,getActiveZones:()=>({
+    window.ReadyLaPlataDetails.open({name,view:host,latlng:anchor,onZoom:view&&entry?()=>focusIncident(name):null,getActiveZones:()=>({
       available:lastIncidentSuccess!==null,stale:incidentsError,
       zones:currentZoneFeatures.filter(feature=>feature.properties?.[zoneFields.live]===1&&String(feature.properties[zoneFields.incident]||'').trim()===name)
         .map(feature=>({name:String(feature.properties[zoneFields.zone]||'').trim()||'Unnamed zone',status:Z.key(statusName(feature))}))
@@ -206,7 +206,6 @@
       try{view.setView([position.coords.latitude,position.coords.longitude],13);$('mapMessage').textContent='Your reported location is approximate. Confirm your address and zone.';}catch(_){}finally{button.disabled=false;}
     },()=>{button.disabled=false;$('mapMessage').textContent='Location could not be obtained. You can search for your address on the map.';},{timeout:10000});
   });
-  function syncMapInteraction(){ /* The viewport map stays interactive. */ }
   function setOptionsOpen(open){
     $('mapOptions').hidden=!open;$('mapOptionsToggle').setAttribute('aria-expanded',String(open));
     $('mapOptionsToggle').closest('.overview-card').classList.toggle('is-options-open',open);
@@ -235,15 +234,8 @@
   }
   const overlayObserver=new ResizeObserver(measureMapOverlays);overlayObserver.observe(document.querySelector('.home-brand-banner'));overlayObserver.observe(document.querySelector('.overview-top'));
   window.addEventListener('resize',measureMapOverlays);window.visualViewport?.addEventListener('resize',measureMapOverlays);measureMapOverlays();
-  function expandMap(expanded){
-    document.body.classList.toggle('is-map-focused',expanded);setOptionsOpen(false);setIncidentMenuOpen(false);
-    $('mapFrame').classList.toggle('is-expanded',expanded);$('mapFullscreenBtn').setAttribute('aria-pressed',String(expanded));$('mapFullscreenBtn').textContent=expanded?'Close expanded map':'Expand map';$('mapActivateBtn').setAttribute('aria-label',expanded?'Close expanded map':'Expand map');$('mapActivateBtn').setAttribute('aria-pressed',String(expanded));$('mapActivateBtn').querySelector('span').textContent=expanded?'Exit full':'Fullscreen';if(view){syncMapInteraction();setTimeout(()=>view.invalidateSize(),0);}
-  }
   $('mapZoomIn').addEventListener('click',()=>view?.zoomBy(1));
   $('mapZoomOut').addEventListener('click',()=>view?.zoomBy(-1));
-  $('mapActivateBtn').addEventListener('click',()=>expandMap(!$('mapFrame').classList.contains('is-expanded')));
-  $('mapFullscreenBtn').addEventListener('click',()=>expandMap($('mapFullscreenBtn').getAttribute('aria-pressed')!=='true'));
-  document.addEventListener('keydown',event=>{if(event.key==='Escape')expandMap(false);});
 
   // GeoJSON polygons include holes; a point on a boundary is included for review.
   function zoneContainsAddress(geometry,x,y){
@@ -274,7 +266,6 @@
     setOptionsOpen(false);setIncidentMenuOpen(false);
     for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle']){if(!$(id).checked){$(id).checked=true;$(id).dispatchEvent(new Event('change'));}}
     const url=new URL(location.href);url.searchParams.delete('incident');history.replaceState(null,'',url);
-    expandMap(false);
     if(view){view.closePopup();requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20],county:true});});}
   }
   function shortAddressLabel(match){

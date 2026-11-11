@@ -17,12 +17,14 @@
     if(addresses.length){const directions=node('div','detail-directions');directions.append(node('span','detail-label','Directions'));for(const address of addresses){const link=node('a','home-btn',address);link.href='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(address);link.target='_blank';link.rel='noopener noreferrer';link.setAttribute('aria-label','Directions to '+address);directions.append(link);}card.append(directions);}
     return card;
   }
-  async function open({name,view,latlng,getActiveZones}={}){
+  async function open({name,view,latlng,getActiveZones,onZoom}={}){
     if(!view||!latlng)return;
     close();const request=generation;
     const content=node('section','incident-support-content');
     content.setAttribute('aria-label',name+' support resources');
     const header=node('div','incident-support-heading');header.append(node('h3','incident-support-title',name));
+    const headerActions=node('div','incident-support-actions');
+    const zoom=node('button','home-btn incident-support-zoom','Zoom To');zoom.type='button';zoom.disabled=typeof onZoom!=='function';zoom.setAttribute('aria-label','Zoom to '+name);zoom.addEventListener('click',()=>onZoom?.());headerActions.append(zoom);header.append(headerActions);
     content.append(header);
     const zoneArea=node('section','incident-active-zones');zoneArea.setAttribute('aria-label','Active zones for '+name);content.append(zoneArea);
     function renderZones(){
@@ -57,13 +59,13 @@
       if(!current())return;
       loading.remove();const data=records.find(record=>String(record.name||'').toLowerCase()===name.toLowerCase());
       if(!data){resourceArea.append(node('p','detail-pending','Support information has not been posted for this incident. Follow current zone instructions.'));popup.update();return;}
-      const url=safeUrl(data.statusLink);if(url){const link=node('a','home-btn primary incident-latest-update','Latest update');link.href=url;link.target='_blank';link.rel='noopener noreferrer';header.append(link);}
+      const url=safeUrl(data.statusLink);if(url){const link=node('a','home-btn primary incident-latest-update','Latest update');link.href=url;link.target='_blank';link.rel='noopener noreferrer';headerActions.append(link);}
       const grid=node('div','incident-detail-resource-grid');
       grid.append(resourceCard('Check-in location',data.checkIn,data.checkInAddr),resourceCard('Evacuation shelters',data.shelters,data.sheltersAddr),resourceCard('Road closures',data.road),resourceCard('Small animals',data.smallAnimals,data.smallAnimalsAddr),resourceCard('Large animals',data.largeAnimals,data.largeAnimalsAddr));resourceArea.append(grid);
       resourceArea.append(node('p','incident-detail-source','La Plata County OEM · Information can change. Follow current incident instructions.'));
       popup.update();
     }catch(_){if(!current())return;loading.textContent='Incident support information could not be loaded.';
-      const retry=node('button','home-btn','Retry information');retry.type='button';retry.addEventListener('click',()=>open({name,view,latlng,getActiveZones}));resourceArea.append(retry);popup.update();}
+      const retry=node('button','home-btn','Retry information');retry.type='button';retry.addEventListener('click',()=>open({name,view,latlng,getActiveZones,onZoom}));resourceArea.append(retry);popup.update();}
   }
   window.ReadyLaPlataDetails={open,close,refreshZones:()=>refreshActiveZones?.()};
 })();
