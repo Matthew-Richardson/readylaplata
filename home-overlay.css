@@ -58,7 +58,6 @@
 .immersive-map .esri-ui-top-left{top:calc(var(--map-header-bottom) + 12px);left:12px}
 .immersive-map .legend-icon-road{border-radius:50%;background:#bc2936;position:relative}
 .immersive-map .legend-icon-road::after{content:"";height:3px;background:#fff;width:12px;position:absolute;left:3px;top:7px}
-.immersive-map .legend-icon-warning{background:#f2c43d;border:1px solid #8d670b;transform:rotate(45deg);width:13px!important;height:13px!important;margin:3px}
 .immersive-map .legend-icon-info{border:1px solid #305c91;border-radius:50%;background:#e6f0fc;color:#305c91;font-weight:bold}
 #welcomeDialog .welcome-map-legend{margin-top:14px;border:1px solid #becfe2;border-radius:10px;padding:12px;background:#f2f6fb}
 #welcomeDialog .welcome-map-legend .home-legend{display:flex;justify-content:flex-start;flex-wrap:wrap;padding:0;gap:10px 16px;border:0;background:none;font-size:12px}
@@ -85,9 +84,6 @@
 .immersive-map .esri-attribution{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;max-width:none!important;width:100%;z-index:1300;background:#ffffffd9;font-size:10px;line-height:14px}
 .immersive-map .home-footer{bottom:16px}
 /* Draw the warning diamond inside its box so rotation cannot clip it. */
-.immersive-map .legend-icon-warning{position:relative;background:none;border:0;transform:none;width:18px!important;height:18px!important;margin:0;overflow:visible;flex:0 0 18px}
-.immersive-map .legend-icon-warning::before{content:"";position:absolute;left:3px;top:3px;width:12px;height:12px;box-sizing:border-box;background:#ffda4c;border:1px solid #8d670b;transform:rotate(45deg);border-radius:1px}
-.immersive-map .legend-icon-warning::after{content:"!";position:absolute;inset:0;text-align:center;font:bold 12px/18px Arial;color:#4b3700}
 .immersive-map .incident-sidebar .incident-item{display:block;cursor:default}
 .immersive-map .incident-name{font-size:15px;line-height:1.35;color:#000;margin:0 0 8px;font-weight:700;overflow-wrap:anywhere}
 .immersive-map .incident-action-buttons{display:flex;gap:7px;margin-top:9px}
@@ -167,3 +163,12 @@
 
 /* Zoom controls clear the floating header; phone branding stays centered. */
 @media(max-width:760px){.immersive-map .home-brand-banner{left:50%;transform:translateX(-50%);width:calc(100% - 16px)}}
+
+
+/* One SVG keeps the warning mark centered inside the diamond in both legends. */
+.immersive-map .legend-icon-warning{display:inline-flex;align-items:center;justify-content:center;width:18px!important;height:18px!important;flex:0 0 18px;margin:0;border:0;background:none;transform:none;overflow:visible}
+.immersive-map .legend-icon-warning::before,.immersive-map .legend-icon-warning::after{content:none;display:none}
+.immersive-map .legend-icon-warning svg{display:block;width:18px;height:18px;flex:none}
+/* Desktop zoom stays in the corner; phone zoom clears the header. */
+.immersive-map .map-zoom-actions{top:max(12px,env(safe-area-inset-top))}
+@media(max-width:760px){.immersive-map .map-zoom-actions{top:calc(var(--map-header-bottom) + 12px)}}
