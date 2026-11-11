@@ -9,7 +9,7 @@ for(const layer of native){if(layer.url&&/\/[01]$/.test(layer.url)){layer.layerI
 let map,view;class WebMap{constructor(p){map=this;Object.assign(this,p);this.layers=new Collection(...native);this.allLayers=this.layers;}load(){return Promise.resolve(this)}add(x){this.layers.add(x)}addMany(xs){this.layers.addMany(xs)}reorder(x,n){this.layers.remove(x);this.layers.splice(n,0,x)}}
 class MapView{constructor(p){view=this;Object.assign(this,p);this.zoom=9;this.widgetMoves=[];this.widgetRemoved=[];this.ui={move:(...args)=>this.widgetMoves.push(args),remove:id=>this.widgetRemoved.push(id)};this.scale=100000;this.width=1000;this.height=700;this.handlers={};this.moves=[]}on(event,fn){this.handlers[event]=fn}when(){return Promise.resolve(this)}goTo(target){this.moves.push(target);if(target.zoom)this.zoom=target.zoom;return Promise.resolve()}toScreen(){return {x:400,y:300}}closePopup(){}openPopup(p){this.popupOpened=p}hitTest(){return Promise.resolve(this.hits||{results:[]})}}
 class Model{constructor(p){Object.assign(this,p)}}class Extent extends Model{expand(factor){return {...this,factor}}}
-const controls=Object.fromEntries(['roadsToggle','roadLayerToggle','poiLayerToggle','mapMessage'].map(id=>[id,{dataset:{},listeners:{},addEventListener(e,fn){this.listeners[e]=fn;}}]));
+const controls=Object.fromEntries(['roadsToggle','roadLayerToggle','poiLayerToggle','incidentLabelsToggle','mapMessage'].map(id=>[id,{dataset:{},listeners:{},addEventListener(e,fn){this.listeners[e]=fn;}}]));
 const watchers=[];const modules=[WebMap,MapView,Layer,Model,Model,Extent,{watch(getter,callback){watchers.push(callback)}}];
 class LabelElement{constructor(){this.children=[];this.listeners={};this.style={setProperty(k,v){this[k]=v}};this.classList={add(){}};this.hidden=false;this.offsetWidth=180;this.offsetHeight=50;}setAttribute(k,v){this[k]=v}append(...elements){this.children.push(...elements)}appendChild(element){this.children.push(element)}replaceChildren(){this.children=[]}addEventListener(type,fn){this.listeners[type]=fn}}
 controls.incidentMapLabels=new LabelElement();
@@ -33,6 +33,8 @@ vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'../home-
  controls.poiLayerToggle.checked=true;controls.poiLayerToggle.listeners.change();assert.equal(native[2].visible,true);assert.equal(group.visible,true);
  adapter.setIncidents([{name:'TEST ONLY',point:{lat:37.3,lng:-107.8},statuses:['Shelter','Access']}]);
  const pins=map.layers.find(l=>l.title==='Active incidents');assert.equal(pins.graphics.length,1);assert.equal(pins.graphics[0].attributes.incident,'TEST ONLY');
+ controls.incidentLabelsToggle.checked=false;controls.incidentLabelsToggle.listeners.change();assert.equal(controls.incidentMapLabels.children[1].hidden,true,'incident name plate hides');assert.equal(pins.visible,true,'incident points stay visible');
+ controls.incidentLabelsToggle.checked=true;controls.incidentLabelsToggle.listeners.change();
  const plate=controls.incidentMapLabels.children[1];assert.equal(plate.children[0].textContent,'TEST ONLY');assert.equal(plate.children[1].children.length,2);assert.equal(plate.hidden,false);
  view.scale=50000;watchers[0]();assert.equal(plate.hidden,true);assert.equal(native[0].labelsVisible,true);assert.equal(pins.visible,false);
  view.scale=100000;watchers[0]();assert.equal(plate.hidden,false);assert.equal(native[0].labelsVisible,false);

@@ -104,6 +104,8 @@
     webmap.add(address);
     const view=new MapView({container,map:webmap,extent:new Extent({xmin:C.countyBounds[0][1],ymin:C.countyBounds[0][0],xmax:C.countyBounds[1][1],ymax:C.countyBounds[1][0],spatialReference:{wkid:4326}}),constraints:{rotationEnabled:false,snapToZoom:false},popup:{dockEnabled:false}});
     const labelContainer=$('incidentMapLabels'),labelEntries=[];
+    let incidentLabelsVisible=true;
+    $('incidentLabelsToggle').addEventListener('change',()=>{incidentLabelsVisible=$('incidentLabelsToggle').checked;positionIncidentLabels();});
     const publishedLabels=new Map(zoneLayers.map(layer=>[layer,layer.labelsVisible!==false]));
     function positionIncidentLabels(){
       const overview=!Number.isFinite(view.scale)||view.scale>=(C.incidentLabelScale||75000);
@@ -113,7 +115,7 @@
       const occupied=[],placed=[],padding=view.padding||{},top=(padding.top||0)+8,bottom=(view.height||0)-(padding.bottom||0)-8;
       // Set visibility together, then measure together before positioning writes.
       const screens=labelEntries.map(entry=>{
-        entry.hitRect=null;const screen=view.toScreen(entry.point);entry.button.hidden=!overview||!screen||screen.x<0||screen.y<0||screen.x>view.width||screen.y>view.height;entry.leader.hidden=true;
+        entry.hitRect=null;const screen=view.toScreen(entry.point);entry.button.hidden=!incidentLabelsVisible||!overview||!screen||screen.x<0||screen.y<0||screen.x>view.width||screen.y>view.height;entry.leader.hidden=true;
         return screen;
       });
       const sizes=labelEntries.map(entry=>({width:entry.button.offsetWidth||180,height:entry.button.offsetHeight||50}));
@@ -224,7 +226,7 @@
     });
     view.on('layerview-create-error',event=>reportLayerError(event.layer,event.error,'view'));
     view.on('layerview-create',event=>clearLayerError(event.layer,'view'));
-    try{await view.when();ready=true;view.ui?.remove?.('zoom');view.ui?.move?.('attribution','manual');}catch(error){view.destroy();for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle'])$(id).disabled=true;throw error;}
+    try{await view.when();ready=true;view.ui?.remove?.('zoom');view.ui?.move?.('attribution','manual');}catch(error){view.destroy();for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle','incidentLabelsToggle'])$(id).disabled=true;throw error;}
     return {
       raw:view,operationalLayers,
       setOverlayPadding({top,bottom,compact=false}){const vertical=Math.max(top,bottom),next=compact?{top:vertical,bottom:vertical,left:12,right:12}:{top,bottom,left:16,right:84};if(Object.keys(next).every(key=>view.padding?.[key]===next[key]))return;view.padding=next;positionIncidentLabels();},

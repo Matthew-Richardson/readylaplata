@@ -92,3 +92,5 @@ The script updates web-map renderer/label definitions for all five statuses, bac
 Native browser gesture zoom is canceled within the map frame only, including WebKit gesture events and multi-touch moves. ArcGIS receives the events for map navigation. Deliberate browser zoom outside the map remains available. Actual rapid-gesture iPhone behavior needs device testing.
 
 Incident name plates are transparent to pointer input so users can drag or pinch the map starting on a label. Completed ArcGIS map clicks are matched to visible label rectangles to retain tap-to-open information. Label buttons remain keyboard accessible. Hidden labels do not capture taps.
+
+Tools & legend includes an Incident labels checkbox, initially on. Turning it off hides incident name plates and connectors but keeps incident points, zones, and native layer labels. Refresh and map navigation retain the toggle; Info resets it to on with other overview controls.
