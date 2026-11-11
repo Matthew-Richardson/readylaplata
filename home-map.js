@@ -117,7 +117,7 @@
       const screens=labelEntries.map(entry=>{
         entry.hitRect=null;const screen=view.toScreen(entry.point);entry.button.hidden=!incidentLabelsVisible||!overview||!screen||screen.x<0||screen.y<0||screen.x>view.width||screen.y>view.height;entry.leader.hidden=true;
         if(entry.halo){
-          entry.halo.hidden=!screen||screen.x<0||screen.y<0||screen.x>view.width||screen.y>view.height;
+          entry.halo.hidden=!overview||!screen||screen.x<0||screen.y<0||screen.x>view.width||screen.y>view.height;
           if(!entry.halo.hidden){entry.halo.style.left=screen.x+'px';entry.halo.style.top=screen.y+'px';}
         }
         return screen;

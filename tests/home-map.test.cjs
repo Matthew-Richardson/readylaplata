@@ -38,8 +38,8 @@ vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'../home-
  controls.incidentLabelsToggle.checked=false;controls.incidentLabelsToggle.listeners.change();assert.equal(controls.incidentMapLabels.children[1].hidden,true,'incident name plate hides');assert.equal(pins.visible,true,'incident points stay visible');
  controls.incidentLabelsToggle.checked=true;controls.incidentLabelsToggle.listeners.change();
  const plate=controls.incidentMapLabels.children[1];assert.equal(plate.children[0].textContent,'TEST ONLY');assert.equal(plate.children[1].children.length,2);assert.equal(plate.hidden,false);
- view.scale=50000;watchers[0]();assert.equal(plate.hidden,true);assert.equal(native[0].labelsVisible,true);assert.equal(pins.visible,true,'incident markers remain available at close zoom');
- view.scale=100000;watchers[0]();assert.equal(plate.hidden,false);assert.equal(native[0].labelsVisible,false);
+ view.scale=50000;watchers[0]();assert.equal(plate.hidden,true);assert.equal(native[0].labelsVisible,true);assert.equal(pins.visible,true,'incident markers remain available at close zoom');assert.equal(controls.incidentMapEffects.children[0].hidden,true,'pulse turns off at zone-detail scale');
+ view.scale=100000;watchers[0]();assert.equal(plate.hidden,false);assert.equal(native[0].labelsVisible,false);assert.equal(controls.incidentMapEffects.children[0].hidden,false,'pulse returns at overview scale');
  plate.listeners.click({stopPropagation(){}});assert.equal(context.clicked,'TEST ONLY');
  assert.equal(plate.listeners.pointerdown,undefined,'label does not intercept drag input');
  context.clicked=null;await view.handlers.click({x:400,y:300,mapPoint:{latitude:37.3,longitude:-107.8}});assert.equal(context.clicked,'TEST ONLY','map tap on visible label opens that incident');

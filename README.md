@@ -99,4 +99,4 @@ Incident labels are off by default. Enabling the tool shows separate name plates
 
 Incident points use a compact 18 px dark-blue diamond with a white outline, distinct from the blue circular address marker and yellow warning symbols. They remain visible at detailed zoom and are included in the map legend. Publish `incident-marker.svg` with the updated home files.
 
-Incident points have a slow blue pulse halo rendered as pointer-transparent CSS rings. Symbol size stays 18 px; label visibility does not affect the halo. Reduced-motion preferences replace the animation with a faint static ring. The effect uses no JavaScript animation timer and is removed/rebuilt with incident refresh.
+Incident points have a slow blue pulse halo at overview scale, rendered as pointer-transparent CSS rings. The pulse hides when zooming closer than incidentLabelScale (default 1:75,000) and returns when zooming out; incident markers remain visible. Symbol size stays 18 px; label visibility does not affect the halo. Reduced-motion preferences replace the animation with a faint static ring. The effect uses no JavaScript animation timer and is removed/rebuilt with incident refresh.
