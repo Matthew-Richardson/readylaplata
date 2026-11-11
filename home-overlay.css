@@ -213,3 +213,12 @@
 
 /* Suppress Safari's native input-focus pan for the initial touch focus only. */
 .immersive-map .home-address-search input.address-focus-guard{opacity:0!important}
+
+/* Address lookup owns its space instead of competing with the map controls. */
+.immersive-map .overview-top{z-index:1302}
+@media(max-width:760px){
+ .immersive-map:has(.overview-top.is-search-expanded) .map-quick-actions,
+ .immersive-map:has(.overview-top.is-search-expanded) .map-zoom-actions,
+ .immersive-map:has(.overview-top:focus-within) .map-quick-actions,
+ .immersive-map:has(.overview-top:focus-within) .map-zoom-actions{display:none!important}
+}

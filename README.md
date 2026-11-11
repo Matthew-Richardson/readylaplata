@@ -71,3 +71,5 @@ Mobile address focus now holds the map's layout height while the keyboard is ope
 Safari keyboard follow-up: compensate the entire fixed map shell for visualViewport.offsetTop, then lift the search relative to that compensated shell. This keeps the header and map from disappearing above the visible viewport when Safari pans to the input. Simulated viewport tests cover the geometry; physical iPhone verification remains necessary.
 
 Touch address focus now runs synchronously with preventScroll while the input is briefly transparent for two animation frames, to suppress WebKit’s native focus pan before it begins. Subsequent taps preserve normal caret placement; desktop and keyboard focus use the normal path. Real iOS validation remains outstanding.
+
+Mobile address lookup has priority over the map tool rails: zoom and tools/incident shortcuts are temporarily hidden while the search is focused or expanded, and return when the search closes. Focusing a new address closes open tools and incident menus. The search dock also paints above the rails at desktop widths.

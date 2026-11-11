@@ -269,7 +269,7 @@
   const overlayObserver=new ResizeObserver(measureMapOverlays);overlayObserver.observe(document.querySelector('.home-brand-banner'));overlayObserver.observe(document.querySelector('.overview-top'));
   window.addEventListener('resize',measureMapOverlays);window.visualViewport?.addEventListener('resize',measureMapOverlays);window.visualViewport?.addEventListener('scroll',measureMapOverlays);
   $('addressSearch').addEventListener('pointerdown',focusAddressWithoutPagePan);
-  $('addressSearch').addEventListener('focus',beginAddressEditing);$('addressSearch').addEventListener('blur',()=>{measureMapOverlays();requestAnimationFrame(measureMapOverlays);});measureMapOverlays();
+  $('addressSearch').addEventListener('focus',()=>{setOptionsOpen(false);setIncidentMenuOpen(false);beginAddressEditing();});$('addressSearch').addEventListener('blur',()=>{measureMapOverlays();requestAnimationFrame(measureMapOverlays);});measureMapOverlays();
   $('mapZoomIn').addEventListener('click',()=>view?.zoomBy(1));
   $('mapZoomOut').addEventListener('click',()=>view?.zoomBy(-1));
 
