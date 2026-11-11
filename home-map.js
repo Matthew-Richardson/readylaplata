@@ -72,7 +72,9 @@
     }
     const roads=all().find(l=>l.type==='vector-tile'&&/^(county )?roads$/i.test(l.title||''));
     const roadInfo=all().find(l=>matches(l,C.roadClosuresUrl)),pois=all().find(l=>matches(l,C.evacPoisUrl));
-    // The only app graphic is a temporary marker for a searched address.
+    // Incident summaries are lightweight markers above the native operational layers.
+    const incidentPins=new GraphicsLayer({title:'Active incidents',listMode:'hide',popupEnabled:false});webmap.add(incidentPins);
+    // Keep the searched-address marker above incident summaries.
     const address=new GraphicsLayer({title:'Searched address',listMode:'hide',popupEnabled:false});
     webmap.add(address);
     const view=new MapView({container,map:webmap,extent:new Extent({xmin:C.countyBounds[0][1],ymin:C.countyBounds[0][0],xmax:C.countyBounds[1][1],ymax:C.countyBounds[1][0],spatialReference:{wkid:4326}}),constraints:{rotationEnabled:false},popup:{dockEnabled:false}});
@@ -98,7 +100,7 @@
       return String(attributes[fieldName(layer,'incident')]||'').trim();
     }
     view.on('click',async event=>{
-      if(typeof onIncident!=='function'||!zoneLayers.length)return;
+      if(typeof onIncident!=='function')return;
       const request=++zoneClick,point=event.mapPoint||view.toMap?.({x:event.x,y:event.y});
       const open=name=>{
         if(request!==zoneClick)return;
@@ -108,9 +110,11 @@
         onIncident(name,point?[point.latitude,point.longitude]:undefined);
       };
       try{
-        const hit=await view.hitTest(event,{include:zoneLayers});if(request!==zoneClick)return;
+        const hit=await view.hitTest(event,{include:[incidentPins,...zoneLayers]});if(request!==zoneClick)return;
         for(const result of hit.results||[]){
-          const graphic=result.graphic;if(!graphic||!zoneLayers.includes(graphic.layer))continue;
+          const graphic=result.graphic;if(!graphic)continue;
+          if(graphic.layer===incidentPins&&graphic.attributes?.incident){open(graphic.attributes.incident);return;}
+          if(!zoneLayers.includes(graphic.layer))continue;
           const name=liveIncident(graphic.layer,graphic.attributes);if(name){open(name);return;}
         }
       }catch(error){if(error.name!=='AbortError')console.warn('Zone hit test; trying spatial query:',error);}
@@ -148,6 +152,20 @@
     try{await view.when();ready=true;}catch(error){view.destroy();for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle'])$(id).disabled=true;throw error;}
     return {
       raw:view,operationalLayers,
+      setOverlayPadding({top,bottom}){view.padding={top,bottom,left:16,right:16};},
+      setIncidents(incidents){
+        incidentPins.removeAll();
+        for(const incident of incidents){
+          const geometry=new Point({longitude:incident.point.lng,latitude:incident.point.lat}),attributes={incident:incident.name};
+          const add=symbol=>incidentPins.add(new Graphic({geometry,attributes,symbol}));
+          add({type:'simple-marker',style:'circle',size:12,color:'#174f8a',outline:{color:'#fff',width:2.5}});
+          add({type:'text',text:incident.name,color:'#112b43',haloColor:'#fff',haloSize:2,horizontalAlignment:'left',verticalAlignment:'bottom',xoffset:13,yoffset:3,font:{family:'Arial',size:11,weight:'bold'}});
+          incident.statuses.forEach((status,index)=>{
+            const style=window.ReadyLaPlataZones.styles[status];if(!style)return;
+            add({type:'simple-marker',style:'circle',size:7,xoffset:16+index*11,yoffset:-6,color:style.stroke,outline:{color:'#fff',width:1.2}});
+          });
+        }
+      },
       async refreshLayers(){
         // Retry failed layers as well as the normal zone/road/POI refresh.
         const retry=[...new Set([...operationalLayers,...layerErrors.keys()])];

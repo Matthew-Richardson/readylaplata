@@ -25,7 +25,7 @@
     // Existing announcement content and its enable/auto-open settings are retained.
     R.initAnnouncement(DOM);
   }
-  function openWelcome() { if (!welcome.open) welcome.showModal(); }
+  function openWelcome() { setOptionsOpen(false);setIncidentMenuOpen(false);if (!welcome.open) welcome.showModal(); }
   function closeWelcome() {
     if ($('welcomeRemember').checked) safeStorage(localStorage,'setItem','readylpc-zone-info-dismissed-v2','1');
     safeStorage(sessionStorage,'setItem','readylpc-zone-info-seen-v2','1');
@@ -53,6 +53,7 @@
     button.addEventListener('click',()=>openIncidentDetails(name));return button;
   }
   function openIncidentDetails(name,latlng){
+    setOptionsOpen(false);setIncidentMenuOpen(false);
     const entry=incidents.get(name);if(!view&&!entry)return;
     if(welcome.open)closeWelcome();
     const addressMatches=currentAddressMatch&&addressZones(currentAddressMatch).some(f=>String(f.properties[zoneFields.incident]||'').trim()===name);
@@ -72,6 +73,7 @@
   }
   function statusName(feature) { return String((feature.properties || feature.attributes)[zoneFields.status] || 'Planning'); }
   async function focusIncident(name) {
+    setIncidentMenuOpen(false);
     const entry=incidents.get(name);
     if(!view || !entry) return;
     chosenIncident=name;
@@ -116,7 +118,8 @@
       mobileActions.append(tab,info);
       card.append(focus,badges,link,mobileActions);container.appendChild(card);
     }
-    $('incidentCount').textContent=incidents.size;
+    $('incidentCount').textContent=incidents.size;$('incidentMenuCount').textContent=incidents.size;
+    $('incidentMenuToggle').setAttribute('aria-label','Active incidents: '+incidents.size);
     requestAnimationFrame(updateIncidentArrows);
   }
   function updateIncidentArrows(){
@@ -158,6 +161,7 @@
       currentZoneFeatures=features;
       incidents=new Map(Array.from(next.entries()).sort(compareIncidents));
       for(const entry of incidents.values())if(entry.extent.isValid())entry.point=entry.extent.getCenter();
+      view?.setIncidents?.([...incidents].filter(([,entry])=>entry.point).map(([name,entry])=>({name,point:entry.point,statuses:Object.keys(STATUS_PRIORITY).filter(status=>entry.counts[status]>0)})));
       renderIncidentList();lastIncidentSuccess=Date.now();incidentsError=false;window.ReadyLaPlataDetails.refreshZones();
       $('incidentState').dataset.error='false';$('incidentState').hidden=incidents.size>0;$('incidentState').textContent=incidents.size?'':'No incidents are currently shown in the county zone layer.';
       $('lastLoaded').textContent='Updated '+localTime(lastIncidentSuccess);
@@ -188,7 +192,7 @@
       const extent=extentData?.extent;
       if(extent&&[extent.xmin,extent.ymin,extent.xmax,extent.ymax].every(Number.isFinite))countyBounds=[[extent.ymin,extent.xmin],[extent.ymax,extent.xmax]];
       view=await window.ReadyLaPlataMap.create({container:'viewDiv',config:C,onIncident:openIncidentDetails});
-      operationalLayers=view.operationalLayers;
+      operationalLayers=view.operationalLayers;measureMapOverlays();
       await view.fitBounds(countyBounds);
       mapReady=true;$('mapLoading').hidden=true;
       await refreshIncidents();
@@ -204,12 +208,36 @@
     },()=>{button.disabled=false;$('mapMessage').textContent='Location could not be obtained. You can search for your address on the map.';},{timeout:10000});
   });
   function syncMapInteraction(){ /* The viewport map stays interactive. */ }
-  $('mapOptionsToggle').addEventListener('click',()=>{
-    const open=$('mapOptionsToggle').getAttribute('aria-expanded')!=='true';
-    $('mapOptionsToggle').setAttribute('aria-expanded',String(open));
+  function setOptionsOpen(open){
+    $('mapOptions').hidden=!open;$('mapOptionsToggle').setAttribute('aria-expanded',String(open));
     $('mapOptionsToggle').closest('.overview-card').classList.toggle('is-options-open',open);
-  });
+    if(open){setIncidentMenuOpen(false);$('mapOptionsClose').focus({preventScroll:true});}
+  }
+  function setIncidentMenuOpen(open){
+    $('incidentPopover').hidden=!open;$('incidentMenuToggle').setAttribute('aria-expanded',String(open));
+    if(open){setOptionsOpen(false);$('incidentMenuClose').focus({preventScroll:true});}
+  }
+  $('mapOptionsToggle').addEventListener('click',()=>setOptionsOpen($('mapOptions').hidden));
+  $('mapOptionsClose').addEventListener('click',()=>{setOptionsOpen(false);$('mapOptionsToggle').focus({preventScroll:true});});
+  $('incidentMenuToggle').addEventListener('click',()=>setIncidentMenuOpen($('incidentPopover').hidden));
+  $('incidentMenuClose').addEventListener('click',()=>{setIncidentMenuOpen(false);$('incidentMenuToggle').focus({preventScroll:true});});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'){
+    if(!$('mapOptions').hidden){setOptionsOpen(false);$('mapOptionsToggle').focus({preventScroll:true});}
+    if(!$('incidentPopover').hidden){setIncidentMenuOpen(false);$('incidentMenuToggle').focus({preventScroll:true});}
+  }});
+  const guideLegend=document.createElement('section');guideLegend.className='welcome-map-legend';
+  guideLegend.appendChild(document.querySelector('#mapOptions .home-legend').cloneNode(true));welcome.querySelector('.welcome-scroll').appendChild(guideLegend);
+  function measureMapOverlays(){
+    const header=document.querySelector('.home-brand-banner'),dock=document.querySelector('.overview-top');
+    document.body.style.setProperty('--map-header-bottom',Math.ceil(header.getBoundingClientRect().bottom)+'px');
+    document.body.style.setProperty('--map-dock-height',Math.ceil(dock.getBoundingClientRect().height)+'px');
+    document.body.style.setProperty('--map-height',Math.round(window.visualViewport?.height||window.innerHeight)+'px');
+    view?.setOverlayPadding?.({top:Math.ceil(header.getBoundingClientRect().bottom)+12,bottom:Math.ceil(dock.getBoundingClientRect().height)+44});
+  }
+  const overlayObserver=new ResizeObserver(measureMapOverlays);overlayObserver.observe(document.querySelector('.home-brand-banner'));overlayObserver.observe(document.querySelector('.overview-top'));
+  window.addEventListener('resize',measureMapOverlays);window.visualViewport?.addEventListener('resize',measureMapOverlays);measureMapOverlays();
   function expandMap(expanded){
+    document.body.classList.toggle('is-map-focused',expanded);setOptionsOpen(false);setIncidentMenuOpen(false);
     $('mapFrame').classList.toggle('is-expanded',expanded);$('mapFullscreenBtn').setAttribute('aria-pressed',String(expanded));$('mapFullscreenBtn').textContent=expanded?'Close expanded map':'Expand map';$('mapActivateBtn').setAttribute('aria-label',expanded?'Close expanded map':'Expand map');$('mapActivateBtn').textContent=expanded?'×':'⛶';if(view){syncMapInteraction();setTimeout(()=>view.invalidateSize(),0);}
   }
   $('mapActivateBtn').addEventListener('click',()=>expandMap(!$('mapFrame').classList.contains('is-expanded')));
@@ -242,7 +270,7 @@
     $('addressIncidentResult').replaceChildren();$('addressIncidentResult').hidden=true;$('mapMessage').textContent='';
 
     $('incidentList').scrollLeft=0;document.querySelectorAll('.incident-item').forEach(el=>{el.classList.remove('is-selected');el.querySelector('.incident-mobile-tab')?.setAttribute('aria-pressed','false');});
-    $('mapOptionsToggle').setAttribute('aria-expanded','false');$('mapOptionsToggle').closest('.overview-card').classList.remove('is-options-open');
+    setOptionsOpen(false);setIncidentMenuOpen(false);
     for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle']){if(!$(id).checked){$(id).checked=true;$(id).dispatchEvent(new Event('change'));}}
     const url=new URL(location.href);url.searchParams.delete('incident');history.replaceState(null,'',url);
     expandMap(false);
@@ -295,7 +323,7 @@
     $('addressIncidentResult').replaceChildren(addressIncidentContent(currentAddressMatch));$('addressIncidentResult').hidden=false;
   }
   $('addressForm').addEventListener('submit',async event=>{
-    event.preventDefault();if(!zoneFields)return;
+    event.preventDefault();setOptionsOpen(false);setIncidentMenuOpen(false);if(!zoneFields)return;
     const text=$('addressSearch').value.trim();if(!text)return;
     $('addressSearch').blur();
     const requestId=++addressRequestId;

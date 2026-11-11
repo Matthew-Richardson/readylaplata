@@ -11,19 +11,23 @@ class MapView{constructor(p){view=this;Object.assign(this,p);this.zoom=9;this.ha
 class Model{constructor(p){Object.assign(this,p)}}class Extent extends Model{expand(factor){return {...this,factor}}}
 const controls=Object.fromEntries(['roadsToggle','roadLayerToggle','poiLayerToggle','mapMessage'].map(id=>[id,{dataset:{},listeners:{},addEventListener(e,fn){this.listeners[e]=fn;}}]));
 const modules=[WebMap,MapView,Layer,Model,Model,Extent,{watch(){}}];
-const context={window:{require(names,fn){fn(...modules)},ReadyLaPlataZones:{renderer:field=>({type:'unique-value',field})}},document:{getElementById:id=>controls[id]},console:{...console,warn(){},error(){}}};
+const context={window:{require(names,fn){fn(...modules)},ReadyLaPlataZones:{renderer:field=>({type:'unique-value',field}),styles:{Go:{stroke:'#15803d'},Shelter:{stroke:'#1e6eb6'},Access:{stroke:'#824ab6'}}}},document:{getElementById:id=>controls[id]},console:{...console,warn(){},error(){}}};
 vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'../home-map.js'),'utf8'),context);
 (async()=>{
  
  const API=context.window.ReadyLaPlataMap,adapter=await API.create({container:'viewDiv',config,fields:{status:'STATUS',zone:'zonename',incident:'incident'},popupFor(){},onIncident(name){context.clicked=name}});
  assert.equal(map.portalItem.id,'source-map');assert.equal(map.layers.filter(l=>l===native[0]).length,1,'no duplicate zone layers');
  assert.equal(native[0].definitionExpression,'(incident IS NOT NULL) AND (LIVE = 1)');assert.equal(native[0].renderer,undefined);assert.equal(native[0].labelingInfo,undefined);
- assert.equal(map.layers.length,native.length+1,'only temporary address layer may be added');
+ assert.equal(map.layers.length,native.length+2,'only incident summaries and temporary address layer may be added');
  assert.equal(view.popup.autoOpenEnabled,undefined,'use native feature popups');
  await adapter.fitBounds(config.countyBounds);assert.equal(view.moves.at(-1).xmin,-108.4);assert.equal(view.moves.at(-1).ymax,37.65);
  await adapter.setView([37.4,-107.8],15);assert.equal(view.moves.at(-1).center.longitude,-107.8);assert.equal(view.moves.at(-1).zoom,15);
  controls.poiLayerToggle.checked=false;controls.poiLayerToggle.listeners.change();assert.equal(native[2].visible,false);
  controls.poiLayerToggle.checked=true;controls.poiLayerToggle.listeners.change();assert.equal(native[2].visible,true);assert.equal(group.visible,true);
+ adapter.setIncidents([{name:'TEST ONLY',point:{lat:37.3,lng:-107.8},statuses:['Shelter','Access']}]);
+ const pins=map.layers.find(l=>l.title==='Active incidents');assert.equal(pins.graphics.length,4);assert.equal(pins.graphics[3].symbol.color,'#824ab6');assert.equal(pins.graphics[0].attributes.incident,'TEST ONLY');
+ context.clicked=null;view.hits={results:[{graphic:{layer:pins,attributes:{incident:'TEST ONLY'}}}]};await view.handlers.click({mapPoint:{latitude:37.3,longitude:-107.8}});assert.equal(context.clicked,'TEST ONLY','incident pin opens support resources');
+ adapter.setIncidents([]);assert.equal(pins.graphics.length,0,'refresh removes old incident markers');adapter.setOverlayPadding({top:90,bottom:140});assert.equal(view.padding.top,90);assert.equal(view.padding.bottom,140);
  const marker=adapter.markAddress({location:{x:-107.8,y:37.4}}),address=map.layers.find(l=>l.title==='Searched address');assert.equal(address.graphics.length,1);marker.remove();assert.equal(address.graphics.length,0);
  assert.equal(adapter.operationalLayers.length,3);
 
@@ -45,6 +49,6 @@ vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'../home-
  let resolveOld;zone.queryFeatures=()=>new Promise(resolve=>{resolveOld=resolve});const pending=view.handlers.click({mapPoint:point});await new Promise(resolve=>setImmediate(resolve));
  zone.queryFeatures=async()=>({features:[{attributes:{LIVE:1,incident:'New selection'}}]});await view.handlers.click({mapPoint:point});resolveOld({features:[{attributes:{LIVE:1,incident:'Old selection'}}]});await pending;assert.equal(context.clicked,'New selection');assert.equal(controls.mapMessage.textContent,'');
  assert.equal(native[0].outFields[0],'*');console.log('PASS: ArcGIS normalized service URL plus layerId identifies zones, roads, and POIs.');console.log('PASS: missing attributes and hatched interiors use spatial fallback; inactive/unassigned zones, query errors, and rapid-tap races handled.');console.log('PASS: live-zone tap opens incident resources; inactive, unnamed, and non-zone hits are excluded.');
- native.length=0;const empty=await API.create({container:'viewDiv',config});assert.equal(map.layers.length,1,'missing operational layers must not be injected');assert.equal(empty.operationalLayers.length,0);assert.equal(controls.roadsToggle.disabled,true);
+ native.length=0;const empty=await API.create({container:'viewDiv',config});assert.equal(map.layers.length,2,'missing operational layers must not be injected');assert.equal(empty.operationalLayers.length,0);assert.equal(controls.roadsToggle.disabled,true);
  native.push(new Layer({url:config.zonesUrl,title:'Zones missing LIVE',fields:[]}));await API.create({container:'viewDiv',config});assert.equal(native[0].visible,false,'hide zones when LIVE is not exposed');console.log('PASS: LIVE filter preserves existing definition, hides zones missing LIVE, and keeps native styling, navigation and layer controls.');
 })().catch(e=>{console.error(e);process.exitCode=1});
