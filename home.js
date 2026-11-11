@@ -62,7 +62,7 @@
     window.ReadyLaPlataDetails.open({name,view:host,latlng:anchor,onZoom:view&&entry?()=>focusIncident(name):null,getActiveZones:()=>({
       available:lastIncidentSuccess!==null,stale:incidentsError,
       zones:currentZoneFeatures.filter(feature=>feature.properties?.[zoneFields.live]===1&&String(feature.properties[zoneFields.incident]||'').trim()===name)
-        .map(feature=>({name:String(feature.properties[zoneFields.zone]||'').trim()||'Unnamed zone',status:Z.key(statusName(feature))}))
+        .map(feature=>({name:String(feature.properties[zoneFields.zone]||'').trim()||'Unnamed zone',status:Z.key(statusName(feature)),description:String(feature.properties[zoneFields.description]||'').trim()}))
     })});
   }
   function addressZones(match){return currentZoneFeatures.filter(feature=>['Go','Set','Access','Shelter'].includes(Z.key(statusName(feature)))&&zoneContainsAddress(feature.geometry,match.location.x,match.location.y));}
@@ -186,7 +186,7 @@
       ]);
       if(metadata.error||!Array.isArray(metadata.fields))throw new Error('County zone metadata unavailable');
       const field=name=>metadata.fields.find(f=>f.name.toLowerCase()===name)?.name;
-      zoneFields={status:field('status'),incident:field('incident'),zone:field('zonename')||field('zone_name'),live:field('live')};
+      zoneFields={status:field('status'),incident:field('incident'),zone:field('zonename')||field('zone_name'),live:field('live'),description:field('description')};
       if(!zoneFields.status||!zoneFields.incident)throw new Error('Zone status/incident fields unavailable');
       const extent=extentData?.extent;
       if(extent&&[extent.xmin,extent.ymin,extent.xmax,extent.ymax].every(Number.isFinite))countyBounds=[[extent.ymin,extent.xmin],[extent.ymax,extent.xmax]];

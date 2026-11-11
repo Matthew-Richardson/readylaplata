@@ -799,6 +799,11 @@ require([
       hint.textContent = "LIVE is missing or not editable on this layer. Use an editable Short Integer field named LIVE (1 = active, 0 = inactive) to control public visibility.";
       fieldsEl.appendChild(hint);
     }
+    if (!editableFields().some(f => ruleFor(f) === "description")){
+      const hint = document.createElement("p");hint.className = "fhint";
+      hint.textContent = "Description is not exposed as an editable field on this layer. Expose the Description text field in the editor layer to add optional public descriptions.";
+      fieldsEl.appendChild(hint);
+    }
     loadIncidentValues();   // refresh the active-incident list each time the form opens
 
     editableFields().forEach(f => {
@@ -809,6 +814,16 @@ require([
       wrap.appendChild(label);
 
       const rule = ruleFor(f);
+      if (rule === "description"){
+        label.textContent = "Description (optional)";
+        const input = document.createElement("textarea");input.rows = 4;
+        input.dataset.field = f.name;input.dataset.ftype = f.type;
+        if (f.length) input.maxLength = f.length;
+        input.value = attrs[f.name] == null ? "" : attrs[f.name];
+        const hint = document.createElement("div");hint.className = "fhint";
+        hint.textContent = "Optional. This description will be live on ReadyLaPlata.org when the zone is active. Access descriptions appear in incident information.";
+        wrap.append(input, hint);fieldsEl.appendChild(wrap);return;
+      }
       if (rule === "live"){
         label.textContent = "Public map visibility (LIVE)";
         const input = document.createElement("select");input.dataset.field = f.name;input.dataset.ftype = f.type;
@@ -980,6 +995,7 @@ require([
   function ruleFor(f){
     const hay = (f.name + " " + (f.alias || ""));
     if (/^live$/i.test(f.name)) return "live";
+    if (/^description$/i.test(f.name) || /^description$/i.test(f.alias || "")) return "description";
     if (/status/i.test(hay))   return "status";
     if (/incident/i.test(hay)) return "incident";
     if (/zone[_ ]?name/i.test(hay) || /^name$/i.test(f.name) || /^name$/i.test(f.alias || "")) return "text";

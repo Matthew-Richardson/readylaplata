@@ -27,12 +27,15 @@
     const zoom=node('button','home-btn incident-support-zoom','Zoom To');zoom.type='button';zoom.disabled=typeof onZoom!=='function';zoom.setAttribute('aria-label','Zoom to '+name);zoom.addEventListener('click',()=>onZoom?.());headerActions.append(zoom);header.append(headerActions);
     content.append(header);
     const zoneArea=node('section','incident-active-zones');zoneArea.setAttribute('aria-label','Active zones for '+name);content.append(zoneArea);
+    const accessArea=node('section','incident-access-descriptions');content.append(accessArea);
+    const resourceHeading=node('div','detail-label','Incident support resources');content.append(resourceHeading);
+    const resourceArea=node('div','incident-support-resources');resourceArea.setAttribute('aria-live','polite');content.append(resourceArea);
     function renderZones(){
-      const report=getActiveZones?.();zoneArea.replaceChildren();
+      const report=getActiveZones?.();zoneArea.replaceChildren();accessArea.replaceChildren();accessArea.hidden=true;resourceHeading.hidden=false;resourceArea.hidden=false;
       zoneArea.append(node('h4','','Active zones'));
       if(!report?.available){zoneArea.append(node('p','detail-pending','Active zone information is unavailable.'));return;}
       if(report.stale)zoneArea.append(node('p','detail-pending','Showing last known zones. Updates are temporarily unavailable.'));
-      const unique=new Map();for(const zone of report.zones)unique.set(JSON.stringify([zone.name,zone.status]),zone);
+      const unique=new Map();for(const zone of report.zones)unique.set(JSON.stringify([zone.name,zone.status,zone.description]),zone);
       const order=['Go','Shelter','Set','Access','Planning'];
       const zones=[...unique.values()].sort((a,b)=>order.indexOf(a.status)-order.indexOf(b.status)||a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
       if(!zones.length){zoneArea.append(node('p','detail-pending','No active zones are currently listed for this incident.'));return;}
@@ -45,10 +48,23 @@
         status.append(symbol,node('span','',style.label));row.append(status);list.append(row);
       }
       zoneArea.append(list);
+      const access=zones.filter(zone=>zone.status==='Access');
+      const accessOnly=zones.length>0&&zones.every(zone=>zone.status==='Access');
+      resourceHeading.hidden=accessOnly;resourceArea.hidden=accessOnly;
+      if(access.length){
+        accessArea.hidden=false;accessArea.append(node('h4','','Access issues'));
+        for(const zone of access){
+          const description=String(zone.description||'').trim();if(!description)continue;
+          const item=node('div','incident-access-description');
+          item.append(node('strong','',zone.name),node('p','',description));accessArea.append(item);
+        }
+        if(accessArea.children.length===1){
+          if(accessOnly)accessArea.append(node('p','detail-pending','Access details have not been posted. Follow current incident instructions.'));
+          else accessArea.hidden=true;
+        }
+      }
     }
     renderZones();
-    content.append(node('div','detail-label','Incident support resources'));
-    const resourceArea=node('div','incident-support-resources');resourceArea.setAttribute('aria-live','polite');content.append(resourceArea);
     const loading=node('p','detail-pending','Loading incident information…');resourceArea.append(loading);
     const popup=view.openSupportPopup(latlng,content);activePopup=popup;
     const current=()=>request===generation&&popup.isOpen();

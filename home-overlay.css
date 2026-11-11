@@ -210,3 +210,9 @@
  .immersive-map.is-address-editing .home-header-actions{width:100%}
  .immersive-map.is-address-editing .home-header-actions .home-nav-btn,.immersive-map.is-address-editing .home-header-actions .home-call-link{width:auto;flex:1;min-height:35px;height:35px}
 }
+
+.immersive-map .incident-access-descriptions{margin:10px 0;padding:10px 12px;background:#f4effa;border:1px solid #b7a0ce;border-radius:8px}
+.immersive-map .incident-access-descriptions h4{margin:0 0 6px;font-size:14px;color:#493061}
+.immersive-map .incident-access-description + .incident-access-description{margin-top:8px;padding-top:8px;border-top:1px solid #d5c6e4}
+.immersive-map .incident-access-description strong{font-size:13px}
+.immersive-map .incident-access-description p{margin:4px 0 0;font-size:14px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}

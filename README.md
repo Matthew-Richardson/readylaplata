@@ -71,3 +71,5 @@ Mobile address focus now holds the map's layout height while the keyboard is ope
 Safari keyboard follow-up: compensate the entire fixed map shell for visualViewport.offsetTop, then lift the search relative to that compensated shell. This keeps the header and map from disappearing above the visible viewport when Safari pans to the input. Simulated viewport tests cover the geometry; physical iPhone verification remains necessary.
 
 Restored the viewport-shift search layout. Removed the temporary input-focus visibility workaround and the mode that hid map controls during address lookup. Map controls stay available alongside the search report.
+
+Zone Description is optional for all editor statuses and uses the field length from the service. Active Access descriptions appear below active zones; Access-only incidents hide the evacuation support-resource section. Mixed incidents retain support resources. Missing Access descriptions display a pending message for Access-only incidents. Descriptions render as plain text with preserved line breaks. The Description field must also be exposed and editable in the staff editor’s layer.
