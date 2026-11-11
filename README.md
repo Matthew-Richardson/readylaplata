@@ -75,3 +75,5 @@ Restored the viewport-shift search layout. Removed the temporary input-focus vis
 Zone Description is optional for all editor statuses and uses the field length from the service. Active Access descriptions appear below active zones; Access-only incidents hide the evacuation support-resource section. Mixed incidents retain support resources. Missing Access descriptions display a pending message for Access-only incidents. Descriptions render as plain text with preserved line breaks. The Description field must also be exposed and editable in the staff editor’s layer.
 
 The zone editor defaults overlap trimming to off. Its All/Active/Inactive selector filters the active layer view without changing feature attributes or service-query scope; inactive includes LIVE=0 and null. Existing view filters are preserved.
+
+The zone editor is a viewport-sized workspace with compact tool buttons, two-column attributes, pinned action controls, and a collapsed workflow guide. Mobile gives the form more space during editing. On constrained screens only the field region scrolls so Save/Cancel remain reachable; the document does not scroll.
