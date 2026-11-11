@@ -218,7 +218,7 @@
 .immersive-map .incident-access-description p{margin:4px 0 0;font-size:14px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
 
 /* Solid status fills with uniform borders and readable black text. */
-.immersive-map .address-zone-chip{background-image:none!important;border:1px solid var(--zone-edge,#52677d)!important;color:#000!important;box-shadow:none}
+.immersive-map .address-zone-chip{background:var(--zone-fill,#eaf0f7)!important;opacity:1;border:1px solid var(--zone-edge,#52677d)!important;color:#000!important;box-shadow:none}
 .immersive-map .address-zone-chip strong,.immersive-map .address-zone-chip>span{color:#000!important;text-shadow:none!important;font-weight:700}
 .immersive-map .address-zone-chip strong{font-size:14px}
 .immersive-map .address-zone-chip>span{font-size:14px}
@@ -284,3 +284,5 @@
 .immersive-map .incident-point-pulse::after{animation-delay:-1.4s}
 @keyframes incident-point-pulse{0%{transform:scale(.85);opacity:.65}85%,100%{transform:scale(1.7);opacity:0}}
 @media(prefers-reduced-motion:reduce){.immersive-map .incident-point-pulse::before{animation:none;transform:scale(1.15);opacity:.3}.immersive-map .incident-point-pulse::after{display:none}}
+
+.immersive-map .address-status-report{background:var(--report-color,#eaf0f7)!important;opacity:1}
