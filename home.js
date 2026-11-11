@@ -52,9 +52,14 @@
     const button=document.createElement('button');button.type='button';button.className='home-btn incident-details-button';button.textContent=label;
     button.addEventListener('click',()=>openIncidentDetails(name));return button;
   }
+  function selectIncident(name){
+    chosenIncident=name||'';view?.setSelectedIncident?.(chosenIncident);
+    $('clearIncidentSelection').disabled=!chosenIncident;
+    document.querySelectorAll('.incident-item').forEach(el=>el.classList.toggle('is-selected',el.dataset.incident===chosenIncident));
+  }
   function openIncidentDetails(name,latlng){
     setOptionsOpen(false);setIncidentMenuOpen(false);
-    const entry=incidents.get(name);if(!view&&!entry)return;
+    const entry=incidents.get(name);if(!view&&!entry)return;selectIncident(name);
     if(welcome.open)closeWelcome();
     const addressMatches=currentAddressMatch&&addressZones(currentAddressMatch).some(f=>String(f.properties[zoneFields.incident]||'').trim()===name);
     const anchor=latlng||(addressMatches?[currentAddressMatch.location.y,currentAddressMatch.location.x]:entry?.point||entry?.extent.getCenter());
@@ -76,8 +81,7 @@
     setIncidentMenuOpen(false);
     const entry=incidents.get(name);
     if(!view || !entry) return;
-    chosenIncident=name;
-    document.querySelectorAll('.incident-item').forEach(el=>{const selected=el.dataset.incident===name;el.classList.toggle('is-selected',selected);});
+    selectIncident(name);
     try {
       window.ReadyLaPlataDetails.close();view.closePopup();
       if(entry.extent?.isValid()) view.fitBounds(entry.extent,{padding:[30,30],maxZoom:14});
@@ -161,6 +165,7 @@
       incidents=new Map(Array.from(next.entries()).sort(compareIncidents));
       for(const entry of incidents.values())if(!entry.point&&entry.extent.isValid())entry.point=entry.extent.getCenter();
       view?.setIncidents?.([...incidents].filter(([,entry])=>entry.point).map(([name,entry])=>({name,point:entry.point,statuses:Object.keys(STATUS_PRIORITY).filter(status=>entry.counts[status]>0)})));
+      if(chosenIncident&&!incidents.has(chosenIncident))selectIncident('');
       renderIncidentList();lastIncidentSuccess=Date.now();incidentsError=false;window.ReadyLaPlataDetails.refreshZones();
       $('incidentState').dataset.error='false';$('incidentState').hidden=incidents.size>0;$('incidentState').textContent=incidents.size?'':'No incidents are currently shown in the county zone layer.';
       $('lastLoaded').textContent='Updated '+localTime(lastIncidentSuccess);
@@ -197,7 +202,8 @@
       await refreshIncidents();
     }catch(error){console.error('Map initialization:',error);mapFailure(/webgl/i.test(String(error.name)+' '+String(error.message))?'This browser cannot display the ArcGIS map. Use the lightweight map.':'The map could not load. Try Refresh or use the lightweight map.');if(zoneFields){mapReady=true;await refreshIncidents();}}
   }
-  $('mapResetBtn').addEventListener('click',()=>{if(view){view.closePopup();view.fitBounds(countyBounds,{padding:[20,20],county:true});}});
+  $('clearIncidentSelection').addEventListener('click',()=>selectIncident(''));
+  $('mapResetBtn').addEventListener('click',()=>{selectIncident('');if(view){view.closePopup();view.fitBounds(countyBounds,{padding:[20,20],county:true});}});
   $('myLocationBtn').addEventListener('click',()=>{
     if(!view)return;
     if(!navigator.geolocation){$('mapMessage').textContent='Location is not supported by this browser.';return;}
@@ -299,11 +305,11 @@
   }
   function resetOverview(){
     window.ReadyLaPlataDetails.close();
-    addressRequestId++;currentAddressMatch=null;chosenIncident='';if(addressMarker){addressMarker.remove();addressMarker=null;}
+    addressRequestId++;currentAddressMatch=null;selectIncident('');if(addressMarker){addressMarker.remove();addressMarker=null;}
     setSearchExpanded(false);$('addressSearch').value='';$('addressSearch').blur();$('addressForm').querySelector('button').disabled=false;
     $('addressIncidentResult').replaceChildren();$('addressIncidentResult').hidden=true;$('mapMessage').textContent='';
 
-    $('incidentList').scrollLeft=0;document.querySelectorAll('.incident-item').forEach(el=>{el.classList.remove('is-selected');el.querySelector('.incident-mobile-tab')?.setAttribute('aria-pressed','false');});
+    $('incidentList').scrollLeft=0;
     setOptionsOpen(false);setIncidentMenuOpen(false);
     for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle','incidentLabelsToggle']){if(!$(id).checked){$(id).checked=true;$(id).dispatchEvent(new Event('change'));}}
     const url=new URL(location.href);url.searchParams.delete('incident');history.replaceState(null,'',url);

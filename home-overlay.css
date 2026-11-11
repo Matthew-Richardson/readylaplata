@@ -274,3 +274,5 @@
 
 /* Confine map gestures to ArcGIS rather than the browser viewport. */
 .immersive-map #mapFrame{touch-action:none;overscroll-behavior:none}
+
+.immersive-map .incident-area-label[aria-pressed="true"]{border:2px solid #174f8a;background:#fffffff2;box-shadow:0 0 0 2px #fff,0 3px 12px #17334d44}

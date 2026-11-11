@@ -103,21 +103,37 @@
     const address=new GraphicsLayer({title:'Searched address',listMode:'hide',popupEnabled:false});
     webmap.add(address);
     const view=new MapView({container,map:webmap,extent:new Extent({xmin:C.countyBounds[0][1],ymin:C.countyBounds[0][0],xmax:C.countyBounds[1][1],ymax:C.countyBounds[1][0],spatialReference:{wkid:4326}}),constraints:{rotationEnabled:false,snapToZoom:false},popup:{dockEnabled:false}});
+    view.highlightOptions={color:'#174f8a',haloOpacity:1,fillOpacity:0};
     const labelContainer=$('incidentMapLabels'),labelEntries=[];
-    let incidentLabelsVisible=true;
+    let incidentLabelsVisible=true,selectedIncident='',selectionGeneration=0;
+    const selectionHandles=[];
+    async function setSelectedIncident(name){
+      selectedIncident=name||'';const generation=++selectionGeneration;
+      selectionHandles.splice(0).forEach(handle=>handle.remove());positionIncidentLabels();
+      if(!selectedIncident)return;
+      await Promise.allSettled(zoneLayers.map(async layer=>{
+        const field=layer.fields?.find(f=>f.name.toLowerCase()==='incident')?.name;if(!field)return;
+        const query=layer.createQuery();
+        query.where='('+String(query.where||'1=1')+') AND ('+C.zonesWhere+') AND '+field+" = '"+name.replace(/'/g,"''")+"'";
+        const ids=await layer.queryObjectIds(query);if(!ids?.length||generation!==selectionGeneration)return;
+        const layerView=await view.whenLayerView(layer);if(generation!==selectionGeneration)return;
+        selectionHandles.push(layerView.highlight(ids));
+      }));
+    }
     $('incidentLabelsToggle').addEventListener('change',()=>{incidentLabelsVisible=$('incidentLabelsToggle').checked;positionIncidentLabels();});
     const publishedLabels=new Map(zoneLayers.map(layer=>[layer,layer.labelsVisible!==false]));
     function positionIncidentLabels(){
       const overview=!Number.isFinite(view.scale)||view.scale>=(C.incidentLabelScale||75000);
-      incidentPins.visible=overview;
+      incidentPins.visible=overview||Boolean(selectedIncident);
       for(const layer of zoneLayers)layer.labelsVisible=overview?false:publishedLabels.get(layer);
       if(!labelContainer)return;
       const occupied=[],placed=[],padding=view.padding||{},top=(padding.top||0)+8,bottom=(view.height||0)-(padding.bottom||0)-8;
       // Set visibility together, then measure together before positioning writes.
       const screens=labelEntries.map(entry=>{
-        entry.hitRect=null;const screen=view.toScreen(entry.point);entry.button.hidden=!incidentLabelsVisible||!overview||!screen||screen.x<0||screen.y<0||screen.x>view.width||screen.y>view.height;entry.leader.hidden=true;
+        entry.hitRect=null;const screen=view.toScreen(entry.point);entry.button.hidden=!incidentLabelsVisible||(selectedIncident?entry.name!==selectedIncident:!overview)||!screen||screen.x<0||screen.y<0||screen.x>view.width||screen.y>view.height;entry.leader.hidden=true;
         return screen;
       });
+      for(const entry of labelEntries)entry.button.setAttribute('aria-pressed',String(entry.name===selectedIncident));
       const sizes=labelEntries.map(entry=>({width:entry.button.offsetWidth||180,height:entry.button.offsetHeight||50}));
       for(const [index,entry] of labelEntries.entries()){
         const screen=screens[index];if(entry.button.hidden)continue;
@@ -233,13 +249,19 @@
     view.on('layerview-create',event=>clearLayerError(event.layer,'view'));
     try{await view.when();ready=true;view.ui?.remove?.('zoom');view.ui?.move?.('attribution','manual');}catch(error){view.destroy();for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle','incidentLabelsToggle'])$(id).disabled=true;throw error;}
     return {
-      raw:view,operationalLayers,
+      raw:view,operationalLayers,setSelectedIncident,
       setOverlayPadding({top,bottom,compact=false}){const vertical=Math.max(top,bottom),next=compact?{top:vertical,bottom:vertical,left:12,right:12}:{top,bottom,left:16,right:84};if(Object.keys(next).every(key=>view.padding?.[key]===next[key]))return;view.padding=next;positionIncidentLabels();},
       setIncidents(incidents){
         incidentPins.removeAll();labelEntries.length=0;labelContainer?.replaceChildren();
         for(const incident of incidents){
           const point=new Point({longitude:incident.point.lng,latitude:incident.point.lat});
-          incidentPins.add(new Graphic({geometry:point,attributes:{incident:incident.name},symbol:{type:'simple-marker',style:'circle',size:14,color:'#174f8a',outline:{color:'#fff',width:2.5}}}));
+          const width=Math.max(28,incident.statuses.length*10+4),center=width/2;
+          const markerDots=incident.statuses.map((status,index)=>{
+            const style=window.ReadyLaPlataZones.styles[status]||{};
+            return '<circle cx="'+(center-(incident.statuses.length-1)*5+index*10)+'" cy="25" r="4" fill="'+(style.fill||'#b8bec7')+'" stroke="'+(style.stroke||'#52677d')+'" stroke-width="1"/>';
+          }).join('');
+          const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="32" viewBox="0 0 '+width+' 32"><circle cx="'+center+'" cy="8" r="6" fill="#174f8a" stroke="#fff" stroke-width="2"/>'+markerDots+'</svg>';
+          incidentPins.add(new Graphic({geometry:point,attributes:{incident:incident.name},symbol:{type:'picture-marker',url:'data:image/svg+xml,'+encodeURIComponent(svg),width,height:32,yoffset:-8}}));
           if(!labelContainer)continue;
           const button=document.createElement('button'),title=document.createElement('strong'),dots=document.createElement('span'),leader=document.createElement('span');
           button.type='button';button.className='incident-area-label';title.textContent=incident.name;dots.className='incident-area-dots';dots.setAttribute('aria-hidden','true');leader.className='incident-area-leaders';leader.setAttribute('aria-hidden','true');leader.hidden=true;
@@ -252,7 +274,9 @@
           button.addEventListener('click',event=>{event.stopPropagation();onIncident?.(incident.name,[incident.point.lat,incident.point.lng]);});
           labelContainer.append(leader,button);labelEntries.push({name:incident.name,point,button,leader,hitRect:null});
         }
-        positionIncidentLabels();
+        if(selectedIncident&&!incidents.some(incident=>incident.name===selectedIncident))setSelectedIncident('');
+        else if(selectedIncident)setSelectedIncident(selectedIncident);
+        else positionIncidentLabels();
       },
       async refreshLayers(){
         // Retry failed layers as well as the normal zone/road/POI refresh.
