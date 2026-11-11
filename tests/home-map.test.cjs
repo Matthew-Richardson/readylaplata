@@ -37,6 +37,9 @@ vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'../home-
  view.scale=50000;watchers[0]();assert.equal(plate.hidden,true);assert.equal(native[0].labelsVisible,true);assert.equal(pins.visible,false);
  view.scale=100000;watchers[0]();assert.equal(plate.hidden,false);assert.equal(native[0].labelsVisible,false);
  plate.listeners.click({stopPropagation(){}});assert.equal(context.clicked,'TEST ONLY');
+ assert.equal(plate.listeners.pointerdown,undefined,'label does not intercept drag input');
+ context.clicked=null;await view.handlers.click({x:400,y:300,mapPoint:{latitude:37.3,longitude:-107.8}});assert.equal(context.clicked,'TEST ONLY','map tap on visible label opens that incident');
+ view.scale=50000;watchers[0]();context.clicked=null;view.hits={results:[]};await view.handlers.click({x:400,y:300});assert.equal(context.clicked,null,'hidden labels do not intercept map taps');view.scale=100000;watchers[0]();
  await adapter.zoomBy(1);assert.equal(view.zoom,16);await adapter.zoomBy(-1);assert.equal(view.zoom,15);
  context.clicked=null;view.hits={results:[{graphic:{layer:pins,attributes:{incident:'TEST ONLY'}}}]};await view.handlers.click({mapPoint:{latitude:37.3,longitude:-107.8}});assert.equal(context.clicked,'TEST ONLY','incident pin opens support resources');
  adapter.setIncidents([{name:'First',point:{lat:37.3,lng:-107.8},statuses:['Go']},{name:'Second',point:{lat:37.3,lng:-107.8},statuses:['Access']}]);

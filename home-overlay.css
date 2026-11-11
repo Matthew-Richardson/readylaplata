@@ -133,7 +133,7 @@
 /* The native zoom widget is replaced with matching accessible rail buttons. */
 .immersive-map .esri-zoom{display:none!important}
 .immersive-map .incident-map-labels{position:absolute;inset:0;z-index:1000;overflow:hidden;pointer-events:none}
-.immersive-map .incident-area-label{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:125px;max-width:240px;min-height:48px;padding:8px 12px;border:1px solid #92aac4;border-radius:10px;background:rgba(255,255,255,.83);backdrop-filter:blur(5px);box-shadow:0 3px 12px #17334c30;color:#112b43;transform:translate(-50%,-50%);text-align:center;pointer-events:auto;cursor:pointer}
+.immersive-map .incident-area-label{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:125px;max-width:240px;min-height:48px;padding:8px 12px;border:1px solid #92aac4;border-radius:10px;background:rgba(255,255,255,.83);backdrop-filter:blur(5px);box-shadow:0 3px 12px #17334c30;color:#112b43;transform:translate(-50%,-50%);text-align:center;pointer-events:none;cursor:pointer}
 .immersive-map .incident-area-label strong{font:700 14px/1.25 Arial;overflow-wrap:anywhere}
 .immersive-map .incident-area-label:hover,.immersive-map .incident-area-label:focus-visible{background:rgba(255,255,255,.96);border-color:#174f8a}
 .immersive-map .incident-area-dots{display:flex;justify-content:center;gap:6px}

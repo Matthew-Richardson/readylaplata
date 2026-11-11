@@ -90,3 +90,5 @@ exec(open(r"C:\GIS\update_evac_webmap_styles.py", encoding="utf-8-sig").read())
 The script updates web-map renderer/label definitions for all five statuses, backs up original and proposed JSON under `Documents\ReadyLaPlata_Backups`, checks for concurrent changes, verifies the write and supports dry runs. It does not change features, schema, LIVE values, hosted-view definitions or source-service defaults.
 
 Native browser gesture zoom is canceled within the map frame only, including WebKit gesture events and multi-touch moves. ArcGIS receives the events for map navigation. Deliberate browser zoom outside the map remains available. Actual rapid-gesture iPhone behavior needs device testing.
+
+Incident name plates are transparent to pointer input so users can drag or pinch the map starting on a label. Completed ArcGIS map clicks are matched to visible label rectangles to retain tap-to-open information. Label buttons remain keyboard accessible. Hidden labels do not capture taps.

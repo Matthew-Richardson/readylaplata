@@ -113,7 +113,7 @@
       const occupied=[],placed=[],padding=view.padding||{},top=(padding.top||0)+8,bottom=(view.height||0)-(padding.bottom||0)-8;
       // Set visibility together, then measure together before positioning writes.
       const screens=labelEntries.map(entry=>{
-        const screen=view.toScreen(entry.point);entry.button.hidden=!overview||!screen||screen.x<0||screen.y<0||screen.x>view.width||screen.y>view.height;entry.leader.hidden=true;
+        entry.hitRect=null;const screen=view.toScreen(entry.point);entry.button.hidden=!overview||!screen||screen.x<0||screen.y<0||screen.x>view.width||screen.y>view.height;entry.leader.hidden=true;
         return screen;
       });
       const sizes=labelEntries.map(entry=>({width:entry.button.offsetWidth||180,height:entry.button.offsetHeight||50}));
@@ -128,6 +128,7 @@
           y=next;break;
         }
         occupied.push({left:x-width/2,right:x+width/2,top:y-height/2,bottom:y+height/2});
+        entry.hitRect=occupied[occupied.length-1];
         entry.button.style.left=x+'px';entry.button.style.top=y+'px';
         placed.push({entry,screen,rect:occupied[occupied.length-1]});
       }
@@ -177,6 +178,12 @@
         delete $('mapMessage').dataset.zoneSelection;
         onIncident(name,point?[point.latitude,point.longitude]:undefined);
       };
+      // Labels are pointer-transparent so dragging reaches the map. Resolve a
+      // completed map click against their screen rectangles to retain tap actions.
+      const label=[...labelEntries].reverse().find(entry=>{
+        const rect=entry.hitRect;return !entry.button.hidden&&rect&&event.x>=rect.left&&event.x<=rect.right&&event.y>=rect.top&&event.y<=rect.bottom;
+      });
+      if(label){open(label.name);return;}
       try{
         const hit=await view.hitTest(event,{include:[incidentPins,...zoneLayers]});if(request!==zoneClick)return;
         for(const result of hit.results||[]){
@@ -236,8 +243,7 @@
           }
           button.setAttribute('aria-label',incident.name+'. '+labels.join(', ')+'. Open incident information');button.title=incident.name+' — '+labels.join(', ');button.append(title,dots);
           button.addEventListener('click',event=>{event.stopPropagation();onIncident?.(incident.name,[incident.point.lat,incident.point.lng]);});
-          for(const type of ['pointerdown','pointerup','dblclick'])button.addEventListener(type,event=>event.stopPropagation());
-          labelContainer.append(leader,button);labelEntries.push({point,button,leader});
+          labelContainer.append(leader,button);labelEntries.push({name:incident.name,point,button,leader,hitRect:null});
         }
         positionIncidentLabels();
       },
