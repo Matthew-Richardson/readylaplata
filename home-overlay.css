@@ -216,3 +216,12 @@
 .immersive-map .incident-access-description + .incident-access-description{margin-top:8px;padding-top:8px;border-top:1px solid #d5c6e4}
 .immersive-map .incident-access-description strong{font-size:13px}
 .immersive-map .incident-access-description p{margin:4px 0 0;font-size:14px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* Keep address status and zone names readable over solid and hatched fills. */
+.immersive-map .address-zone-chip,
+.immersive-map .address-zone-chip strong,
+.immersive-map .address-zone-chip>span,
+.immersive-map .address-report-headline{
+ color:#000!important;
+ text-shadow:-1px -1px 0 #fff,0 -1px 0 #fff,1px -1px 0 #fff,-1px 0 0 #fff,1px 0 0 #fff,-1px 1px 0 #fff,0 1px 0 #fff,1px 1px 0 #fff;
+}
