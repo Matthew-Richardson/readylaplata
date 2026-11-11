@@ -103,7 +103,7 @@
     const address=new GraphicsLayer({title:'Searched address',listMode:'hide',popupEnabled:false});
     webmap.add(address);
     const view=new MapView({container,map:webmap,extent:new Extent({xmin:C.countyBounds[0][1],ymin:C.countyBounds[0][0],xmax:C.countyBounds[1][1],ymax:C.countyBounds[1][0],spatialReference:{wkid:4326}}),constraints:{rotationEnabled:false,snapToZoom:false},popup:{dockEnabled:false}});
-    const labelContainer=$('incidentMapLabels'),labelEntries=[];
+    const labelContainer=$('incidentMapLabels'),labelEntries=[],labelGroups=new Map();
     let incidentLabelsVisible=true;
     $('incidentLabelsToggle').addEventListener('change',()=>{incidentLabelsVisible=$('incidentLabelsToggle').checked;positionIncidentLabels();});
     const publishedLabels=new Map(zoneLayers.map(layer=>[layer,layer.labelsVisible!==false]));
@@ -112,33 +112,80 @@
       incidentPins.visible=overview;
       for(const layer of zoneLayers)layer.labelsVisible=overview?false:publishedLabels.get(layer);
       if(!labelContainer)return;
-      const occupied=[],placed=[],padding=view.padding||{},top=(padding.top||0)+8,bottom=(view.height||0)-(padding.bottom||0)-8;
+      const placed=[],padding=view.padding||{},top=(padding.top||0)+8,bottom=(view.height||0)-(padding.bottom||0)-8;
       // Set visibility together, then measure together before positioning writes.
       const screens=labelEntries.map(entry=>{
         entry.hitRect=null;const screen=view.toScreen(entry.point);entry.button.hidden=!incidentLabelsVisible||!overview||!screen||screen.x<0||screen.y<0||screen.x>view.width||screen.y>view.height;entry.leader.hidden=true;
         return screen;
       });
       const sizes=labelEntries.map(entry=>({width:entry.button.offsetWidth||180,height:entry.button.offsetHeight||50}));
+      const clusters=[];
       for(const [index,entry] of labelEntries.entries()){
-        const screen=screens[index];if(entry.button.hidden)continue;
-        const {width,height}=sizes[index];
-        const rightEdge=view.width-((padding.right||0)>20?84:8);
-        const x=Math.max(width/2+8,Math.min(screen.x,rightEdge-width/2));let choice=null;
-        // The caller orders incidents by protective-action priority. Give those
-        // labels space first, trying the interior anchor and only one short move.
-        for(const offset of [0,-1,1]){
-          const y=screen.y+offset*(height+8),rect={left:x-width/2,right:x+width/2,top:y-height/2,bottom:y+height/2};
-          if(rect.left<8||rect.right>rightEdge||rect.top<top||rect.bottom>bottom)continue;
-          const end={x:Math.max(rect.left,Math.min(screen.x,rect.right)),y:Math.max(rect.top,Math.min(screen.y,rect.bottom))};
-          if(Math.hypot(end.x-screen.x,end.y-screen.y)>48)continue;
-          if(occupied.some(other=>rect.left<other.right+6&&rect.right>other.left-6&&rect.top<other.bottom+6&&rect.bottom>other.top-6))continue;
-          choice={y,rect};break;
-        }
-        if(!choice){entry.button.hidden=true;continue;}
-        occupied.push(choice.rect);entry.hitRect=choice.rect;
-        entry.button.style.left=x+'px';entry.button.style.top=choice.y+'px';
-        placed.push({entry,screen,rect:choice.rect});
+        if(entry.button.hidden)continue;
+        const screen=screens[index],size=sizes[index];
+        const item={entry,screen,width:size.width,height:size.height};
+        const nearby=clusters.filter(cluster=>cluster.some(other=>Math.abs(other.screen.x-screen.x)<(other.width+size.width)/2+16&&Math.abs(other.screen.y-screen.y)<(other.height+size.height)/2+16));
+        if(!nearby.length)clusters.push([item]);
+        else{const merged=[item,...nearby.flat()];for(const cluster of nearby)clusters.splice(clusters.indexOf(cluster),1);clusters.push(merged.sort((a,b)=>labelEntries.indexOf(a.entry)-labelEntries.indexOf(b.entry)));}
       }
+      // Merge again using the larger group-card bounds so groups cannot cover
+      // neighboring labels after their incident names are collected together.
+      const projected=members=>{
+        const width=members.length>1?260:members[0].width,height=members.length>1?42+Math.ceil(members.reduce((n,item)=>n+item.entry.name.length+3,0)/30)*17:members[0].height;
+        const right=view.width-((padding.right||0)>20?84:8),x=Math.max(width/2+8,Math.min(members.reduce((n,item)=>n+item.screen.x,0)/members.length,right-width/2));
+        const y=Math.max(top+height/2,Math.min(members.reduce((n,item)=>n+item.screen.y,0)/members.length,bottom-height/2));
+        return {left:x-width/2,right:x+width/2,top:y-height/2,bottom:y+height/2};
+      };
+      let merged=true;
+      while(merged){merged=false;
+        for(let a=0;a<clusters.length&&!merged;a++)for(let b=a+1;b<clusters.length;b++){
+          const one=projected(clusters[a]),two=projected(clusters[b]);
+          if(one.left<two.right+8&&one.right>two.left-8&&one.top<two.bottom+8&&one.bottom>two.top-8){
+            clusters[a]=[...clusters[a],...clusters[b]].sort((a,b)=>labelEntries.indexOf(a.entry)-labelEntries.indexOf(b.entry));clusters.splice(b,1);merged=true;break;
+          }
+        }
+      }
+      const usedGroups=new Set();
+      for(const members of clusters){
+        const grouped=members.length>1,key=JSON.stringify(members.map(item=>item.entry.name));
+        let button=members[0].entry.button;
+        if(grouped){
+          usedGroups.add(key);let group=labelGroups.get(key);
+          if(!group){
+            button=document.createElement('button');button.type='button';button.className='incident-area-label incident-area-group';
+            const title=document.createElement('strong'),names=document.createElement('span');
+            title.textContent=members.length+' incidents ▾';names.className='incident-group-names';names.textContent=members.map(item=>item.entry.name).join(' · ');button.append(title,names);
+            const groupDots=document.createElement('span');groupDots.className='incident-area-dots';groupDots.setAttribute('aria-hidden','true');
+            for(const status of ['Go','Shelter','Set','Access','Planning']){
+              if(!members.some(item=>item.entry.statuses.includes(status)))continue;
+              const style=window.ReadyLaPlataZones.styles[status]||{},dot=document.createElement('span');dot.className='incident-area-dot';dot.style.background=style.fill||'#b8bec7';dot.style.borderColor=style.stroke||'#52677d';dot.title=style.label||status;if(style.hatch)dot.classList.add('access-hatch');groupDots.append(dot);
+            }
+            button.append(groupDots);
+            const openGroup=()=>{
+              const content=document.createElement('section');content.className='incident-group-picker';content.setAttribute('aria-label','Choose an incident');
+              const heading=document.createElement('h3');heading.textContent='Choose an incident';content.append(heading);
+              for(const item of members){
+                const row=document.createElement('button');row.type='button';row.className='home-btn incident-group-choice';row.textContent=item.entry.name;
+                const statuses=document.createElement('span');statuses.className='incident-group-choice-status';statuses.textContent=item.entry.statuses.map(status=>window.ReadyLaPlataZones.styles[status]?.label||status).join(' · ');row.append(statuses);
+                row.addEventListener('click',()=>onIncident?.(item.entry.name,[item.entry.point.latitude,item.entry.point.longitude]));content.append(row);
+              }
+              openSupportWindow(container,content);
+            };
+            button.setAttribute('aria-label',members.length+' nearby incidents: '+members.map(item=>item.entry.name).join(', ')+'. Choose an incident');
+            button.addEventListener('click',event=>{event.stopPropagation();openGroup();});
+            group={button,openGroup};labelGroups.set(key,group);labelContainer.append(button);
+          }
+          button=group.button;button.hidden=false;
+          for(const item of members){item.entry.button.hidden=true;item.entry.groupAction=group.openGroup;}
+        }else members[0].entry.groupAction=null;
+        const width=button.offsetWidth||180,height=button.offsetHeight||50,rightEdge=view.width-((padding.right||0)>20?84:8);
+        const anchor={x:members.reduce((sum,item)=>sum+item.screen.x,0)/members.length,y:members.reduce((sum,item)=>sum+item.screen.y,0)/members.length};
+        const x=Math.max(width/2+8,Math.min(anchor.x,rightEdge-width/2)),y=Math.max(top+height/2,Math.min(anchor.y,bottom-height/2));
+        const rect={left:x-width/2,right:x+width/2,top:y-height/2,bottom:y+height/2};
+        button.style.left=x+'px';button.style.top=y+'px';
+        for(const item of members){item.entry.hitRect=rect;placed.push({entry:item.entry,screen:item.screen,rect});}
+      }
+      for(const [key,group] of labelGroups){if(!usedGroups.has(key)){group.button.remove();labelGroups.delete(key);}}
       // Draw a straight connector after placement; the shared leader layer stays below every plate.
       for(const {entry,screen,rect} of placed){
 
@@ -188,9 +235,9 @@
       // Labels are pointer-transparent so dragging reaches the map. Resolve a
       // completed map click against their screen rectangles to retain tap actions.
       const label=[...labelEntries].reverse().find(entry=>{
-        const rect=entry.hitRect;return !entry.button.hidden&&rect&&event.x>=rect.left&&event.x<=rect.right&&event.y>=rect.top&&event.y<=rect.bottom;
+        const rect=entry.hitRect;return rect&&event.x>=rect.left&&event.x<=rect.right&&event.y>=rect.top&&event.y<=rect.bottom;
       });
-      if(label){open(label.name);return;}
+      if(label){if(label.groupAction)label.groupAction();else open(label.name);return;}
       try{
         const hit=await view.hitTest(event,{include:[incidentPins,...zoneLayers]});if(request!==zoneClick)return;
         for(const result of hit.results||[]){
@@ -236,7 +283,7 @@
       raw:view,operationalLayers,
       setOverlayPadding({top,bottom,compact=false}){const vertical=Math.max(top,bottom),next=compact?{top:vertical,bottom:vertical,left:12,right:12}:{top,bottom,left:16,right:84};if(Object.keys(next).every(key=>view.padding?.[key]===next[key]))return;view.padding=next;positionIncidentLabels();},
       setIncidents(incidents){
-        incidentPins.removeAll();labelEntries.length=0;labelContainer?.replaceChildren();
+        incidentPins.removeAll();labelEntries.length=0;labelGroups.clear();labelContainer?.replaceChildren();
         for(const incident of incidents){
           const point=new Point({longitude:incident.point.lng,latitude:incident.point.lat});
           incidentPins.add(new Graphic({geometry:point,attributes:{incident:incident.name},symbol:{type:'simple-marker',style:'circle',size:14,color:'#174f8a',outline:{color:'#fff',width:2.5}}}));
@@ -250,7 +297,7 @@
           }
           button.setAttribute('aria-label',incident.name+'. '+labels.join(', ')+'. Open incident information');button.title=incident.name+' — '+labels.join(', ');button.append(title,dots);
           button.addEventListener('click',event=>{event.stopPropagation();onIncident?.(incident.name,[incident.point.lat,incident.point.lng]);});
-          labelContainer.append(leader,button);labelEntries.push({name:incident.name,point,button,leader,hitRect:null});
+          labelContainer.append(leader,button);labelEntries.push({name:incident.name,statuses:incident.statuses,point,button,leader,hitRect:null});
         }
         positionIncidentLabels();
       },
