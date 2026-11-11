@@ -1,0 +1,13 @@
+// Run from the repository root: node tests/mobile-search-viewport.test.cjs
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync(path.join(__dirname,'../home.js'),'utf8'),styles={},classes=new Set();let mobile=true;
+const input={blur(){context.document.activeElement=null}},context={window:{innerWidth:390,innerHeight:844,visualViewport:{height:844,offsetTop:0},matchMedia:()=>({matches:mobile})},document:{activeElement:input,body:{style:{setProperty:(k,v)=>styles[k]=v},classList:{toggle:(key,on)=>on?classes.add(key):classes.delete(key)}}},$:()=>input,Math};
+vm.createContext(context);const a=source.indexOf('  let addressViewportLock='),b=source.indexOf('  function measureMapOverlays()',a);vm.runInContext(source.slice(a,b),context);context.measureMapOverlays=()=>context.syncAddressViewport();
+context.beginAddressEditing();assert.equal(styles['--map-height'],'844px');assert(classes.has('is-address-editing'));
+context.window.visualViewport.height=470;context.window.innerHeight=470;assert.equal(context.syncAddressViewport(),true);assert.equal(styles['--map-height'],'844px','keyboard does not resize map');assert.equal(styles['--search-keyboard-lift'],'374px');
+context.window.visualViewport.offsetTop=120;context.syncAddressViewport();assert.equal(styles['--search-keyboard-lift'],'254px','search follows visual viewport pan');
+context.document.activeElement=null;context.syncAddressViewport();assert.equal(styles['--map-height'],'844px','blur waits for keyboard close animation');
+context.window.visualViewport.height=844;context.window.visualViewport.offsetTop=0;context.window.innerHeight=844;assert.equal(context.syncAddressViewport(),false);assert.equal(styles['--search-keyboard-lift'],'0px');assert(!classes.has('is-address-editing'));
+mobile=false;context.document.activeElement=input;context.beginAddressEditing();assert.equal(context.syncAddressViewport(),false,'desktop focus does not freeze viewport');
+mobile=true;context.beginAddressEditing();context.window.innerWidth=844;context.window.innerHeight=390;context.window.visualViewport.height=390;assert.equal(context.syncAddressViewport(),false,'orientation clears old viewport lock');assert.equal(context.document.activeElement,null);
+console.log('PASS: mobile keyboard resize, visual pan, delayed keyboard dismissal, desktop focus, and orientation changes.');

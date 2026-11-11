@@ -225,15 +225,36 @@
   }});
   const guideLegend=document.createElement('section');guideLegend.className='welcome-map-legend';
   guideLegend.appendChild(document.querySelector('#mapOptions .home-legend').cloneNode(true));welcome.querySelector('.welcome-scroll').appendChild(guideLegend);
+  // Keep map geometry stable while a mobile keyboard changes the visual viewport.
+  let addressViewportLock=null;
+  function syncAddressViewport(){
+    const viewport=window.visualViewport,input=$('addressSearch'),focused=document.activeElement===input;
+    const visualHeight=viewport?.height||window.innerHeight,offsetTop=viewport?.offsetTop||0;
+    if(addressViewportLock&&Math.abs(window.innerWidth-addressViewportLock.width)>64){addressViewportLock=null;input.blur();}
+    if(addressViewportLock&&!focused&&visualHeight>=addressViewportLock.height-80)addressViewportLock=null;
+    const height=addressViewportLock?.height||visualHeight;
+    document.body.classList.toggle('is-address-editing',Boolean(addressViewportLock));
+    document.body.style.setProperty('--map-height',Math.round(height)+'px');
+    document.body.style.setProperty('--search-visible-height',Math.round(visualHeight)+'px');
+    document.body.style.setProperty('--search-keyboard-lift',Math.round(addressViewportLock?Math.max(0,height-visualHeight-offsetTop):0)+'px');
+    return Boolean(addressViewportLock);
+  }
+  function beginAddressEditing(){
+    if(window.matchMedia('(max-width:760px)').matches&&!addressViewportLock){
+      addressViewportLock={height:window.innerHeight,width:window.innerWidth};
+    }
+    measureMapOverlays();
+  }
   function measureMapOverlays(){
+    if(syncAddressViewport())return;
     const header=document.querySelector('.home-brand-banner'),dock=document.querySelector('.overview-top');
     document.body.style.setProperty('--map-header-bottom',Math.ceil(header.getBoundingClientRect().bottom)+'px');
     document.body.style.setProperty('--map-dock-height',Math.ceil(dock.getBoundingClientRect().height)+'px');
-    document.body.style.setProperty('--map-height',Math.round(window.visualViewport?.height||window.innerHeight)+'px');
     view?.setOverlayPadding?.({top:Math.ceil(header.getBoundingClientRect().bottom)+12,bottom:Math.ceil(dock.getBoundingClientRect().height)+44,compact:window.matchMedia('(max-width:760px)').matches});
   }
   const overlayObserver=new ResizeObserver(measureMapOverlays);overlayObserver.observe(document.querySelector('.home-brand-banner'));overlayObserver.observe(document.querySelector('.overview-top'));
-  window.addEventListener('resize',measureMapOverlays);window.visualViewport?.addEventListener('resize',measureMapOverlays);measureMapOverlays();
+  window.addEventListener('resize',measureMapOverlays);window.visualViewport?.addEventListener('resize',measureMapOverlays);window.visualViewport?.addEventListener('scroll',measureMapOverlays);
+  $('addressSearch').addEventListener('focus',beginAddressEditing);$('addressSearch').addEventListener('blur',()=>{measureMapOverlays();requestAnimationFrame(measureMapOverlays);});measureMapOverlays();
   $('mapZoomIn').addEventListener('click',()=>view?.zoomBy(1));
   $('mapZoomOut').addEventListener('click',()=>view?.zoomBy(-1));
 
