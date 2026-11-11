@@ -219,6 +219,16 @@
         <select id="layerPick" aria-label="Layer to edit"></select>
       </div>
 
+      <div class="field">
+        <label for="zoneVisibilityFilter">Show zones on map</label>
+        <select id="zoneVisibilityFilter">
+          <option value="all" selected>All zones</option>
+          <option value="active">Active zones (LIVE = 1)</option>
+          <option value="inactive">Inactive zones (LIVE = 0 or blank)</option>
+        </select>
+        <div class="fhint" id="zoneFilterHint">Filters the map only. Does not change zone visibility settings.</div>
+      </div>
+
       <div class="section-label">Add a zone</div>
       <div class="tools">
         <button class="tool" id="tPolygon" aria-pressed="false">
@@ -241,7 +251,7 @@
 
       <p class="hint" id="hint">Pick a tool, or click an existing zone to edit it.</p>
       <label class="hint" style="display:flex;gap:8px;align-items:flex-start;">
-        <input type="checkbox" id="trimOverlaps" checked style="width:auto;flex:0 0 auto;margin-top:3px;" />
+        <input type="checkbox" id="trimOverlaps" style="width:auto;flex:0 0 auto;margin-top:3px;" />
         Remove overlap from other zones in the same incident and layer on Save
       </label>
 
@@ -438,6 +448,7 @@ require([
   let measurement = null;     // measurement widget (guard clicks while active)
   let origDef = null;         // the layer's own definitionExpression (preserve it)
   let layerView = null;       // active layer's view, for highlighting
+  let baseViewFilter = null;
   let highlightHandle = null; // current highlight
   let sourceZone = null;      // original feature for split / inner zone
   let splitParts = null;
@@ -517,6 +528,7 @@ require([
   function setActiveLayer(l){
     if (saving) return;
     clearHighlight();
+    if (layerView) layerView.filter = baseViewFilter;
     layer = l;
     layer.outFields = ["*"];
     const statusField = layer.fields.find(f => /^status$/i.test(f.name));
@@ -524,11 +536,33 @@ require([
     origDef = layer.definitionExpression || null;
     oidField = layer.objectIdField || "OBJECTID";
     layerView = null;
-    view.whenLayerView(layer).then(lv => { layerView = lv; }).catch(() => {});
+    view.whenLayerView(l).then(lv => {
+      if (layer !== l) return;
+      layerView = lv;baseViewFilter = lv.filter?.clone() || null;applyZoneVisibilityFilter();
+    }).catch(() => {});
     $("layerName").textContent = layer.title || "Evac Zones";
     $("status").innerHTML = `Editing <b>${layer.title || "layer"}</b>`;
     loadIncidentValues();
     resetAll();
+  }
+
+  function zoneVisibilityWhere(field, value){
+    if (!field || value === "all") return null;
+    return value === "active" ? `${field} = 1` : `(${field} = 0 OR ${field} IS NULL)`;
+  }
+
+  function applyZoneVisibilityFilter(){
+    const select = $("zoneVisibilityFilter"),field = layer?.fields.find(f => /^live$/i.test(f.name));
+    select.disabled = !field;
+    $("zoneFilterHint").textContent = field
+      ? "Filters the map only. Does not change zone visibility settings."
+      : "LIVE is not available on this layer. Showing all zones.";
+    if (!layerView) return;
+    const where = zoneVisibilityWhere(field?.name, select.value);
+    if (!where){layerView.filter = baseViewFilter;return;}
+    const filter = baseViewFilter?.clone() || {};
+    filter.where = filter.where ? `(${filter.where}) AND (${where})` : where;
+    layerView.filter = filter;
   }
 
   function findField(re){
@@ -635,6 +669,7 @@ require([
 
   // ---- tools ----
   function wireTools(){
+    $("zoneVisibilityFilter").onchange = applyZoneVisibilityFilter;
     tPolygon.onclick = () => toggleTool("polygon");
     tPoint.onclick   = () => toggleTool("point");
     $("cancelBtn").onclick = resetAll;

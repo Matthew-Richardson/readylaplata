@@ -22,3 +22,14 @@ ctx.mode='add';ctx.openForm(null,'New zone');assert.equal(ctx.readForm().Live,0)
 let prefix=html.slice(html.indexOf('  async function onSave(){'),html.indexOf('    setSaving(true);',html.indexOf('  async function onSave(){')));
 vm.runInContext(prefix+"return 'ready';}\nglobalThis.validate=onSave;",ctx);Object.assign(ctx,{saving:false,mergeBusy:false,selected:{},sketchVM:{state:'ready'},toast:message=>ctx.message=message});
 (async()=>{ctx.mode='edit';ctx.openForm({OBJECTID:1,STATUS:'Go',Live:1},'Edit');assert.equal(await ctx.validate(),undefined);assert.match(ctx.message,/incident/);ctx.openForm({OBJECTID:1,STATUS:'Go',Live:0},'Edit');assert.equal(await ctx.validate(),'ready');console.log('PASS: five statuses, labels, aliases, LIVE integer values/defaults/inheritance, editor renderer, and required active-zone attributes.');})().catch(e=>{console.error(e);process.exit(1)});
+
+const filterStart=html.indexOf('  function zoneVisibilityWhere('),filterEnd=html.indexOf('  function findField(',filterStart);
+vm.runInContext(html.slice(filterStart,filterEnd),ctx);
+ctx.layerView={filter:null};ctx.baseViewFilter={where:'incident IS NOT NULL',clone(){return {where:this.where}}};
+nodes.zoneVisibilityFilter=new E('select');nodes.zoneVisibilityFilter.value='active';
+ctx.applyZoneVisibilityFilter();assert.equal(ctx.layerView.filter.where,'(incident IS NOT NULL) AND (Live = 1)');
+nodes.zoneVisibilityFilter.value='inactive';ctx.applyZoneVisibilityFilter();assert(ctx.layerView.filter.where.includes('Live = 0 OR Live IS NULL'));
+nodes.zoneVisibilityFilter.value='all';ctx.applyZoneVisibilityFilter();assert.equal(ctx.layerView.filter,ctx.baseViewFilter);
+ctx.layer.fields=ctx.layer.fields.filter(f=>f.name!=='Live');ctx.applyZoneVisibilityFilter();assert.equal(nodes.zoneVisibilityFilter.disabled,true);assert.equal(ctx.layerView.filter,ctx.baseViewFilter);
+assert(!/id="trimOverlaps"[^>]*\bchecked\b/.test(html),'overlap removal starts off');
+console.log('PASS: active/inactive/all map filters preserve the existing filter, handle missing LIVE, and overlap trimming defaults off.');

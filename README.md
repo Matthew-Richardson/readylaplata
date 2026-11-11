@@ -73,3 +73,5 @@ Safari keyboard follow-up: compensate the entire fixed map shell for visualViewp
 Restored the viewport-shift search layout. Removed the temporary input-focus visibility workaround and the mode that hid map controls during address lookup. Map controls stay available alongside the search report.
 
 Zone Description is optional for all editor statuses and uses the field length from the service. Active Access descriptions appear below active zones; Access-only incidents hide the evacuation support-resource section. Mixed incidents retain support resources. Missing Access descriptions display a pending message for Access-only incidents. Descriptions render as plain text with preserved line breaks. The Description field must also be exposed and editable in the staff editor’s layer.
+
+The zone editor defaults overlap trimming to off. Its All/Active/Inactive selector filters the active layer view without changing feature attributes or service-query scope; inactive includes LIVE=0 and null. Existing view filters are preserved.
