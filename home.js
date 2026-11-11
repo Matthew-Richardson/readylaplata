@@ -105,7 +105,7 @@
         const label=document.createElement('span');label.className='incident-status-label';label.textContent=style.label;
         badge.append(symbol,label);badges.appendChild(badge);
       }
-      const link=incidentDetailsButton(name,'Details →');
+      const link=incidentDetailsButton(name,'Info');
       const tab=document.createElement('button');tab.type='button';tab.className='incident-mobile-tab';tab.setAttribute('aria-pressed',String(name===chosenIncident));
       const tabName=document.createElement('span');tabName.className='incident-tab-name';tabName.textContent=name;
       const dots=document.createElement('span');dots.className='incident-tab-dots';dots.setAttribute('aria-hidden','true');
