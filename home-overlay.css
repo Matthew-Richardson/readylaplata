@@ -172,3 +172,7 @@
 /* Desktop zoom stays in the corner; phone zoom clears the header. */
 .immersive-map .map-zoom-actions{top:max(12px,env(safe-area-inset-top))}
 @media(max-width:760px){.immersive-map .map-zoom-actions{top:calc(var(--map-header-bottom) + 12px)}}
+
+/* Give the county logo more of the mobile header's available width. */
+@media(max-width:760px) and (min-height:601px){.immersive-map .home-brand-logo{width:clamp(110px,34vw,150px);height:auto;flex-shrink:0}.immersive-map .home-brand-group{gap:10px;max-width:100%}}
+@media(max-width:760px) and (max-height:600px){.immersive-map .home-brand-logo{width:86px;height:auto;flex-shrink:0}}
