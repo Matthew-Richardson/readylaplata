@@ -23,8 +23,10 @@ const view={openSupportPopup(_,node){content=node;return {isOpen:()=>true,remove
  await API.open({name:'Example',view,latlng:[37.3,-107.8],getActiveZones:accessReport});
  assert.equal(find(content,'incident-support-resources')[0].hidden,true,'Access-only hides evacuation resources');
  const descriptions=find(content,'incident-access-descriptions')[0];assert.equal(descriptions.hidden,false);assert(descriptions.textContent.includes('Bridge closed.\nUse CR 203.'));
+ zones.push({name:'ACCESS-2',status:'Access',description:'Second closure'});API.refreshZones();
+ assert.equal(find(content,'incident-zone-group').length,1,'same status shares one group');assert.equal(find(content,'incident-zone-row').length,2,'both zones remain visible');
  zones.push({name:'GO-1',status:'Go',description:'Not an access description'});API.refreshZones();
- assert.equal(find(content,'incident-support-resources')[0].hidden,false,'mixed incidents keep support resources');
+ assert.equal(find(content,'incident-support-resources')[0].hidden,false,'mixed incidents keep support resources');assert.equal(find(content,'incident-zone-group').length,2,'different statuses have separate groups');
  assert(!descriptions.textContent.includes('Not an access description'));
  assert(content.children.indexOf(descriptions)>content.children.indexOf(find(content,'incident-active-zones')[0]),'Access descriptions follow active zones');
  zones=[{name:'ACCESS-1',status:'Access',description:''}];API.refreshZones();assert(descriptions.textContent.includes('Access details have not been posted'));

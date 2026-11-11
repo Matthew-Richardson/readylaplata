@@ -39,15 +39,20 @@
       const order=['Go','Shelter','Set','Access','Planning'];
       const zones=[...unique.values()].sort((a,b)=>order.indexOf(a.status)-order.indexOf(b.status)||a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
       if(!zones.length){zoneArea.append(node('p','detail-pending','No active zones are currently listed for this incident.'));return;}
-      const list=node('ul','incident-zone-list');
-      for(const zone of zones){
-        const style=window.ReadyLaPlataZones.styles[zone.status],row=node('li','incident-zone-row');
-        const zoneName=node('strong','incident-zone-name',zone.name);zoneName.title=zone.name;row.append(zoneName);
-        const status=node('span','incident-zone-status'),symbol=node('span','incident-status-symbol');symbol.setAttribute('aria-hidden','true');
-        symbol.style.background=style.fill;symbol.style.borderColor=style.stroke;if(style.hatch)symbol.classList.add('access-hatch');
-        status.append(symbol,node('span','',style.label));row.append(status);list.append(row);
+      for(const key of order){
+        const members=zones.filter(zone=>zone.status===key);if(!members.length)continue;
+        const group=node('section','incident-zone-group'),style=window.ReadyLaPlataZones.styles[key];
+        const heading=node('h5','incident-zone-group-heading'),symbol=node('span','incident-status-symbol');
+        symbol.setAttribute('aria-hidden','true');symbol.style.background=style.fill;symbol.style.borderColor=style.stroke;
+        if(style.hatch)symbol.classList.add('access-hatch');
+        heading.append(symbol,node('span','',style.label));group.append(heading);
+        const list=node('ul','incident-zone-list');
+        for(const zone of members){
+          const row=node('li','incident-zone-row'),zoneName=node('strong','incident-zone-name',zone.name);
+          row.append(zoneName);list.append(row);
+        }
+        group.append(list);zoneArea.append(group);
       }
-      zoneArea.append(list);
       const access=zones.filter(zone=>zone.status==='Access');
       const accessOnly=zones.length>0&&zones.every(zone=>zone.status==='Access');
       resourceHeading.hidden=accessOnly;resourceArea.hidden=accessOnly;

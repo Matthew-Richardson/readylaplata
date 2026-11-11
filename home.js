@@ -320,7 +320,7 @@
       const list=document.createElement('ul');list.className='address-zone-list';
       for(const feature of zones){
         const status=Z.key(statusName(feature)),style=Z.styles[status];
-        const item=document.createElement('li'),badge=document.createElement('strong');item.className='address-zone-chip';badge.textContent=style.label;item.style.background=style.fill;item.style.borderColor=style.stroke;item.style.color=style.text;if(status==='Access')item.classList.add('access-hatch');
+        const item=document.createElement('li'),badge=document.createElement('strong');item.className='address-zone-chip';badge.textContent=style.label;item.style.background=style.fill;item.style.borderColor=style.stroke;item.style.color='#000';item.style.setProperty('--zone-edge',style.stroke);if(status==='Access')item.classList.add('access-hatch');
         const zone=document.createElement('span');zone.textContent=String((zoneFields.zone && feature.properties[zoneFields.zone])||'Unnamed zone');item.append(badge,zone);list.appendChild(item);
       }
       group.appendChild(list);if(name){const link=incidentDetailsButton(name,'More info');link.setAttribute('aria-label','More info about '+name);moreLinks.push(link);}groups.appendChild(group);
