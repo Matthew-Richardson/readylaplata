@@ -233,3 +233,13 @@
 .immersive-map #incidentMenuToggle>span{grid-column:1 / -1;grid-row:2;font-size:10px;line-height:1.1}
 .immersive-map #incidentMenuCount{position:static;grid-column:2;grid-row:1;min-width:20px;max-width:100%;box-sizing:border-box;padding:3px;border-radius:10px;background:#b91c2c;color:#fff;font-size:12px;line-height:1.1;text-align:center}
 @media(max-width:760px){.immersive-map .address-zone-chip strong,.immersive-map .address-zone-chip>span{font-size:13px}}
+
+/* Keep incident identity and both actions together on mobile. */
+@media(max-width:760px){
+ .immersive-map .incident-support-heading{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:7px;padding-right:40px}
+ .immersive-map .incident-support-window .incident-support-heading .incident-support-title{margin:0;min-width:0;font-size:15px;line-height:1.25;overflow-wrap:anywhere}
+ .immersive-map .incident-support-actions{flex-wrap:nowrap;justify-content:flex-end;gap:4px}
+ .immersive-map .incident-support-actions .home-btn{min-height:36px;padding:6px;font-size:11px;white-space:nowrap}
+ .immersive-map .incident-support-actions .incident-latest-update{order:1}
+ .immersive-map .incident-support-actions .incident-support-zoom{order:2}
+}
