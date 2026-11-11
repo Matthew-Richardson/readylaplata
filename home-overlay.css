@@ -250,3 +250,24 @@
  .immersive-map .home-footer p{max-width:100%;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;margin:0}
  .immersive-map .overview-top{bottom:calc(max(56px,calc(env(safe-area-inset-bottom) + 52px)) + var(--search-keyboard-lift,0px))}
 }
+
+/* Avoid accidental browser double-tap zoom on overlay controls. */
+.immersive-map .home-brand-banner,
+.immersive-map .overview-top,
+.immersive-map .map-quick-actions,
+.immersive-map .map-zoom-actions,
+.immersive-map .incident-support-window,
+.immersive-map .incident-summary-panel,
+.immersive-map .map-options,
+.immersive-map #welcomeDialog,
+.immersive-map .codered-dialog,
+.immersive-map .callerid-dialog,
+.immersive-map .announcement-dialog,
+.immersive-map button,
+.immersive-map a,
+.immersive-map label{touch-action:manipulation}
+@media(pointer:coarse){
+ .immersive-map input:not([type="checkbox"]):not([type="radio"]),
+ .immersive-map select,
+ .immersive-map textarea{font-size:16px!important}
+}
