@@ -217,8 +217,8 @@
 .immersive-map .incident-access-description strong{font-size:13px}
 .immersive-map .incident-access-description p{margin:4px 0 0;font-size:14px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
 
-/* Solid chip surfaces retain readable text on every status color. */
-.immersive-map .address-zone-chip{background:#fff!important;border:1px solid #728397!important;border-left:5px solid var(--zone-edge,#52677d)!important;color:#000!important;box-shadow:none}
+/* Solid status fills with uniform borders and readable black text. */
+.immersive-map .address-zone-chip{background-image:none!important;border:1px solid var(--zone-edge,#52677d)!important;color:#000!important;box-shadow:none}
 .immersive-map .address-zone-chip strong,.immersive-map .address-zone-chip>span{color:#000!important;text-shadow:none!important;font-weight:700}
 .immersive-map .address-zone-chip strong{font-size:14px}
 .immersive-map .address-zone-chip>span{font-size:14px}
