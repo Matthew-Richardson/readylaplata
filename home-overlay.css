@@ -137,7 +137,7 @@
 /* The native zoom widget is replaced with matching accessible rail buttons. */
 .immersive-map .esri-zoom{display:none!important}
 .immersive-map .incident-map-labels{position:absolute;inset:0;z-index:1000;overflow:hidden;pointer-events:none}
-.immersive-map .incident-area-label{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:125px;max-width:240px;min-height:48px;padding:8px 12px;border:1px solid #92aac4;border-top:3px solid var(--incident-edge,#174f8a);border-radius:10px;background:rgba(255,255,255,.83);backdrop-filter:blur(5px);box-shadow:0 3px 12px #17334c30;color:#112b43;transform:translate(-50%,-50%);text-align:center;pointer-events:auto;cursor:pointer}
+.immersive-map .incident-area-label{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:125px;max-width:240px;min-height:48px;padding:8px 12px;border:1px solid #92aac4;border-radius:10px;background:rgba(255,255,255,.83);backdrop-filter:blur(5px);box-shadow:0 3px 12px #17334c30;color:#112b43;transform:translate(-50%,-50%);text-align:center;pointer-events:auto;cursor:pointer}
 .immersive-map .incident-area-label strong{font:700 14px/1.25 Arial;overflow-wrap:anywhere}
 .immersive-map .incident-area-label:hover,.immersive-map .incident-area-label:focus-visible{background:rgba(255,255,255,.96);border-color:#174f8a}
 .immersive-map .incident-area-dots{display:flex;justify-content:center;gap:6px}
@@ -148,7 +148,7 @@
 
 
 /* Header information, two left-hand zoom controls and a compact right-hand rail. */
-.immersive-map .map-zoom-actions{position:absolute;top:max(12px,env(safe-area-inset-top));left:12px;display:flex;flex-direction:column;gap:6px;width:64px;z-index:1301}
+.immersive-map .map-zoom-actions{position:absolute;top:calc(var(--map-header-bottom) + 12px);left:12px;display:flex;flex-direction:column;gap:6px;width:64px;z-index:1301}
 .immersive-map .map-zoom-actions>button{position:relative;inset:auto;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:64px;min-width:64px;height:50px;padding:5px;margin:0;border:1px solid #a8bfd8;border-radius:10px;background:#ffffffe0;box-shadow:0 3px 14px #18334d24;color:#173f6b;font:700 10px/1.1 Arial;cursor:pointer}
 .immersive-map .map-zoom-actions>button svg{width:19px;height:19px}
 .immersive-map .map-zoom-actions>button:disabled{opacity:.5;cursor:default}
@@ -164,3 +164,6 @@
 }
 @media(max-width:360px){.immersive-map .home-brand-logo{width:46px}.immersive-map .home-site-name{font-size:20px}.immersive-map .home-site-subtitle{font-size:9px}}
 @media(max-height:600px){.immersive-map .map-zoom-actions>button{height:36px}.immersive-map .map-zoom-actions>button svg{width:14px;height:14px}.immersive-map .home-brand-banner{left:50%;transform:translateX(-50%);width:min(800px,calc(100% - 180px))}}
+
+/* Zoom controls clear the floating header; phone branding stays centered. */
+@media(max-width:760px){.immersive-map .home-brand-banner{left:50%;transform:translateX(-50%);width:calc(100% - 16px)}}
