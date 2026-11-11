@@ -94,3 +94,5 @@ Native browser gesture zoom is canceled within the map frame only, including Web
 Incident name plates are transparent to pointer input so users can drag or pinch the map starting on a label. Completed ArcGIS map clicks are matched to visible label rectangles to retain tap-to-open information. Label buttons remain keyboard accessible. Hidden labels do not capture taps.
 
 Tools & legend includes an Incident labels checkbox, initially on. Turning it off hides incident name plates and connectors but keeps incident points, zones, and native layer labels. Refresh and map navigation retain the toggle; Info resets it to on with other overview controls.
+
+County-scale label placement favors the incident’s interior anchor and permits only one short vertical move in either direction. Connector lengths are capped at 48 screen pixels. Incidents are placed in protective-action priority order; labels that still overlap are hidden until there is space, while all incident markers and menu entries remain. Name plates use a more compact size.

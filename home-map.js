@@ -122,17 +122,22 @@
       for(const [index,entry] of labelEntries.entries()){
         const screen=screens[index];if(entry.button.hidden)continue;
         const {width,height}=sizes[index];
-        const x=Math.max(width/2+8,Math.min(screen.x,view.width-width/2-86));let y=screen.y;
-        for(const offset of [0,-1,1,-2,2,-3,3]){
-          const next=screen.y+offset*(height+8),rect={left:x-width/2,right:x+width/2,top:next-height/2,bottom:next+height/2};
-          if(rect.top<top||rect.bottom>bottom)continue;
+        const rightEdge=view.width-((padding.right||0)>20?84:8);
+        const x=Math.max(width/2+8,Math.min(screen.x,rightEdge-width/2));let choice=null;
+        // The caller orders incidents by protective-action priority. Give those
+        // labels space first, trying the interior anchor and only one short move.
+        for(const offset of [0,-1,1]){
+          const y=screen.y+offset*(height+8),rect={left:x-width/2,right:x+width/2,top:y-height/2,bottom:y+height/2};
+          if(rect.left<8||rect.right>rightEdge||rect.top<top||rect.bottom>bottom)continue;
+          const end={x:Math.max(rect.left,Math.min(screen.x,rect.right)),y:Math.max(rect.top,Math.min(screen.y,rect.bottom))};
+          if(Math.hypot(end.x-screen.x,end.y-screen.y)>48)continue;
           if(occupied.some(other=>rect.left<other.right+6&&rect.right>other.left-6&&rect.top<other.bottom+6&&rect.bottom>other.top-6))continue;
-          y=next;break;
+          choice={y,rect};break;
         }
-        occupied.push({left:x-width/2,right:x+width/2,top:y-height/2,bottom:y+height/2});
-        entry.hitRect=occupied[occupied.length-1];
-        entry.button.style.left=x+'px';entry.button.style.top=y+'px';
-        placed.push({entry,screen,rect:occupied[occupied.length-1]});
+        if(!choice){entry.button.hidden=true;continue;}
+        occupied.push(choice.rect);entry.hitRect=choice.rect;
+        entry.button.style.left=x+'px';entry.button.style.top=choice.y+'px';
+        placed.push({entry,screen,rect:choice.rect});
       }
       // Draw a straight connector after placement; the shared leader layer stays below every plate.
       for(const {entry,screen,rect} of placed){
