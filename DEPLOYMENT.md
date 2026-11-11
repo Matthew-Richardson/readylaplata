@@ -6,7 +6,7 @@ Copy these files together into the test web directory, retaining their names:
 
 - `index.html`, `evac.html`, `overview.html`, `evac-lite.html`, `zone.html`
 - `home.js`, `home-map.js`, `home-details.js`, `home-config.js`, `zone-status.js`, `shared.js`
-- `home.css`, `home-overlay.css`, `shared-styles.css`, `logo.png`, `favicon.ico`
+- `home.css`, `home-overlay.css`, `shared-styles.css`, `logo.png`, `favicon.ico`, `incident-marker.svg`
 - `incident.json`, `announcement.json`, `drill-banner.json`
 
 No npm installation or build is needed. Tests, scripts and documentation are not runtime files. Keep the existing county `staff/` and alert tools; this repository does not replace those separate server applications. Workflow links in the zone editor point to the existing county tools.

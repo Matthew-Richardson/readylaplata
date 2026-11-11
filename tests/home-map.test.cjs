@@ -32,12 +32,12 @@ vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'../home-
  controls.poiLayerToggle.checked=false;controls.poiLayerToggle.listeners.change();assert.equal(native[2].visible,false);
  controls.poiLayerToggle.checked=true;controls.poiLayerToggle.listeners.change();assert.equal(native[2].visible,true);assert.equal(group.visible,true);
  adapter.setIncidents([{name:'TEST ONLY',point:{lat:37.3,lng:-107.8},statuses:['Shelter','Access']}]);
- const pins=map.layers.find(l=>l.title==='Active incidents');assert.equal(pins.graphics.length,1);assert.equal(pins.graphics[0].attributes.incident,'TEST ONLY');
+ const pins=map.layers.find(l=>l.title==='Active incidents');assert.equal(pins.graphics.length,1);assert.equal(pins.graphics[0].attributes.incident,'TEST ONLY');assert.equal(pins.graphics[0].symbol.type,'picture-marker');assert.equal(pins.graphics[0].symbol.width,32);assert.match(pins.graphics[0].symbol.url,/incident-marker\.svg/);
  assert.equal(controls.incidentMapLabels.children[1].hidden,true,'incident labels start off by default');
  controls.incidentLabelsToggle.checked=false;controls.incidentLabelsToggle.listeners.change();assert.equal(controls.incidentMapLabels.children[1].hidden,true,'incident name plate hides');assert.equal(pins.visible,true,'incident points stay visible');
  controls.incidentLabelsToggle.checked=true;controls.incidentLabelsToggle.listeners.change();
  const plate=controls.incidentMapLabels.children[1];assert.equal(plate.children[0].textContent,'TEST ONLY');assert.equal(plate.children[1].children.length,2);assert.equal(plate.hidden,false);
- view.scale=50000;watchers[0]();assert.equal(plate.hidden,true);assert.equal(native[0].labelsVisible,true);assert.equal(pins.visible,false);
+ view.scale=50000;watchers[0]();assert.equal(plate.hidden,true);assert.equal(native[0].labelsVisible,true);assert.equal(pins.visible,true,'incident markers remain available at close zoom');
  view.scale=100000;watchers[0]();assert.equal(plate.hidden,false);assert.equal(native[0].labelsVisible,false);
  plate.listeners.click({stopPropagation(){}});assert.equal(context.clicked,'TEST ONLY');
  assert.equal(plate.listeners.pointerdown,undefined,'label does not intercept drag input');

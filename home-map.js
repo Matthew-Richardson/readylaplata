@@ -109,7 +109,7 @@
     const publishedLabels=new Map(zoneLayers.map(layer=>[layer,layer.labelsVisible!==false]));
     function positionIncidentLabels(){
       const overview=!Number.isFinite(view.scale)||view.scale>=(C.incidentLabelScale||75000);
-      incidentPins.visible=overview;
+      incidentPins.visible=true;
       for(const layer of zoneLayers)layer.labelsVisible=overview?false:publishedLabels.get(layer);
       if(!labelContainer)return;
       const placed=[],padding=view.padding||{},top=(padding.top||0)+8,bottom=(view.height||0)-(padding.bottom||0)-8;
@@ -241,7 +241,7 @@
         incidentPins.removeAll();labelEntries.length=0;labelContainer?.replaceChildren();
         for(const incident of incidents){
           const point=new Point({longitude:incident.point.lng,latitude:incident.point.lat});
-          incidentPins.add(new Graphic({geometry:point,attributes:{incident:incident.name},symbol:{type:'simple-marker',style:'circle',size:14,color:'#174f8a',outline:{color:'#fff',width:2.5}}}));
+          incidentPins.add(new Graphic({geometry:point,attributes:{incident:incident.name},symbol:{type:'picture-marker',url:'incident-marker.svg?v=20261111-points83',width:32,height:32}}));
           if(!labelContainer)continue;
           const button=document.createElement('button'),title=document.createElement('strong'),dots=document.createElement('span'),leader=document.createElement('span');
           button.type='button';button.className='incident-area-label';title.textContent=incident.name;dots.className='incident-area-dots';dots.setAttribute('aria-hidden','true');leader.className='incident-area-leaders';leader.setAttribute('aria-hidden','true');leader.hidden=true;
