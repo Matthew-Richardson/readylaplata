@@ -264,6 +264,17 @@
   const overlayObserver=new ResizeObserver(scheduleOverlayMeasure);overlayObserver.observe(document.querySelector('.home-brand-banner'));overlayObserver.observe(document.querySelector('.overview-top'));
   window.addEventListener('resize',scheduleOverlayMeasure);window.visualViewport?.addEventListener('resize',scheduleOverlayMeasure);window.visualViewport?.addEventListener('scroll',scheduleOverlayMeasure);
   $('addressSearch').addEventListener('focus',beginAddressEditing);$('addressSearch').addEventListener('blur',()=>{measureMapOverlays();requestAnimationFrame(measureMapOverlays);});measureMapOverlays();
+  function guardMapPageZoom(frame){
+    // WebKit's native gesture zoom can escape the SDK during fast multi-touch.
+    // Cancel only the browser default; ArcGIS still receives the same events.
+    const cancelNativeZoom=event=>{if(event.cancelable)event.preventDefault();};
+    frame.addEventListener('gesturestart',cancelNativeZoom,{passive:false});
+    frame.addEventListener('gesturechange',cancelNativeZoom,{passive:false});
+    frame.addEventListener('touchmove',event=>{
+      if(event.touches.length>1)cancelNativeZoom(event);
+    },{passive:false});
+  }
+  guardMapPageZoom($('mapFrame'));
   $('mapZoomIn').addEventListener('click',()=>view?.zoomBy(1));
   $('mapZoomOut').addEventListener('click',()=>view?.zoomBy(-1));
 

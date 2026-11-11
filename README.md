@@ -16,7 +16,7 @@ The public entry point is `index.html`. This is a static site with no build step
 | `shared.js` | Shared dialogs, announcements and public utilities |
 | `incident.json` | Incident support information and latest-update links |
 | `announcement.json`, `drill-banner.json` | Optional county announcements and drill banner |
-| `logo.png` | County logo and favicon |
+| `logo.png`, `favicon.ico` | County wordmark and official county tab icon |
 | `evac-lite.html` | Separately retained lightweight Leaflet map |
 | `evac.html`, `overview.html` | Legacy redirects preserving query parameters |
 | `zone.html` | Staff zone editor; ArcGIS authentication and edit permissions required |
@@ -59,7 +59,7 @@ The editor fills the viewport, with compact tools, a two-column form and pinned 
 - Resize notifications are coalesced to one animation frame. Identical map padding is not reapplied to the SDK.
 - Incident label dimensions are read before positioning writes, and straight connector nodes are reused.
 - The duplicate initial county fit, unused frontend variables and 40 obsolete control selectors were removed. The two home stylesheets are 3,415 bytes smaller combined.
-- Missing favicon references use the existing logo. Legacy shared exports remain for compatibility.
+- The tab icon uses the official square county favicon rather than shrinking the wide wordmark. Legacy shared exports remain for compatibility.
 
 These are source-level and simulated improvements, not a measured browser performance score. ArcGIS rendering and mobile keyboard behavior require testing on a WebGL2-capable device. No new runtime dependencies were added.
 
@@ -88,3 +88,5 @@ exec(open(r"C:\GIS\update_evac_webmap_styles.py", encoding="utf-8-sig").read())
 ```
 
 The script updates web-map renderer/label definitions for all five statuses, backs up original and proposed JSON under `Documents\ReadyLaPlata_Backups`, checks for concurrent changes, verifies the write and supports dry runs. It does not change features, schema, LIVE values, hosted-view definitions or source-service defaults.
+
+Native browser gesture zoom is canceled within the map frame only, including WebKit gesture events and multi-touch moves. ArcGIS receives the events for map navigation. Deliberate browser zoom outside the map remains available. Actual rapid-gesture iPhone behavior needs device testing.

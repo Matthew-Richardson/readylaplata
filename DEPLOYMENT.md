@@ -6,14 +6,14 @@ Copy these files together into the test web directory, retaining their names:
 
 - `index.html`, `evac.html`, `overview.html`, `evac-lite.html`, `zone.html`
 - `home.js`, `home-map.js`, `home-details.js`, `home-config.js`, `zone-status.js`, `shared.js`
-- `home.css`, `home-overlay.css`, `shared-styles.css`, `logo.png`
+- `home.css`, `home-overlay.css`, `shared-styles.css`, `logo.png`, `favicon.ico`
 - `incident.json`, `announcement.json`, `drill-banner.json`
 
 No npm installation or build is needed. Tests, scripts and documentation are not runtime files. Keep the existing county `staff/` and alert tools; this repository does not replace those separate server applications. Workflow links in the zone editor point to the existing county tools.
 
 Keep the server's current JSON if staff have updated it since the GitHub copy was synchronized. Back up the deployed files before replacement. For rollback, restore that complete backup together.
 
-Serve HTML, CSS, JavaScript, PNG and JSON with their normal content types over HTTPS. Public maps require access to the configured ArcGIS services and SDK; the signup panel requires Regroup. A restrictive server content policy must allow those existing dependencies and the current inline scripts/styles.
+Serve HTML, CSS, JavaScript, PNG, ICO and JSON with their normal content types over HTTPS. Public maps require access to the configured ArcGIS services and SDK; the signup panel requires Regroup. A restrictive server content policy must allow those existing dependencies and the current inline scripts/styles.
 
 Keep HTML and live JSON revalidated (`Cache-Control: no-cache` or an equivalent server policy); do not give incident/announcement data an immutable cache policy. CSS/JS URLs include version query strings, so static assets can use a reasonable cache lifetime when the server cache includes the query string in its key. Compression for text assets can reduce transfer size; enable gzip/Brotli if supported by your server. These server settings are recommendations and have not been applied by this repository.
 

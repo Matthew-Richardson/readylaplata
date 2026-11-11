@@ -22,3 +22,13 @@ scheduled.scheduleOverlayMeasure();scheduled.scheduleOverlayMeasure();scheduled.
  context.view.refreshLayers=async()=>requests++;await context.refreshAll();assert.equal(requests,5,'retry is possible after failure');
  console.log('PASS: on-demand signup loads once, resize events coalesce, refresh requests share work, and failures allow retry.');
 })().catch(error=>{console.error(error);process.exit(1)});
+
+const gestures={},gestureContext={};vm.createContext(gestureContext);
+const guardStart=source.indexOf('  function guardMapPageZoom('),guardEnd=source.indexOf("  guardMapPageZoom($",guardStart);
+vm.runInContext(source.slice(guardStart,guardEnd),gestureContext);
+gestureContext.guardMapPageZoom({addEventListener(type,handler,options){assert.equal(options.passive,false);gestures[type]=handler;}});
+let prevented=0;const gesture={cancelable:true,preventDefault(){prevented++},touches:[{},{}]};
+gestures.gesturestart(gesture);gestures.gesturechange(gesture);gestures.touchmove(gesture);assert.equal(prevented,3);
+gestures.touchmove({...gesture,touches:[{}]});assert.equal(prevented,3,'single finger input is left to map');
+gestures.gesturechange({...gesture,cancelable:false});assert.equal(prevented,3,'noncancelable events are left alone');
+console.log('PASS: native map pinch zoom is canceled without blocking single-touch events or stopping SDK propagation.');
