@@ -176,3 +176,8 @@
 /* Give the county logo more of the mobile header's available width. */
 @media(max-width:760px) and (min-height:601px){.immersive-map .home-brand-logo{width:clamp(110px,34vw,150px);height:auto;flex-shrink:0}.immersive-map .home-brand-group{gap:10px;max-width:100%}}
 @media(max-width:760px) and (max-height:600px){.immersive-map .home-brand-logo{width:86px;height:auto;flex-shrink:0}}
+
+
+/* All connector segments paint behind every incident plate. */
+.immersive-map .incident-area-leaders{position:absolute;inset:0;z-index:0;pointer-events:none}
+.immersive-map .incident-area-label{z-index:1}

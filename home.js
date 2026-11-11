@@ -230,7 +230,7 @@
     document.body.style.setProperty('--map-header-bottom',Math.ceil(header.getBoundingClientRect().bottom)+'px');
     document.body.style.setProperty('--map-dock-height',Math.ceil(dock.getBoundingClientRect().height)+'px');
     document.body.style.setProperty('--map-height',Math.round(window.visualViewport?.height||window.innerHeight)+'px');
-    view?.setOverlayPadding?.({top:Math.ceil(header.getBoundingClientRect().bottom)+12,bottom:Math.ceil(dock.getBoundingClientRect().height)+44});
+    view?.setOverlayPadding?.({top:Math.ceil(header.getBoundingClientRect().bottom)+12,bottom:Math.ceil(dock.getBoundingClientRect().height)+44,compact:window.matchMedia('(max-width:760px)').matches});
   }
   const overlayObserver=new ResizeObserver(measureMapOverlays);overlayObserver.observe(document.querySelector('.home-brand-banner'));overlayObserver.observe(document.querySelector('.overview-top'));
   window.addEventListener('resize',measureMapOverlays);window.visualViewport?.addEventListener('resize',measureMapOverlays);measureMapOverlays();

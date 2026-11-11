@@ -37,6 +37,31 @@
     }
     return best;
   }
+  // Prefer a direct connector; otherwise use clear horizontal/vertical corridors.
+  function segmentCrossesRect(a,b,r){
+    const dx=b.x-a.x,dy=b.y-a.y,p=[-dx,dx,-dy,dy],q=[a.x-r.left,r.right-a.x,a.y-r.top,r.bottom-a.y];let enter=0,exit=1;
+    for(let i=0;i<4;i++){
+      if(p[i]===0){if(q[i]<0)return false;continue;}
+      const t=q[i]/p[i];if(p[i]<0)enter=Math.max(enter,t);else exit=Math.min(exit,t);if(enter>exit)return false;
+    }
+    return true;
+  }
+  function routeConnector(start,end,obstacles,bounds){
+    const clear=points=>points.every((point,index)=>!index||!obstacles.some(rect=>segmentCrossesRect(points[index-1],point,rect)));
+    if(clear([start,end]))return [start,end];
+    const candidates=[[start,{x:start.x,y:end.y},end],[start,{x:end.x,y:start.y},end]];
+    const xs=[bounds.left,bounds.right,...obstacles.flatMap(r=>[r.left-2,r.right+2])];
+    const ys=[bounds.top,bounds.bottom,...obstacles.flatMap(r=>[r.top-2,r.bottom+2])];
+    for(const x of xs)if(x>=bounds.left&&x<=bounds.right)candidates.push([start,{x,y:start.y},{x,y:end.y},end]);
+    for(const y of ys)if(y>=bounds.top&&y<=bounds.bottom)candidates.push([start,{x:start.x,y},{x:end.x,y},end]);
+    let best=[],length=Infinity;
+    for(const points of candidates){
+      if(!clear(points))continue;
+      const distance=points.slice(1).reduce((sum,point,index)=>sum+Math.hypot(point.x-points[index].x,point.y-points[index].y),0);
+      if(distance<length){best=points;length=distance;}
+    }
+    return best;
+  }
   let activeSupport=null;
   function openSupportWindow(container,content){
     activeSupport?.remove();
@@ -110,7 +135,7 @@
       incidentPins.visible=overview;
       for(const layer of zoneLayers)layer.labelsVisible=overview?false:publishedLabels.get(layer);
       if(!labelContainer)return;
-      const occupied=[],padding=view.padding||{},top=(padding.top||0)+8,bottom=(view.height||0)-(padding.bottom||0)-8;
+      const occupied=[],placed=[],padding=view.padding||{},top=(padding.top||0)+8,bottom=(view.height||0)-(padding.bottom||0)-8;
       for(const entry of labelEntries){
         const screen=view.toScreen(entry.point);entry.button.hidden=!overview||!screen||screen.x<0||screen.y<0||screen.x>view.width||screen.y>view.height;entry.leader.hidden=true;
         if(entry.button.hidden)continue;
@@ -124,8 +149,22 @@
         }
         occupied.push({left:x-width/2,right:x+width/2,top:y-height/2,bottom:y+height/2});
         entry.button.style.left=x+'px';entry.button.style.top=y+'px';
-        const dx=x-screen.x,dy=y-screen.y,distance=Math.hypot(dx,dy);
-        if(distance>8){entry.leader.hidden=false;Object.assign(entry.leader.style,{left:screen.x+'px',top:screen.y+'px',width:distance+'px',transform:'rotate('+Math.atan2(dy,dx)+'rad)'});}
+        placed.push({entry,screen,rect:occupied[occupied.length-1]});
+      }
+      // Route after every plate has a final position, so no line crosses a plate.
+      for(const {entry,screen,rect} of placed){
+        entry.leader.replaceChildren();
+        if(screen.x>=rect.left&&screen.x<=rect.right&&screen.y>=rect.top&&screen.y<=rect.bottom)continue;
+        const end={x:Math.max(rect.left,Math.min(screen.x,rect.right)),y:Math.max(rect.top,Math.min(screen.y,rect.bottom))};
+        const obstacles=placed.filter(other=>other.entry!==entry).map(({rect:r})=>({left:r.left-5,right:r.right+5,top:r.top-5,bottom:r.bottom+5}));
+        const points=routeConnector(screen,end,obstacles,{left:8,right:view.width-84,top,bottom});
+        if(points.length<2)continue;
+        for(let i=1;i<points.length;i++){
+          const a=points[i-1],b=points[i],length=Math.hypot(b.x-a.x,b.y-a.y);if(length<1)continue;
+          const segment=document.createElement('span');segment.className='incident-area-leader';
+          Object.assign(segment.style,{left:a.x+'px',top:a.y+'px',width:length+'px',transform:'rotate('+Math.atan2(b.y-a.y,b.x-a.x)+'rad)'});entry.leader.appendChild(segment);
+        }
+        entry.leader.hidden=!entry.leader.children.length;
       }
     }
     reactiveUtils.watch(()=>[view.extent,view.scale,view.width,view.height,view.padding],positionIncidentLabels);
@@ -203,7 +242,7 @@
     try{await view.when();ready=true;view.ui?.remove?.('zoom');view.ui?.move?.('attribution','manual');}catch(error){view.destroy();for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle'])$(id).disabled=true;throw error;}
     return {
       raw:view,operationalLayers,
-      setOverlayPadding({top,bottom}){view.padding={top,bottom,left:16,right:84};positionIncidentLabels();},
+      setOverlayPadding({top,bottom,compact=false}){const vertical=Math.max(top,bottom);view.padding=compact?{top:vertical,bottom:vertical,left:12,right:12}:{top,bottom,left:16,right:84};positionIncidentLabels();},
       setIncidents(incidents){
         incidentPins.removeAll();labelEntries.length=0;labelContainer?.replaceChildren();
         for(const incident of incidents){
@@ -211,7 +250,7 @@
           incidentPins.add(new Graphic({geometry:point,attributes:{incident:incident.name},symbol:{type:'simple-marker',style:'circle',size:14,color:'#174f8a',outline:{color:'#fff',width:2.5}}}));
           if(!labelContainer)continue;
           const button=document.createElement('button'),title=document.createElement('strong'),dots=document.createElement('span'),leader=document.createElement('span');
-          button.type='button';button.className='incident-area-label';const primary=window.ReadyLaPlataZones.styles[incident.statuses[0]];if(primary)button.style.setProperty('--incident-edge',primary.stroke);title.textContent=incident.name;dots.className='incident-area-dots';dots.setAttribute('aria-hidden','true');leader.className='incident-area-leader';leader.setAttribute('aria-hidden','true');leader.hidden=true;
+          button.type='button';button.className='incident-area-label';const primary=window.ReadyLaPlataZones.styles[incident.statuses[0]];if(primary)button.style.setProperty('--incident-edge',primary.stroke);title.textContent=incident.name;dots.className='incident-area-dots';dots.setAttribute('aria-hidden','true');leader.className='incident-area-leaders';leader.setAttribute('aria-hidden','true');leader.hidden=true;
           const labels=[];
           for(const status of incident.statuses){
             const style=window.ReadyLaPlataZones.styles[status];if(!style)continue;labels.push(style.label);
@@ -237,5 +276,5 @@
       markAddress(match){const graphic=new Graphic({geometry:new Point({longitude:match.location.x,latitude:match.location.y}),symbol:{type:'simple-marker',style:'circle',size:12,color:'#174f8a',outline:{color:'#fff',width:2.5}}});address.add(graphic);return {remove(){address.remove(graphic);}};}
     };
   }
-  window.ReadyLaPlataMap={create,openSupportWindow,bounds:()=>new Bounds(),boundsForFeature,interiorPointForFeature};
+  window.ReadyLaPlataMap={create,openSupportWindow,bounds:()=>new Bounds(),boundsForFeature,interiorPointForFeature,routeConnector,segmentCrossesRect};
 })();
