@@ -96,7 +96,7 @@
     for(const [name,entry] of incidents){
       const card=document.createElement('article');card.className='incident-item';card.dataset.incident=name;
       card.classList.toggle('is-selected',name===chosenIncident);
-      const focus=document.createElement('button');focus.type='button';focus.className='incident-focus';focus.textContent=name;focus.setAttribute('aria-label','Show '+name+' on the map');focus.addEventListener('click',()=>focusIncident(name));
+      const heading=document.createElement('h3');heading.className='incident-name';heading.textContent=name;
       const badges=document.createElement('div');badges.className='incident-badges';
       for(const status of Object.keys(STATUS_PRIORITY)){
         const count=entry.counts[status];if(!count)continue;
@@ -107,16 +107,10 @@
         const label=document.createElement('span');label.className='incident-status-label';label.textContent=style.label;
         badge.append(symbol,label);badges.appendChild(badge);
       }
-      const link=incidentDetailsButton(name,'Info');
-      const tab=document.createElement('button');tab.type='button';tab.className='incident-mobile-tab';tab.setAttribute('aria-pressed',String(name===chosenIncident));
-      const tabName=document.createElement('span');tabName.className='incident-tab-name';tabName.textContent=name;
-      const dots=document.createElement('span');dots.className='incident-tab-dots';dots.setAttribute('aria-hidden','true');
-      const labels=[];for(const badge of badges.children){const dot=badge.querySelector('.incident-status-symbol').cloneNode(true);dot.classList.remove('incident-status-symbol');dot.classList.add('status-badge');dot.title=badge.textContent;labels.push(badge.textContent);dots.append(dot);}
-      tab.setAttribute('aria-label','Zoom to '+name+'. '+labels.join(', '));tab.title=name+' · '+labels.join(', ');tab.append(tabName,dots);tab.addEventListener('click',()=>focusIncident(name));
-      const mobileActions=document.createElement('div');mobileActions.className='incident-mobile-actions';
-      const info=incidentDetailsButton(name,'ⓘ');info.className='incident-mobile-info';info.setAttribute('aria-label','Incident information for '+name);info.title='Incident information';
-      mobileActions.append(tab,info);
-      card.append(focus,badges,link,mobileActions);container.appendChild(card);
+      const actions=document.createElement('div');actions.className='incident-action-buttons';
+      const zoom=document.createElement('button');zoom.type='button';zoom.className='home-btn incident-zoom-button';zoom.textContent='Zoom To';zoom.setAttribute('aria-label','Zoom to '+name);zoom.addEventListener('click',()=>focusIncident(name));
+      const info=incidentDetailsButton(name,'Info');info.setAttribute('aria-label','Incident information for '+name);
+      actions.append(zoom,info);card.append(heading,badges,actions);container.appendChild(card);
     }
     $('incidentCount').textContent=incidents.size;$('incidentMenuCount').textContent=incidents.size;
     $('incidentMenuToggle').setAttribute('aria-label','Active incidents: '+incidents.size);
@@ -166,7 +160,7 @@
       $('incidentState').dataset.error='false';$('incidentState').hidden=incidents.size>0;$('incidentState').textContent=incidents.size?'':'No incidents are currently shown in the county zone layer.';
       $('lastLoaded').textContent='Updated '+localTime(lastIncidentSuccess);
       if(currentAddressMatch)renderAddressResult();
-      if(firstLoad && view)requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20]});if(linkedIncident&&incidents.has(linkedIncident))openIncidentDetails(linkedIncident);});
+      if(firstLoad && view)requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20],zoomOffset:1});if(linkedIncident&&incidents.has(linkedIncident))openIncidentDetails(linkedIncident);});
       firstLoad=false;
     } catch(err){
       incidentsError=true;window.ReadyLaPlataDetails.refreshZones();if(currentAddressMatch)renderAddressResult();
@@ -193,12 +187,12 @@
       if(extent&&[extent.xmin,extent.ymin,extent.xmax,extent.ymax].every(Number.isFinite))countyBounds=[[extent.ymin,extent.xmin],[extent.ymax,extent.xmax]];
       view=await window.ReadyLaPlataMap.create({container:'viewDiv',config:C,onIncident:openIncidentDetails});
       operationalLayers=view.operationalLayers;measureMapOverlays();
-      await view.fitBounds(countyBounds);
+      await view.fitBounds(countyBounds,{zoomOffset:1});
       mapReady=true;$('mapLoading').hidden=true;
       await refreshIncidents();
     }catch(error){console.error('Map initialization:',error);mapFailure(/webgl/i.test(String(error.name)+' '+String(error.message))?'This browser cannot display the ArcGIS map. Use the lightweight map.':'The map could not load. Try Refresh or use the lightweight map.');if(zoneFields){mapReady=true;await refreshIncidents();}}
   }
-  $('mapResetBtn').addEventListener('click',()=>{if(view){view.closePopup();view.fitBounds(countyBounds,{padding:[20,20]});}});
+  $('mapResetBtn').addEventListener('click',()=>{if(view){view.closePopup();view.fitBounds(countyBounds,{padding:[20,20],zoomOffset:1});}});
   $('myLocationBtn').addEventListener('click',()=>{
     if(!view)return;
     if(!navigator.geolocation){$('mapMessage').textContent='Location is not supported by this browser.';return;}
@@ -266,7 +260,7 @@
   function resetOverview(){
     window.ReadyLaPlataDetails.close();
     addressRequestId++;currentAddressMatch=null;chosenIncident='';if(addressMarker){addressMarker.remove();addressMarker=null;}
-    $('addressSearch').value='';$('addressSearch').blur();$('addressForm').querySelector('button').disabled=false;
+    setSearchExpanded(false);$('addressSearch').value='';$('addressSearch').blur();$('addressForm').querySelector('button').disabled=false;
     $('addressIncidentResult').replaceChildren();$('addressIncidentResult').hidden=true;$('mapMessage').textContent='';
 
     $('incidentList').scrollLeft=0;document.querySelectorAll('.incident-item').forEach(el=>{el.classList.remove('is-selected');el.querySelector('.incident-mobile-tab')?.setAttribute('aria-pressed','false');});
@@ -274,7 +268,7 @@
     for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle']){if(!$(id).checked){$(id).checked=true;$(id).dispatchEvent(new Event('change'));}}
     const url=new URL(location.href);url.searchParams.delete('incident');history.replaceState(null,'',url);
     expandMap(false);
-    if(view){view.closePopup();requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20]});});}
+    if(view){view.closePopup();requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20],zoomOffset:1});});}
   }
   function shortAddressLabel(match){
     const value=String(match.attributes?.ShortLabel||match.address||'Address').split(',')[0].trim();
@@ -314,17 +308,31 @@
     const zoom=document.createElement('button');zoom.type='button';zoom.className='home-btn primary';zoom.textContent='Zoom to';zoom.disabled=!view;zoom.addEventListener('click',()=>{
       window.ReadyLaPlataDetails.close();zoomToAddress(match);
     });
-    const reset=document.createElement('button');reset.type='button';reset.className='home-btn';reset.textContent='Reset';reset.addEventListener('click',resetOverview);for(const link of moreLinks)actions.appendChild(link);actions.append(zoom,reset);content.appendChild(actions);
+    for(const link of moreLinks)actions.appendChild(link);actions.append(zoom);content.appendChild(actions);
     content.title=match.address+' · Address location is approximate. Confirm incident instructions.';
     return content;
   }
+  function setSearchExpanded(expanded){
+    document.querySelector('.overview-top').classList.toggle('is-search-expanded',expanded);$('addressSearchClose').hidden=!expanded;
+  }
+  function closeAddressSearch(){
+    addressRequestId++;currentAddressMatch=null;if(addressMarker){addressMarker.remove();addressMarker=null;}
+    $('addressSearch').value='';$('addressForm').querySelector('button').disabled=false;
+    $('addressIncidentResult').replaceChildren();$('addressIncidentResult').hidden=true;$('mapMessage').textContent='';setSearchExpanded(false);$('addressSearch').blur();
+  }
+  $('addressSearchClose').addEventListener('click',closeAddressSearch);
+  $('addressSearch').addEventListener('input',()=>{
+    addressRequestId++;currentAddressMatch=null;if(addressMarker){addressMarker.remove();addressMarker=null;}
+    $('addressIncidentResult').replaceChildren();$('addressIncidentResult').hidden=true;$('mapMessage').textContent='';$('addressForm').querySelector('button').disabled=false;
+    setSearchExpanded(Boolean($('addressSearch').value.trim()));
+  });
   function renderAddressResult(){
-    if(!currentAddressMatch)return;
+    if(!currentAddressMatch)return;setSearchExpanded(true);
     $('addressIncidentResult').replaceChildren(addressIncidentContent(currentAddressMatch));$('addressIncidentResult').hidden=false;
   }
   $('addressForm').addEventListener('submit',async event=>{
     event.preventDefault();setOptionsOpen(false);setIncidentMenuOpen(false);if(!zoneFields)return;
-    const text=$('addressSearch').value.trim();if(!text)return;
+    const text=$('addressSearch').value.trim();if(!text)return;setSearchExpanded(true);
     $('addressSearch').blur();
     const requestId=++addressRequestId;
     const button=$('addressForm').querySelector('button');button.disabled=true;

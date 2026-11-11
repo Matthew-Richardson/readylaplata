@@ -35,7 +35,7 @@
   <link rel="stylesheet" href="shared-styles.css?v=20261110-live38">
   <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/light/main.css">
   <link rel="stylesheet" href="home.css?v=20261110-divider48">
-  <link rel="stylesheet" href="home-overlay.css?v=20261111-map50">
+  <link rel="stylesheet" href="home-overlay.css?v=20261111-rail52">
 
 <style id="zone-information-layout">
 #welcomeDialog{width:min(980px,calc(100% - 24px));max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);padding:0;border:1px solid #ccd8e4;border-radius:14px;color:#162b40;overflow:hidden;font-family:Arial,sans-serif}
@@ -76,12 +76,12 @@
 </header>
   <main id="main-content">
     <section class="overview-card" aria-label="County incident map">
-      <div class="overview-top">
+      <div class="overview-top"><button id="addressSearchClose" class="overlay-close address-search-close" type="button" aria-label="Close address search results" hidden>×</button>
   <form id="addressForm" class="home-address-search"><label for="addressSearch">Address Search</label><div><input id="addressSearch" type="search" enterkeyhint="search" placeholder="Street address, city" autocomplete="street-address"><button class="home-btn" type="submit"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span>Search</span></button></div></form>
         
         <div id="addressIncidentResult" class="address-incident-result" role="status" hidden></div>
         <p id="mapMessage" class="map-message" role="status"></p>
-        <p id="mapLayerMessage" class="map-message" role="status"></p><button id="mapOptionsToggle" class="map-options-toggle" type="button" aria-controls="mapOptions" aria-expanded="false">Map tools &amp; legend <span aria-hidden="true">⌃</span></button>
+        <p id="mapLayerMessage" class="map-message" role="status"></p>
 
       </div>
       <div class="overview-map-layout">
@@ -94,7 +94,7 @@
             <div class="map-quick-actions" aria-label="Map shortcuts"><button id="infoButton" class="map-quick-button" type="button" aria-label="Zone guide and map legend">
                   <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></svg>
                   <span>Info</span>
-                </button><button id="incidentMenuToggle" class="map-quick-button" type="button" aria-controls="incidentPopover" aria-expanded="false" aria-label="Active incidents"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5m0 3h.01"/></svg><span>Incidents</span><b id="incidentMenuCount">—</b></button><button id="mapActivateBtn" class="home-btn map-activate" type="button" aria-label="Expand map">⛶</button></div>
+                </button><button id="incidentMenuToggle" class="map-quick-button" type="button" aria-controls="incidentPopover" aria-expanded="false" aria-label="Active incidents"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5m0 3h.01"/></svg><span>Incidents</span><b id="incidentMenuCount">—</b></button><button id="mapOptionsToggle" class="map-quick-button" type="button" aria-controls="mapOptions" aria-expanded="false"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Z"/><path d="M9 3v16m6-14v16"/></svg><span>Tools &amp; legend</span></button><button id="mapActivateBtn" class="home-btn map-activate" type="button" aria-label="Expand map">⛶</button></div>
             <div id="viewDiv" role="region" aria-label="La Plata County incident map"></div>
             <div id="mapLoading" class="home-map-loading" role="status">Loading overview map…</div>
           </div>
@@ -229,8 +229,8 @@
 <script src="zone-status.js?v=20261110-live38"></script>
 <script src="https://js.arcgis.com/4.31/" defer></script>
 <script src="home-config.js?v=20261110-live38"></script>
-<script src="home-map.js?v=20261111-map50" defer></script>
+<script src="home-map.js?v=20261111-rail52" defer></script>
 <script src="home-details.js?v=20261110-tap47" defer></script>
-<script src="home.js?v=20261111-map50" defer></script>
+<script src="home.js?v=20261111-rail52" defer></script>
 </body>
 </html>

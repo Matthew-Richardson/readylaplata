@@ -4,7 +4,7 @@
 .immersive-map main,.immersive-map .overview-card,.immersive-map .overview-map-layout,.immersive-map .home-map-frame,.immersive-map .home-map-frame.is-expanded{position:absolute;inset:0;display:block;max-height:none;min-height:0;height:100%;width:100%;border:0;border-radius:0;margin:0;overflow:hidden;box-shadow:none;z-index:auto}
 .immersive-map #viewDiv{height:100%;width:100%;pointer-events:auto;touch-action:none!important}
 .home-map-page.immersive-map [hidden]{display:none!important}
-.immersive-map .home-brand-banner{position:absolute;top:max(14px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(850px,calc(100% - 340px));min-width:0;z-index:1300;display:flex!important;align-items:center;justify-content:space-between;gap:16px;padding:12px 16px;border:1px solid #b6c9de;border-radius:14px;background:#ffffffed;backdrop-filter:blur(12px);box-shadow:0 5px 25px #18334d26}
+.immersive-map .home-brand-banner{position:absolute;top:max(14px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(850px,calc(100% - 340px));min-width:0;z-index:1300;display:flex!important;align-items:center;justify-content:space-between;gap:16px;padding:12px 16px;border:1px solid #b6c9de;border-radius:14px;background:rgba(255,255,255,.78);backdrop-filter:blur(8px);box-shadow:0 5px 25px #18334d26}
 .immersive-map .home-brand-group{gap:12px;justify-self:auto;min-width:0;padding:0}
 .immersive-map .home-brand-logo{width:105px;height:auto}
 .immersive-map .home-brand-text{display:block}
@@ -21,7 +21,7 @@
 .immersive-map #incidentMenuCount{position:absolute;right:4px;top:3px;border-radius:12px;background:#174f8a;color:#fff;font-size:10px;padding:2px 4px}
 .immersive-map .map-quick-actions .map-activate{width:48px;font-size:23px}
 .immersive-map .map-quick-button[aria-expanded=true]{background:#e3eefb;border-color:#174f8a}
-.immersive-map .overview-top{position:absolute;left:50%;bottom:max(28px,calc(env(safe-area-inset-bottom) + 22px));transform:translateX(-50%);width:min(760px,calc(100% - 32px));max-height:min(46dvh,360px)!important;display:flex;flex-direction:column;gap:9px;padding:12px 14px;margin:0;border:1px solid #b1c5dd;border-radius:14px;background:#ffffffed;backdrop-filter:blur(12px);box-shadow:0 5px 28px #18334d30;z-index:1300;overflow-y:auto}
+.immersive-map .overview-top{position:absolute;left:50%;bottom:max(28px,calc(env(safe-area-inset-bottom) + 22px));transform:translateX(-50%);width:min(760px,calc(100% - 32px));max-height:min(46dvh,360px)!important;display:flex;flex-direction:column;gap:9px;padding:12px 14px;margin:0;border:1px solid #b1c5dd;border-radius:14px;background:rgba(255,255,255,.78);backdrop-filter:blur(8px);box-shadow:0 5px 28px #18334d30;z-index:1300;overflow-y:auto}
 .immersive-map .overview-top>.home-address-search{order:2;max-width:none;width:100%;margin:0;padding:0;min-width:0}
 .immersive-map .home-address-search label{font-size:12px!important;margin-bottom:5px!important}
 .immersive-map .home-address-search input{font-size:16px!important;background:#fff!important}
@@ -78,3 +78,51 @@
  .immersive-map .home-footer{font-size:8px;max-width:calc(100% - 140px)}
 }
 @media(max-height:600px){.immersive-map .home-brand-banner{flex-direction:row;gap:12px;padding:7px 10px}.immersive-map .home-brand-logo{width:65px}.immersive-map .home-site-name{font-size:20px}.immersive-map .home-site-subtitle{display:none}.immersive-map .home-header-actions{width:auto}.immersive-map .home-header-actions .home-nav-btn,.immersive-map .home-header-actions .home-call-link{width:76px;flex-basis:76px;min-height:32px;height:32px}.immersive-map .incident-support-window{top:calc(var(--map-header-bottom) + 8px);max-height:calc(var(--map-height) - var(--map-header-bottom) - 20px)}.immersive-map .overview-top{max-height:38dvh!important}}
+
+
+/* Keep native navigation and attribution outside the view's fit padding. */
+.immersive-map .esri-zoom{position:fixed!important;top:max(12px,env(safe-area-inset-top))!important;left:12px!important;right:auto!important;bottom:auto!important;z-index:1302;border:1px solid #b1c5dd;border-radius:9px;overflow:hidden;box-shadow:0 3px 14px #18334d26}
+.immersive-map .esri-attribution{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;max-width:none!important;width:100%;z-index:1300;background:#ffffffd9;font-size:10px;line-height:14px}
+.immersive-map .home-footer{bottom:16px}
+/* Draw the warning diamond inside its box so rotation cannot clip it. */
+.immersive-map .legend-icon-warning{position:relative;background:none;border:0;transform:none;width:18px!important;height:18px!important;margin:0;overflow:visible;flex:0 0 18px}
+.immersive-map .legend-icon-warning::before{content:"";position:absolute;left:3px;top:3px;width:12px;height:12px;box-sizing:border-box;background:#ffda4c;border:1px solid #8d670b;transform:rotate(45deg);border-radius:1px}
+.immersive-map .legend-icon-warning::after{content:"!";position:absolute;inset:0;text-align:center;font:bold 12px/18px Arial;color:#4b3700}
+.immersive-map .incident-sidebar .incident-item{display:block;cursor:default}
+.immersive-map .incident-name{font-size:15px;line-height:1.35;color:#000;margin:0 0 8px;font-weight:700;overflow-wrap:anywhere}
+.immersive-map .incident-action-buttons{display:flex;gap:7px;margin-top:9px}
+.immersive-map .incident-action-buttons .home-btn{position:relative;z-index:2;flex:1;min-height:38px;padding:6px 10px;font-size:13px;margin:0}
+.immersive-map .incident-action-buttons .incident-zoom-button{background:#edf4fc;border-color:#9eb8d5}
+@media(max-width:760px){.immersive-map .home-brand-banner{left:64px;transform:none;width:calc(100% - 74px)}.immersive-map .home-brand-logo{width:64px}.immersive-map .home-site-name{font-size:22px}.immersive-map .home-brand-group{gap:8px}.immersive-map .home-footer{font-size:8px;bottom:16px}.immersive-map .esri-attribution{font-size:8px}}
+
+
+/* A single right-hand rail and a compact, expandable search window. */
+.immersive-map{--rail-top:max(16px,env(safe-area-inset-top));--rail-height:218px}
+.immersive-map .map-quick-actions{top:var(--rail-top);right:16px;flex-direction:column;width:64px;gap:6px}
+.immersive-map .map-quick-actions .map-quick-button,.immersive-map .map-quick-actions .map-activate,.immersive-map .map-quick-actions #mapOptionsToggle{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;order:0;gap:3px;min-width:64px;width:64px;min-height:50px;height:50px;padding:5px;border:1px solid #a8bfd8;border-radius:10px;background:#ffffffe0;box-shadow:0 3px 14px #18334d24;color:#173f6b;font:700 10px/1.1 Arial;cursor:pointer}
+.immersive-map .map-quick-actions #mapOptionsToggle svg{height:19px;width:19px}
+.immersive-map .map-quick-actions #mapOptionsToggle span{font-size:9px;max-width:58px;text-align:center;white-space:normal}
+.immersive-map .esri-zoom{left:auto!important;right:16px!important;top:calc(var(--rail-top) + var(--rail-height) + 10px)!important;width:64px}
+.immersive-map .esri-zoom .esri-widget--button{width:64px}
+.immersive-map .overview-top{width:min(420px,calc(100% - 24px));bottom:max(40px,calc(env(safe-area-inset-bottom) + 36px));padding:8px;gap:6px;border-radius:12px}
+.immersive-map .overview-top.is-search-expanded{width:min(760px,calc(100% - 24px));padding:12px;max-height:46dvh!important}
+.immersive-map .overview-top .home-address-search label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.immersive-map .overview-top .home-address-search input{height:42px;margin:0}
+.immersive-map .overview-top .home-address-search .home-btn{height:42px;min-height:42px}
+.immersive-map .address-search-close{position:absolute;right:7px;top:7px;z-index:3;width:30px;height:30px;min-height:30px;font-size:22px}
+.immersive-map .overview-top.is-search-expanded .home-address-search{padding-right:34px}
+.immersive-map .overview-top.is-search-expanded:has(.address-incident-result:not([hidden])) .address-status-report{padding-right:34px}
+.immersive-map .map-options,.immersive-map .incident-sidebar{right:92px;top:calc(var(--map-header-bottom) + 12px);width:min(430px,calc(100% - 108px));max-height:calc(var(--map-height) - var(--map-header-bottom) - 40px)}
+.immersive-map .incident-sidebar{width:min(330px,calc(100% - 108px))}
+@media(max-width:1199px){.immersive-map{--rail-top:calc(var(--map-header-bottom) + 10px)}}
+@media(max-width:760px){
+ .immersive-map{--rail-height:191px}
+ .immersive-map .home-brand-banner{left:50%;transform:translateX(-50%);width:calc(100% - 16px)}
+ .immersive-map .home-brand-logo{width:86px}.immersive-map .home-site-name{font-size:25px}
+ .immersive-map .map-quick-actions{right:10px;gap:5px}
+ .immersive-map .map-quick-actions .map-quick-button,.immersive-map .map-quick-actions .map-activate,.immersive-map .map-quick-actions #mapOptionsToggle{height:44px;min-height:44px}
+ .immersive-map .esri-zoom{right:10px!important}
+ .immersive-map .overview-top{width:min(360px,calc(100% - 24px))}
+ .immersive-map .map-options,.immersive-map .incident-sidebar{right:84px;width:calc(100% - 96px);top:calc(var(--map-header-bottom) + 10px)}
+}
+@media(max-height:600px){.immersive-map{--rail-height:156px}.immersive-map .map-quick-actions{gap:4px}.immersive-map .map-quick-actions .map-quick-button,.immersive-map .map-quick-actions .map-activate,.immersive-map .map-quick-actions #mapOptionsToggle{height:36px;min-height:36px}.immersive-map .map-quick-button svg{height:14px;width:14px}.immersive-map .map-quick-button span{font-size:9px}}

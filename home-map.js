@@ -149,7 +149,7 @@
     });
     view.on('layerview-create-error',event=>reportLayerError(event.layer,event.error,'view'));
     view.on('layerview-create',event=>clearLayerError(event.layer,'view'));
-    try{await view.when();ready=true;}catch(error){view.destroy();for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle'])$(id).disabled=true;throw error;}
+    try{await view.when();ready=true;view.ui?.move?.('zoom','manual');view.ui?.move?.('attribution','manual');}catch(error){view.destroy();for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle'])$(id).disabled=true;throw error;}
     return {
       raw:view,operationalLayers,
       setOverlayPadding({top,bottom}){view.padding={top,bottom,left:16,right:16};},
@@ -158,11 +158,11 @@
         for(const incident of incidents){
           const geometry=new Point({longitude:incident.point.lng,latitude:incident.point.lat}),attributes={incident:incident.name};
           const add=symbol=>incidentPins.add(new Graphic({geometry,attributes,symbol}));
-          add({type:'simple-marker',style:'circle',size:12,color:'#174f8a',outline:{color:'#fff',width:2.5}});
-          add({type:'text',text:incident.name,color:'#112b43',haloColor:'#fff',haloSize:2,horizontalAlignment:'left',verticalAlignment:'bottom',xoffset:13,yoffset:3,font:{family:'Arial',size:11,weight:'bold'}});
+          add({type:'simple-marker',style:'circle',size:14,color:'#174f8a',outline:{color:'#fff',width:2.5}});
+          add({type:'text',text:incident.name,color:'#112b43',haloColor:'#fff',haloSize:2,horizontalAlignment:'left',verticalAlignment:'bottom',xoffset:15,yoffset:5,font:{family:'Arial',size:12,weight:'bold'}});
           incident.statuses.forEach((status,index)=>{
             const style=window.ReadyLaPlataZones.styles[status];if(!style)return;
-            add({type:'simple-marker',style:'circle',size:7,xoffset:16+index*11,yoffset:-6,color:style.stroke,outline:{color:'#fff',width:1.2}});
+            add({type:'simple-marker',style:'circle',size:10,xoffset:18+index*14,yoffset:-7,color:style.stroke,outline:{color:'#fff',width:1.2}});
           });
         }
       },
@@ -171,7 +171,7 @@
         const retry=[...new Set([...operationalLayers,...layerErrors.keys()])];
         await Promise.allSettled(retry.map(async layer=>{await loadLayer(layer);if(layer.visible!==false&&typeof layer.refresh==='function')layer.refresh();}));
       },
-      async fitBounds(bounds,options={}){const extent=extentFor(bounds),request=navigation+1;await navigate(extent.expand(1.12));if(request===navigation&&options.maxZoom&&view.zoom>options.maxZoom)await navigate({zoom:options.maxZoom});},
+      async fitBounds(bounds,options={}){const extent=extentFor(bounds),request=navigation+1;await navigate(extent.expand(1.12));if(request!==navigation)return;let zoom=view.zoom+(options.zoomOffset||0);if(options.maxZoom)zoom=Math.min(zoom,options.maxZoom);if(zoom!==view.zoom)await navigate({zoom});},
       setView(latlng,zoom){return navigate({center:new Point({longitude:latlng[1],latitude:latlng[0]}),zoom});},
       openSupportPopup(latlng,content){view.closePopup();return openSupportWindow(container,content);},
       closePopup(){view.closePopup();closeSupport();},invalidateSize(){/* MapView observes its container, including expanded mode. */},
