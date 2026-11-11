@@ -235,8 +235,11 @@
     const height=addressViewportLock?.height||visualHeight;
     document.body.classList.toggle('is-address-editing',Boolean(addressViewportLock));
     document.body.style.setProperty('--map-height',Math.round(height)+'px');
+    // Safari pans the visual viewport independently of the fixed layout viewport.
+    // Move the entire map shell with that pan so its header and map remain visible.
+    document.body.style.setProperty('--map-viewport-top',Math.round(addressViewportLock?offsetTop:0)+'px');
     document.body.style.setProperty('--search-visible-height',Math.round(visualHeight)+'px');
-    document.body.style.setProperty('--search-keyboard-lift',Math.round(addressViewportLock?Math.max(0,height-visualHeight-offsetTop):0)+'px');
+    document.body.style.setProperty('--search-keyboard-lift',Math.round(addressViewportLock?Math.max(0,height-visualHeight):0)+'px');
     return Boolean(addressViewportLock);
   }
   function beginAddressEditing(){

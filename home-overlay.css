@@ -184,7 +184,7 @@
 
 
 /* Let only the search dock follow the on-screen keyboard; do not shrink the map. */
-.immersive-map .home-shell{position:fixed;top:0;left:0;right:0;height:var(--map-height);overscroll-behavior:none}
+.immersive-map .home-shell{position:fixed;top:var(--map-viewport-top,0px);left:0;right:0;height:var(--map-height);overscroll-behavior:none}
 .immersive-map .overview-top{bottom:calc(max(40px,calc(env(safe-area-inset-bottom) + 36px)) + var(--search-keyboard-lift,0px))}
 .immersive-map.is-address-editing .overview-top{max-height:calc(var(--search-visible-height) - 24px)!important;scroll-padding-bottom:8px}
 .immersive-map .home-address-search input{font-size:16px!important}
