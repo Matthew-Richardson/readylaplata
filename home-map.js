@@ -103,7 +103,7 @@
     const address=new GraphicsLayer({title:'Searched address',listMode:'hide',popupEnabled:false});
     webmap.add(address);
     const view=new MapView({container,map:webmap,extent:new Extent({xmin:C.countyBounds[0][1],ymin:C.countyBounds[0][0],xmax:C.countyBounds[1][1],ymax:C.countyBounds[1][0],spatialReference:{wkid:4326}}),constraints:{rotationEnabled:false,snapToZoom:false},popup:{dockEnabled:false}});
-    const labelContainer=$('incidentMapLabels'),labelEntries=[];
+    const labelContainer=$('incidentMapLabels'),effectContainer=$('incidentMapEffects'),labelEntries=[];
     let incidentLabelsVisible=Boolean($('incidentLabelsToggle').checked);
     $('incidentLabelsToggle').addEventListener('change',()=>{incidentLabelsVisible=$('incidentLabelsToggle').checked;positionIncidentLabels();});
     const publishedLabels=new Map(zoneLayers.map(layer=>[layer,layer.labelsVisible!==false]));
@@ -116,6 +116,10 @@
       // Set visibility together, then measure together before positioning writes.
       const screens=labelEntries.map(entry=>{
         entry.hitRect=null;const screen=view.toScreen(entry.point);entry.button.hidden=!incidentLabelsVisible||!overview||!screen||screen.x<0||screen.y<0||screen.x>view.width||screen.y>view.height;entry.leader.hidden=true;
+        if(entry.halo){
+          entry.halo.hidden=!screen||screen.x<0||screen.y<0||screen.x>view.width||screen.y>view.height;
+          if(!entry.halo.hidden){entry.halo.style.left=screen.x+'px';entry.halo.style.top=screen.y+'px';}
+        }
         return screen;
       });
       const sizes=labelEntries.map(entry=>({width:entry.button.offsetWidth||180,height:entry.button.offsetHeight||50}));
@@ -238,11 +242,13 @@
       raw:view,operationalLayers,
       setOverlayPadding({top,bottom,compact=false}){const vertical=Math.max(top,bottom),next=compact?{top:vertical,bottom:vertical,left:12,right:12}:{top,bottom,left:16,right:84};if(Object.keys(next).every(key=>view.padding?.[key]===next[key]))return;view.padding=next;positionIncidentLabels();},
       setIncidents(incidents){
-        incidentPins.removeAll();labelEntries.length=0;labelContainer?.replaceChildren();
+        incidentPins.removeAll();labelEntries.length=0;labelContainer?.replaceChildren();effectContainer?.replaceChildren();
         for(const incident of incidents){
           const point=new Point({longitude:incident.point.lng,latitude:incident.point.lat});
           incidentPins.add(new Graphic({geometry:point,attributes:{incident:incident.name},symbol:{type:'picture-marker',url:'incident-marker.svg?v=20261111-points84',width:18,height:18}}));
           if(!labelContainer)continue;
+          const halo=effectContainer?document.createElement('span'):null;
+          if(halo){halo.className='incident-point-pulse';effectContainer.append(halo);}
           const button=document.createElement('button'),title=document.createElement('strong'),dots=document.createElement('span'),leader=document.createElement('span');
           button.type='button';button.className='incident-area-label';title.textContent=incident.name;dots.className='incident-area-dots';dots.setAttribute('aria-hidden','true');leader.className='incident-area-leaders';leader.setAttribute('aria-hidden','true');leader.hidden=true;
           const labels=[];
@@ -252,7 +258,7 @@
           }
           button.setAttribute('aria-label',incident.name+'. '+labels.join(', ')+'. Open incident information');button.title=incident.name+' — '+labels.join(', ');button.append(title,dots);
           button.addEventListener('click',event=>{event.stopPropagation();onIncident?.(incident.name,[incident.point.lat,incident.point.lng]);});
-          labelContainer.append(leader,button);labelEntries.push({name:incident.name,point,button,leader,hitRect:null});
+          labelContainer.append(leader,button);labelEntries.push({name:incident.name,point,button,leader,halo,hitRect:null});
         }
         positionIncidentLabels();
       },

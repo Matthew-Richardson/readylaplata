@@ -276,3 +276,11 @@
 .immersive-map #mapFrame{touch-action:none;overscroll-behavior:none}
 
 
+
+/* A slow, pointer-transparent halo draws attention without enlarging symbols. */
+.immersive-map .incident-map-effects{position:absolute;inset:0;z-index:990;overflow:hidden;pointer-events:none}
+.immersive-map .incident-point-pulse{position:absolute;width:22px;height:22px;transform:translate(-50%,-50%);pointer-events:none}
+.immersive-map .incident-point-pulse::before,.immersive-map .incident-point-pulse::after{content:"";position:absolute;inset:0;border:2px solid #2675b9;border-radius:50%;box-shadow:0 0 0 1px #ffffffbf;animation:incident-point-pulse 2.8s ease-out infinite;pointer-events:none}
+.immersive-map .incident-point-pulse::after{animation-delay:-1.4s}
+@keyframes incident-point-pulse{0%{transform:scale(.85);opacity:.65}85%,100%{transform:scale(1.7);opacity:0}}
+@media(prefers-reduced-motion:reduce){.immersive-map .incident-point-pulse::before{animation:none;transform:scale(1.15);opacity:.3}.immersive-map .incident-point-pulse::after{display:none}}

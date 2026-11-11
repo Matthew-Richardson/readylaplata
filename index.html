@@ -35,7 +35,7 @@
   <link rel="stylesheet" href="shared-styles.css?v=20261110-live38">
   <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/light/main.css">
   <link rel="stylesheet" href="home.css?v=20261111-cleanup72">
-  <link rel="stylesheet" href="home-overlay.css?v=20261111-labelsoff82">
+  <link rel="stylesheet" href="home-overlay.css?v=20261111-pulse86">
 
 <style id="zone-information-layout">
 #welcomeDialog{width:min(980px,calc(100% - 24px));max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);padding:0;border:1px solid #ccd8e4;border-radius:14px;color:#162b40;overflow:hidden;font-family:Arial,sans-serif}
@@ -96,6 +96,7 @@
       <div id="mapFrame" class="home-map-frame">
             <div class="map-quick-actions" aria-label="Map shortcuts"><button id="incidentMenuToggle" class="map-quick-button" type="button" aria-controls="incidentPopover" aria-expanded="false" aria-label="Active incidents"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 21h20L12 3Z" stroke-linejoin="round"/><path d="M12 9v5" stroke-linecap="round"/><circle cx="12" cy="17.5" r="1" fill="currentColor" stroke="none"/></svg><span>Incidents</span><b id="incidentMenuCount">—</b></button><button id="mapOptionsToggle" class="map-quick-button" type="button" aria-controls="mapOptions" aria-expanded="false"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Z"/><path d="M9 3v16m6-14v16"/></svg><span>Tools &amp; legend</span></button></div>
             <div class="map-zoom-actions" aria-label="Map zoom"><button id="mapZoomIn" class="map-quick-button" type="button" aria-label="Zoom in" disabled><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16M4 12h16"/></svg><span>Zoom in</span></button><button id="mapZoomOut" class="map-quick-button" type="button" aria-label="Zoom out" disabled><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/></svg><span>Zoom out</span></button></div><div id="viewDiv" role="region" aria-label="La Plata County incident map"></div>
+            <div id="incidentMapEffects" class="incident-map-effects" aria-hidden="true"></div>
             <div id="incidentMapLabels" class="incident-map-labels" aria-label="Active incident areas"></div>
             <div id="mapLoading" class="home-map-loading" role="status">Loading overview map…</div>
           </div>
@@ -232,7 +233,7 @@
 <script src="zone-status.js?v=20261110-live38"></script>
 <script src="https://js.arcgis.com/4.31/" defer></script>
 <script src="home-config.js?v=20261111-zoom85"></script>
-<script src="home-map.js?v=20261111-points84" defer></script>
+<script src="home-map.js?v=20261111-pulse86" defer></script>
 <script src="home-details.js?v=20261111-readable68" defer></script>
 <script src="home.js?v=20261111-zoom85" defer></script>
 </body>
