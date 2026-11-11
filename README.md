@@ -97,4 +97,4 @@ Tools & legend includes an Incident labels checkbox, initially off. Turning it o
 
 Incident labels are off by default. Enabling the tool shows separate name plates for every incident in the county-scale view, with vertical separation and straight connectors where needed. Labels are not grouped or suppressed for priority. The Incidents menu and map points remain available while labels are off. Info restores the default labels-off state.
 
-Incident points use a 32 px red incident symbol with a white exclamation mark, white rim and dark outer outline, distinct from the temporary blue address marker. They remain visible at detailed zoom and are included in the map legend. Publish `incident-marker.svg` with the updated home files.
+Incident points use a compact 18 px dark-blue diamond with a white outline, distinct from the blue circular address marker and yellow warning symbols. They remain visible at detailed zoom and are included in the map legend. Publish `incident-marker.svg` with the updated home files.

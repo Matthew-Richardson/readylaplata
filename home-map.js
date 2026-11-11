@@ -241,7 +241,7 @@
         incidentPins.removeAll();labelEntries.length=0;labelContainer?.replaceChildren();
         for(const incident of incidents){
           const point=new Point({longitude:incident.point.lng,latitude:incident.point.lat});
-          incidentPins.add(new Graphic({geometry:point,attributes:{incident:incident.name},symbol:{type:'picture-marker',url:'incident-marker.svg?v=20261111-points83',width:32,height:32}}));
+          incidentPins.add(new Graphic({geometry:point,attributes:{incident:incident.name},symbol:{type:'picture-marker',url:'incident-marker.svg?v=20261111-points84',width:18,height:18}}));
           if(!labelContainer)continue;
           const button=document.createElement('button'),title=document.createElement('strong'),dots=document.createElement('span'),leader=document.createElement('span');
           button.type='button';button.className='incident-area-label';title.textContent=incident.name;dots.className='incident-area-dots';dots.setAttribute('aria-hidden','true');leader.className='incident-area-leaders';leader.setAttribute('aria-hidden','true');leader.hidden=true;
