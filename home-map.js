@@ -12,6 +12,31 @@
     function visit(c){if(!Array.isArray(c))return;if(typeof c[0]==='number'&&typeof c[1]==='number'){b.xmin=Math.min(b.xmin,c[0]);b.xmax=Math.max(b.xmax,c[0]);b.ymin=Math.min(b.ymin,c[1]);b.ymax=Math.max(b.ymax,c[1]);}else c.forEach(visit);}
     visit(feature.geometry?.coordinates);return b;
   }
+  // Choose a point inside the largest polygon, including concave shapes and holes.
+  function interiorPointForFeature(feature){
+    const geometry=feature.geometry,polygons=geometry?.type==='Polygon'?[geometry.coordinates]:geometry?.type==='MultiPolygon'?geometry.coordinates:[];
+    let best=null,bestArea=-1;
+    for(const rings of polygons){
+      const ring=rings[0];if(!ring?.length)continue;
+      let ymin=Infinity,ymax=-Infinity;for(const coordinate of ring){ymin=Math.min(ymin,coordinate[1]);ymax=Math.max(ymax,coordinate[1]);}
+      let area=0;for(let i=0,j=ring.length-1;i<ring.length;j=i++)area+=ring[j][0]*ring[i][1]-ring[i][0]*ring[j][1];area=Math.abs(area);
+      if(area<=bestArea)continue;
+      let candidate=null,score=-1;
+      for(const fraction of [.5,.375,.625,.25,.75,.125,.875]){
+        const y=ymin+(ymax-ymin)*fraction,crossings=[];
+        for(const boundary of rings)for(let i=0,j=boundary.length-1;i<boundary.length;j=i++){
+          const a=boundary[j],b=boundary[i];if((a[1]>y)!==(b[1]>y))crossings.push(a[0]+(y-a[1])*(b[0]-a[0])/(b[1]-a[1]));
+        }
+        crossings.sort((a,b)=>a-b);
+        for(let i=0;i+1<crossings.length;i+=2){
+          const width=crossings[i+1]-crossings[i],value=width*(1-Math.abs(fraction-.5));
+          if(width>0&&value>score){score=value;candidate={lat:y,lng:(crossings[i]+crossings[i+1])/2};}
+        }
+      }
+      if(candidate){best=candidate;bestArea=area;}
+    }
+    return best;
+  }
   let activeSupport=null;
   function openSupportWindow(container,content){
     activeSupport?.remove();
@@ -64,7 +89,7 @@
     if(!zoneLayers.length){console.error('Configured evacuation-zone layer not found in web map:',C.zonesUrl);$('mapMessage').textContent='The evacuation-zone layer could not be identified in this map.';}
 
     for(const layer of zoneLayers){
-      layer.outFields=['*'];
+      layer.outFields=['*'];layer.maxScale=0;
       const existing=String(layer.definitionExpression||'').trim();
       layer.definitionExpression=existing?'('+existing+') AND ('+C.zonesWhere+')':C.zonesWhere;
       try{await layer.load();if(!layer.fields?.some(field=>field.name.toUpperCase()==='LIVE')){layer.visible=false;$('mapMessage').textContent='Live evacuation-zone information is temporarily unavailable.';}}
@@ -77,7 +102,33 @@
     // Keep the searched-address marker above incident summaries.
     const address=new GraphicsLayer({title:'Searched address',listMode:'hide',popupEnabled:false});
     webmap.add(address);
-    const view=new MapView({container,map:webmap,extent:new Extent({xmin:C.countyBounds[0][1],ymin:C.countyBounds[0][0],xmax:C.countyBounds[1][1],ymax:C.countyBounds[1][0],spatialReference:{wkid:4326}}),constraints:{rotationEnabled:false},popup:{dockEnabled:false}});
+    const view=new MapView({container,map:webmap,extent:new Extent({xmin:C.countyBounds[0][1],ymin:C.countyBounds[0][0],xmax:C.countyBounds[1][1],ymax:C.countyBounds[1][0],spatialReference:{wkid:4326}}),constraints:{rotationEnabled:false,snapToZoom:false},popup:{dockEnabled:false}});
+    const labelContainer=$('incidentMapLabels'),labelEntries=[];
+    const publishedLabels=new Map(zoneLayers.map(layer=>[layer,layer.labelsVisible!==false]));
+    function positionIncidentLabels(){
+      const overview=!Number.isFinite(view.scale)||view.scale>=(C.incidentLabelScale||75000);
+      incidentPins.visible=overview;
+      for(const layer of zoneLayers)layer.labelsVisible=overview?false:publishedLabels.get(layer);
+      if(!labelContainer)return;
+      const occupied=[],padding=view.padding||{},top=(padding.top||0)+8,bottom=(view.height||0)-(padding.bottom||0)-8;
+      for(const entry of labelEntries){
+        const screen=view.toScreen(entry.point);entry.button.hidden=!overview||!screen||screen.x<0||screen.y<0||screen.x>view.width||screen.y>view.height;entry.leader.hidden=true;
+        if(entry.button.hidden)continue;
+        const width=entry.button.offsetWidth||180,height=entry.button.offsetHeight||50;
+        const x=Math.max(width/2+8,Math.min(screen.x,view.width-width/2-86));let y=screen.y;
+        for(const offset of [0,-1,1,-2,2,-3,3]){
+          const next=screen.y+offset*(height+8),rect={left:x-width/2,right:x+width/2,top:next-height/2,bottom:next+height/2};
+          if(rect.top<top||rect.bottom>bottom)continue;
+          if(occupied.some(other=>rect.left<other.right+6&&rect.right>other.left-6&&rect.top<other.bottom+6&&rect.bottom>other.top-6))continue;
+          y=next;break;
+        }
+        occupied.push({left:x-width/2,right:x+width/2,top:y-height/2,bottom:y+height/2});
+        entry.button.style.left=x+'px';entry.button.style.top=y+'px';
+        const dx=x-screen.x,dy=y-screen.y,distance=Math.hypot(dx,dy);
+        if(distance>8){entry.leader.hidden=false;Object.assign(entry.leader.style,{left:screen.x+'px',top:screen.y+'px',width:distance+'px',transform:'rotate('+Math.atan2(dy,dx)+'rad)'});}
+      }
+    }
+    reactiveUtils.watch(()=>[view.extent,view.scale,view.width,view.height,view.padding],positionIncidentLabels);
     let ready=false,navigation=0;
     const operationalLayers=[...zoneLayers,roadInfo,pois].filter(layer=>layer&&typeof layer.refresh==='function');
     function closeSupport(){activeSupport?.remove();}
@@ -149,34 +200,42 @@
     });
     view.on('layerview-create-error',event=>reportLayerError(event.layer,event.error,'view'));
     view.on('layerview-create',event=>clearLayerError(event.layer,'view'));
-    try{await view.when();ready=true;view.ui?.move?.('zoom','manual');view.ui?.move?.('attribution','manual');}catch(error){view.destroy();for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle'])$(id).disabled=true;throw error;}
+    try{await view.when();ready=true;view.ui?.remove?.('zoom');view.ui?.move?.('attribution','manual');}catch(error){view.destroy();for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle'])$(id).disabled=true;throw error;}
     return {
       raw:view,operationalLayers,
-      setOverlayPadding({top,bottom}){view.padding={top,bottom,left:16,right:16};},
+      setOverlayPadding({top,bottom}){view.padding={top,bottom,left:16,right:84};positionIncidentLabels();},
       setIncidents(incidents){
-        incidentPins.removeAll();
+        incidentPins.removeAll();labelEntries.length=0;labelContainer?.replaceChildren();
         for(const incident of incidents){
-          const geometry=new Point({longitude:incident.point.lng,latitude:incident.point.lat}),attributes={incident:incident.name};
-          const add=symbol=>incidentPins.add(new Graphic({geometry,attributes,symbol}));
-          add({type:'simple-marker',style:'circle',size:14,color:'#174f8a',outline:{color:'#fff',width:2.5}});
-          add({type:'text',text:incident.name,color:'#112b43',haloColor:'#fff',haloSize:2,horizontalAlignment:'left',verticalAlignment:'bottom',xoffset:15,yoffset:5,font:{family:'Arial',size:12,weight:'bold'}});
-          incident.statuses.forEach((status,index)=>{
-            const style=window.ReadyLaPlataZones.styles[status];if(!style)return;
-            add({type:'simple-marker',style:'circle',size:10,xoffset:18+index*14,yoffset:-7,color:style.stroke,outline:{color:'#fff',width:1.2}});
-          });
+          const point=new Point({longitude:incident.point.lng,latitude:incident.point.lat});
+          incidentPins.add(new Graphic({geometry:point,attributes:{incident:incident.name},symbol:{type:'simple-marker',style:'circle',size:14,color:'#174f8a',outline:{color:'#fff',width:2.5}}}));
+          if(!labelContainer)continue;
+          const button=document.createElement('button'),title=document.createElement('strong'),dots=document.createElement('span'),leader=document.createElement('span');
+          button.type='button';button.className='incident-area-label';const primary=window.ReadyLaPlataZones.styles[incident.statuses[0]];if(primary)button.style.setProperty('--incident-edge',primary.stroke);title.textContent=incident.name;dots.className='incident-area-dots';dots.setAttribute('aria-hidden','true');leader.className='incident-area-leader';leader.setAttribute('aria-hidden','true');leader.hidden=true;
+          const labels=[];
+          for(const status of incident.statuses){
+            const style=window.ReadyLaPlataZones.styles[status];if(!style)continue;labels.push(style.label);
+            const dot=document.createElement('span');dot.className='incident-area-dot';dot.style.background=style.fill||style.stroke;dot.style.borderColor=style.stroke;dot.title=style.label;if(style.hatch)dot.classList.add('access-hatch');dots.appendChild(dot);
+          }
+          button.setAttribute('aria-label',incident.name+'. '+labels.join(', ')+'. Open incident information');button.title=incident.name+' — '+labels.join(', ');button.append(title,dots);
+          button.addEventListener('click',event=>{event.stopPropagation();onIncident?.(incident.name,[incident.point.lat,incident.point.lng]);});
+          for(const type of ['pointerdown','pointerup','dblclick'])button.addEventListener(type,event=>event.stopPropagation());
+          labelContainer.append(leader,button);labelEntries.push({point,button,leader});
         }
+        positionIncidentLabels();
       },
       async refreshLayers(){
         // Retry failed layers as well as the normal zone/road/POI refresh.
         const retry=[...new Set([...operationalLayers,...layerErrors.keys()])];
         await Promise.allSettled(retry.map(async layer=>{await loadLayer(layer);if(layer.visible!==false&&typeof layer.refresh==='function')layer.refresh();}));
       },
-      async fitBounds(bounds,options={}){const extent=extentFor(bounds),request=navigation+1;await navigate(extent.expand(1.12));if(request!==navigation)return;let zoom=view.zoom+(options.zoomOffset||0);if(options.maxZoom)zoom=Math.min(zoom,options.maxZoom);if(zoom!==view.zoom)await navigate({zoom});},
+      async fitBounds(bounds,options={}){const extent=extentFor(bounds),request=navigation+1;await navigate(extent.expand(options.county?1.02:1.12));if(request!==navigation)return;let zoom=view.zoom+(options.zoomOffset||0);if(options.maxZoom)zoom=Math.min(zoom,options.maxZoom);if(zoom!==view.zoom)await navigate({zoom});},
+      zoomBy(delta){return navigate({zoom:view.zoom+delta});},
       setView(latlng,zoom){return navigate({center:new Point({longitude:latlng[1],latitude:latlng[0]}),zoom});},
       openSupportPopup(latlng,content){view.closePopup();return openSupportWindow(container,content);},
       closePopup(){view.closePopup();closeSupport();},invalidateSize(){/* MapView observes its container, including expanded mode. */},
       markAddress(match){const graphic=new Graphic({geometry:new Point({longitude:match.location.x,latitude:match.location.y}),symbol:{type:'simple-marker',style:'circle',size:12,color:'#174f8a',outline:{color:'#fff',width:2.5}}});address.add(graphic);return {remove(){address.remove(graphic);}};}
     };
   }
-  window.ReadyLaPlataMap={create,openSupportWindow,bounds:()=>new Bounds(),boundsForFeature};
+  window.ReadyLaPlataMap={create,openSupportWindow,bounds:()=>new Bounds(),boundsForFeature,interiorPointForFeature};
 })();

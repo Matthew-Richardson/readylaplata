@@ -147,20 +147,25 @@
       features.forEach(feature=>{
         const name=String(feature.properties[zoneFields.incident]||'').trim();if(!name)return;
         let entry=next.get(name);
-        if(!entry){entry={statuses:new Set(),counts:{Go:0,Shelter:0,Set:0,Access:0,Planning:0},extent:window.ReadyLaPlataMap.bounds(),point:null,marker:null};next.set(name,entry);}
+        if(!entry){entry={statuses:new Set(),counts:{Go:0,Shelter:0,Set:0,Access:0,Planning:0},extent:window.ReadyLaPlataMap.bounds(),point:null,labelArea:0,marker:null};next.set(name,entry);}
         entry.statuses.add(statusName(feature));entry.counts[Z.key(statusName(feature))]++;
         const bounds=window.ReadyLaPlataMap.boundsForFeature(feature);
-        if(bounds.isValid())entry.extent.extend(bounds);
+        if(bounds.isValid()){
+          entry.extent.extend(bounds);
+          const point=window.ReadyLaPlataMap.interiorPointForFeature(feature);
+          const area=Number(feature.properties.Shape__Area)||((bounds.xmax-bounds.xmin)*(bounds.ymax-bounds.ymin));
+          if(point&&area>entry.labelArea){entry.point=point;entry.labelArea=area;}
+        }
       });
       currentZoneFeatures=features;
       incidents=new Map(Array.from(next.entries()).sort(compareIncidents));
-      for(const entry of incidents.values())if(entry.extent.isValid())entry.point=entry.extent.getCenter();
+      for(const entry of incidents.values())if(!entry.point&&entry.extent.isValid())entry.point=entry.extent.getCenter();
       view?.setIncidents?.([...incidents].filter(([,entry])=>entry.point).map(([name,entry])=>({name,point:entry.point,statuses:Object.keys(STATUS_PRIORITY).filter(status=>entry.counts[status]>0)})));
       renderIncidentList();lastIncidentSuccess=Date.now();incidentsError=false;window.ReadyLaPlataDetails.refreshZones();
       $('incidentState').dataset.error='false';$('incidentState').hidden=incidents.size>0;$('incidentState').textContent=incidents.size?'':'No incidents are currently shown in the county zone layer.';
       $('lastLoaded').textContent='Updated '+localTime(lastIncidentSuccess);
       if(currentAddressMatch)renderAddressResult();
-      if(firstLoad && view)requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20],zoomOffset:1});if(linkedIncident&&incidents.has(linkedIncident))openIncidentDetails(linkedIncident);});
+      if(firstLoad && view)requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20],county:true});if(linkedIncident&&incidents.has(linkedIncident))openIncidentDetails(linkedIncident);});
       firstLoad=false;
     } catch(err){
       incidentsError=true;window.ReadyLaPlataDetails.refreshZones();if(currentAddressMatch)renderAddressResult();
@@ -186,13 +191,13 @@
       const extent=extentData?.extent;
       if(extent&&[extent.xmin,extent.ymin,extent.xmax,extent.ymax].every(Number.isFinite))countyBounds=[[extent.ymin,extent.xmin],[extent.ymax,extent.xmax]];
       view=await window.ReadyLaPlataMap.create({container:'viewDiv',config:C,onIncident:openIncidentDetails});
-      operationalLayers=view.operationalLayers;measureMapOverlays();
-      await view.fitBounds(countyBounds,{zoomOffset:1});
+      operationalLayers=view.operationalLayers;$('mapZoomIn').disabled=false;$('mapZoomOut').disabled=false;measureMapOverlays();
+      await view.fitBounds(countyBounds,{county:true});
       mapReady=true;$('mapLoading').hidden=true;
       await refreshIncidents();
     }catch(error){console.error('Map initialization:',error);mapFailure(/webgl/i.test(String(error.name)+' '+String(error.message))?'This browser cannot display the ArcGIS map. Use the lightweight map.':'The map could not load. Try Refresh or use the lightweight map.');if(zoneFields){mapReady=true;await refreshIncidents();}}
   }
-  $('mapResetBtn').addEventListener('click',()=>{if(view){view.closePopup();view.fitBounds(countyBounds,{padding:[20,20],zoomOffset:1});}});
+  $('mapResetBtn').addEventListener('click',()=>{if(view){view.closePopup();view.fitBounds(countyBounds,{padding:[20,20],county:true});}});
   $('myLocationBtn').addEventListener('click',()=>{
     if(!view)return;
     if(!navigator.geolocation){$('mapMessage').textContent='Location is not supported by this browser.';return;}
@@ -232,8 +237,10 @@
   window.addEventListener('resize',measureMapOverlays);window.visualViewport?.addEventListener('resize',measureMapOverlays);measureMapOverlays();
   function expandMap(expanded){
     document.body.classList.toggle('is-map-focused',expanded);setOptionsOpen(false);setIncidentMenuOpen(false);
-    $('mapFrame').classList.toggle('is-expanded',expanded);$('mapFullscreenBtn').setAttribute('aria-pressed',String(expanded));$('mapFullscreenBtn').textContent=expanded?'Close expanded map':'Expand map';$('mapActivateBtn').setAttribute('aria-label',expanded?'Close expanded map':'Expand map');$('mapActivateBtn').textContent=expanded?'×':'⛶';if(view){syncMapInteraction();setTimeout(()=>view.invalidateSize(),0);}
+    $('mapFrame').classList.toggle('is-expanded',expanded);$('mapFullscreenBtn').setAttribute('aria-pressed',String(expanded));$('mapFullscreenBtn').textContent=expanded?'Close expanded map':'Expand map';$('mapActivateBtn').setAttribute('aria-label',expanded?'Close expanded map':'Expand map');$('mapActivateBtn').setAttribute('aria-pressed',String(expanded));$('mapActivateBtn').querySelector('span').textContent=expanded?'Exit full':'Fullscreen';if(view){syncMapInteraction();setTimeout(()=>view.invalidateSize(),0);}
   }
+  $('mapZoomIn').addEventListener('click',()=>view?.zoomBy(1));
+  $('mapZoomOut').addEventListener('click',()=>view?.zoomBy(-1));
   $('mapActivateBtn').addEventListener('click',()=>expandMap(!$('mapFrame').classList.contains('is-expanded')));
   $('mapFullscreenBtn').addEventListener('click',()=>expandMap($('mapFullscreenBtn').getAttribute('aria-pressed')!=='true'));
   document.addEventListener('keydown',event=>{if(event.key==='Escape')expandMap(false);});
@@ -268,7 +275,7 @@
     for(const id of ['roadsToggle','roadLayerToggle','poiLayerToggle']){if(!$(id).checked){$(id).checked=true;$(id).dispatchEvent(new Event('change'));}}
     const url=new URL(location.href);url.searchParams.delete('incident');history.replaceState(null,'',url);
     expandMap(false);
-    if(view){view.closePopup();requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20],zoomOffset:1});});}
+    if(view){view.closePopup();requestAnimationFrame(()=>{view.invalidateSize({pan:false});view.fitBounds(countyBounds,{padding:[20,20],county:true});});}
   }
   function shortAddressLabel(match){
     const value=String(match.attributes?.ShortLabel||match.address||'Address').split(',')[0].trim();

@@ -126,3 +126,22 @@
  .immersive-map .map-options,.immersive-map .incident-sidebar{right:84px;width:calc(100% - 96px);top:calc(var(--map-header-bottom) + 10px)}
 }
 @media(max-height:600px){.immersive-map{--rail-height:156px}.immersive-map .map-quick-actions{gap:4px}.immersive-map .map-quick-actions .map-quick-button,.immersive-map .map-quick-actions .map-activate,.immersive-map .map-quick-actions #mapOptionsToggle{height:36px;min-height:36px}.immersive-map .map-quick-button svg{height:14px;width:14px}.immersive-map .map-quick-button span{font-size:9px}}
+
+
+/* Every rail control shares one width, grid alignment and visual treatment. */
+.immersive-map .map-quick-actions{display:flex;align-items:stretch;gap:6px;width:64px}
+.immersive-map .map-quick-actions>button{position:relative!important;inset:auto!important;transform:none!important;box-sizing:border-box;flex:none;margin:0!important;width:64px!important;min-width:64px!important;height:50px;min-height:50px;padding:5px!important;display:flex;flex-direction:column;justify-content:center;align-items:center;border:1px solid #a8bfd8!important;border-radius:10px!important;background:#ffffffe0;box-shadow:0 3px 14px #18334d24;font:700 10px/1.1 Arial!important;color:#173f6b}
+.immersive-map .map-quick-actions>button svg{width:19px!important;height:19px!important;flex:none}
+.immersive-map .map-quick-actions>button:disabled{opacity:.5;cursor:default}
+.immersive-map #incidentMenuCount{background:#bd2631;color:#fff}
+/* The native zoom widget is replaced with matching accessible rail buttons. */
+.immersive-map .esri-zoom{display:none!important}
+.immersive-map .incident-map-labels{position:absolute;inset:0;z-index:1000;overflow:hidden;pointer-events:none}
+.immersive-map .incident-area-label{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:125px;max-width:240px;min-height:48px;padding:8px 12px;border:1px solid #92aac4;border-top:3px solid var(--incident-edge,#174f8a);border-radius:10px;background:rgba(255,255,255,.83);backdrop-filter:blur(5px);box-shadow:0 3px 12px #17334c30;color:#112b43;transform:translate(-50%,-50%);text-align:center;pointer-events:auto;cursor:pointer}
+.immersive-map .incident-area-label strong{font:700 14px/1.25 Arial;overflow-wrap:anywhere}
+.immersive-map .incident-area-label:hover,.immersive-map .incident-area-label:focus-visible{background:rgba(255,255,255,.96);border-color:#174f8a}
+.immersive-map .incident-area-dots{display:flex;justify-content:center;gap:6px}
+.immersive-map .incident-area-dot{display:block;width:11px;height:11px;border:1.5px solid;border-radius:50%;box-shadow:0 0 0 1px #fff}
+.immersive-map .incident-area-leader{position:absolute;height:2px;background:#4a6d92;box-shadow:0 0 0 1px #ffffffa6;transform-origin:left center;pointer-events:none}
+@media(max-width:760px){.immersive-map .map-quick-actions{gap:5px}.immersive-map .map-quick-actions>button{height:44px;min-height:44px}.immersive-map .incident-area-label{max-width:190px;min-width:110px;padding:6px 8px}.immersive-map .incident-area-label strong{font-size:13px}}
+@media(max-height:600px){.immersive-map .map-quick-actions{gap:4px}.immersive-map .map-quick-actions>button{height:36px;min-height:36px}.immersive-map .map-quick-actions>button svg{width:14px!important;height:14px!important}.immersive-map .map-quick-actions>button span{font-size:9px}}
