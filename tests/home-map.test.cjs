@@ -18,9 +18,6 @@ vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'../home-
 (async()=>{
  
  const API=context.window.ReadyLaPlataMap,adapter=await API.create({container:'viewDiv',config,fields:{status:'STATUS',zone:'zonename',incident:'incident'},popupFor(){},onIncident(name){context.clicked=name}});
- const obstacle={left:40,right:60,top:-10,bottom:10},route=API.routeConnector({x:0,y:0},{x:100,y:0},[obstacle],{left:-20,right:120,top:-20,bottom:20});
- assert(route.length>2,'blocked connector bends around the plate');for(let i=1;i<route.length;i++)assert.equal(API.segmentCrossesRect(route[i-1],route[i],obstacle),false,'connector segment avoids plate');
- assert.equal(API.routeConnector({x:50,y:0},{x:100,y:0},[obstacle],{left:-20,right:120,top:-20,bottom:20}).length,0,'no line is drawn from an occluded anchor');
  const polygon=coordinates=>({geometry:{type:'Polygon',coordinates}});
  const concave=API.interiorPointForFeature(polygon([[[0,0],[10,0],[10,2],[2,2],[2,10],[0,10],[0,0]]]));assert(concave&&(concave.lng<=2||concave.lat<=2),'anchor remains inside concave zone');
  const donut=API.interiorPointForFeature(polygon([[[0,0],[10,0],[10,10],[0,10],[0,0]],[[4,4],[6,4],[6,6],[4,6],[4,4]]]));assert(donut&&!(donut.lng>4&&donut.lng<6&&donut.lat>4&&donut.lat<6),'anchor avoids zone holes');
@@ -43,7 +40,7 @@ vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'../home-
  await adapter.zoomBy(1);assert.equal(view.zoom,16);await adapter.zoomBy(-1);assert.equal(view.zoom,15);
  context.clicked=null;view.hits={results:[{graphic:{layer:pins,attributes:{incident:'TEST ONLY'}}}]};await view.handlers.click({mapPoint:{latitude:37.3,longitude:-107.8}});assert.equal(context.clicked,'TEST ONLY','incident pin opens support resources');
  adapter.setIncidents([{name:'First',point:{lat:37.3,lng:-107.8},statuses:['Go']},{name:'Second',point:{lat:37.3,lng:-107.8},statuses:['Access']}]);
- assert.notEqual(controls.incidentMapLabels.children[1].style.top,controls.incidentMapLabels.children[3].style.top,'nearby labels do not overlap');assert.equal(controls.incidentMapLabels.children[2].hidden,true,'connector is omitted when its anchor is covered by another plate');
+ assert.notEqual(controls.incidentMapLabels.children[1].style.top,controls.incidentMapLabels.children[3].style.top,'nearby labels do not overlap');assert.equal(controls.incidentMapLabels.children[2].hidden,false,'straight connector continues behind another plate');assert.equal(controls.incidentMapLabels.children[2].children.length,1,'connector has one straight segment');
  adapter.setIncidents([]);assert.equal(controls.incidentMapLabels.children.length,0);assert.equal(pins.graphics.length,0,'refresh removes old incident markers');adapter.setOverlayPadding({top:90,bottom:140,compact:true});assert.equal(view.padding.left,12);assert.equal(view.padding.right,12);assert.equal(view.padding.top,view.padding.bottom);adapter.setOverlayPadding({top:90,bottom:140});assert.equal(view.padding.top,90);assert.equal(view.padding.bottom,140);
  const marker=adapter.markAddress({location:{x:-107.8,y:37.4}}),address=map.layers.find(l=>l.title==='Searched address');assert.equal(address.graphics.length,1);marker.remove();assert.equal(address.graphics.length,0);
  assert.equal(adapter.operationalLayers.length,3);

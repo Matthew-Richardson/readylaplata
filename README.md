@@ -64,4 +64,4 @@ The entire right-hand rail now uses the same button components for Info, Inciden
 
 The incident status/support window includes a Zoom To action beside Latest update. It navigates to the incident zones and closes the resources window, including when opened from a county-scale name plate. Run `node tests/incident-details.test.cjs` for popup action checks.
 
-Mobile county fitting uses symmetric viewport padding and narrower side margins so the full county is larger and centered on the page. Desktop padding remains unchanged. Connector paths are computed after every incident plate is placed, avoid other plates with a clearance margin, and paint behind all plates. If an anchor is occluded and no clear route exists, the connector is omitted instead of crossing a plate.
+Mobile county fitting uses symmetric viewport padding and narrower side margins so the full county is larger and centered on the page. Desktop padding remains unchanged. Connectors are single straight segments from the incident anchor to the plate edge, painted behind every name plate. They do not bend around neighboring plates.
